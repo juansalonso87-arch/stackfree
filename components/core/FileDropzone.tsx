@@ -25,8 +25,28 @@ const nombresLegibles: Record<string, string> = {
   "image/jpeg": "JPG",
   "image/webp": "WEBP",
   "image/gif": "GIF",
+  "image/bmp": "BMP",
+  "image/avif": "AVIF",
   "application/pdf": "PDF",
 };
+
+/** Por si el sistema no informa el tipo MIME (pasa en algunos Windows). */
+const tipoPorExtension: Record<string, string> = {
+  png: "image/png",
+  jpg: "image/jpeg",
+  jpeg: "image/jpeg",
+  webp: "image/webp",
+  gif: "image/gif",
+  bmp: "image/bmp",
+  avif: "image/avif",
+  pdf: "application/pdf",
+};
+
+function tipoDe(archivo: File): string {
+  if (archivo.type) return archivo.type;
+  const extension = archivo.name.split(".").pop()?.toLowerCase() ?? "";
+  return tipoPorExtension[extension] ?? "";
+}
 
 function formatearTipos(tipos: string[]): string {
   return tipos.map((t) => nombresLegibles[t] ?? t).join(", ");
@@ -62,7 +82,7 @@ export function FileDropzone({
       const validos: File[] = [];
 
       for (const archivo of seleccion) {
-        if (!accept.includes(archivo.type)) {
+        if (!accept.includes(tipoDe(archivo))) {
           errores.push(`"${archivo.name}" no es un formato válido. Usa ${formatearTipos(accept)}.`);
           continue;
         }

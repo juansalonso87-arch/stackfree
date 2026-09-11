@@ -1,6 +1,6 @@
 import type { ComponentType } from "react";
 import type { LucideIcon } from "lucide-react";
-import { ImageOff, Repeat } from "lucide-react";
+import { FileStack, ImageOff, Repeat } from "lucide-react";
 
 /**
  * REGISTRY DE HERRAMIENTAS
@@ -273,6 +273,59 @@ export const herramientas: Herramienta[] = [
     ],
     variantes: PARES_CONVERSION.map(([de, a]) => varianteConversion(de, a)),
     cargar: () => import("@/components/tools/convertir-imagen/ConvertirImagenTool"),
+  },
+  {
+    slug: "unir-pdf",
+    nombre: "Unir PDF",
+    h1: "Unir PDF gratis online",
+    subtitulo:
+      "Combina varios archivos PDF en uno solo, en el orden que quieras. Sin límite de archivos, sin marca de agua y sin subir tus documentos a ningún servidor.",
+    tituloSeo: "Unir PDF gratis online: combinar varios PDF en uno",
+    descripcionSeo:
+      "Une, combina o junta varios PDF en un solo archivo, gratis y sin límites. Reordena las páginas como quieras. Tus documentos nunca salen de tu navegador.",
+    descripcionCorta: "Combina varios PDF en uno solo, en el orden que elijas, sin subir tus documentos.",
+    keywords: [
+      "unir pdf",
+      "unir pdf gratis online",
+      "combinar pdf",
+      "juntar pdf",
+      "fusionar pdf",
+      "unir varios pdf en uno",
+      "unir pdf sin marca de agua",
+    ],
+    icono: FileStack,
+    categoria: "pdf",
+    estado: "activa",
+    formatosEntrada: ["application/pdf"],
+    pasos: [
+      "Arrastra dos o más archivos PDF al recuadro (o tócalo para elegirlos).",
+      "Ordénalos con las flechas: el orden de la lista será el orden del documento final.",
+      "Toca “Unir PDF”. Tu navegador junta todas las páginas en un solo archivo.",
+      "Descarga el PDF unido. Sin marcas de agua ni límites.",
+    ],
+    faq: [
+      {
+        pregunta: "¿Cuántos PDF puedo unir a la vez?",
+        respuesta:
+          "Hasta 50 archivos por vez, de hasta 100 MB cada uno. Como todo se procesa en tu dispositivo, el único límite real es la memoria de tu computadora o celular.",
+      },
+      {
+        pregunta: "¿Mis documentos se suben a algún servidor?",
+        respuesta:
+          "No. La unión la hace tu propio navegador. Tus contratos, facturas o apuntes nunca salen de tu dispositivo, lo que hace a esta herramienta ideal para documentos confidenciales.",
+      },
+      {
+        pregunta: "¿Se pierde calidad o se modifican los PDF?",
+        respuesta:
+          "No. Las páginas se copian tal cual, con su texto, imágenes y calidad originales. Solo se crea un archivo nuevo que las contiene a todas.",
+      },
+      {
+        pregunta: "¿Puedo unir PDF protegidos con contraseña?",
+        respuesta:
+          "No por ahora. Si un PDF tiene contraseña, la herramienta te lo indica en la lista para que le quites la protección antes de unirlo.",
+      },
+    ],
+    cargar: () => import("@/components/tools/unir-pdf/UnirPdfTool"),
   },
 ];
 
