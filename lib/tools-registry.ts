@@ -1,6 +1,6 @@
 import type { ComponentType } from "react";
 import type { LucideIcon } from "lucide-react";
-import { FileStack, ImageOff, Repeat } from "lucide-react";
+import { FileImage, FileStack, ImageOff, Repeat } from "lucide-react";
 
 /**
  * REGISTRY DE HERRAMIENTAS
@@ -157,6 +157,53 @@ function varianteConversion(de: ClaveFormato, a: ClaveFormato): VarianteHerramie
       },
     ],
     opciones: { formatoSalida: FORMATOS_IMAGEN[a].mime, formatoEntrada: FORMATOS_IMAGEN[de].mime },
+  };
+}
+
+/* ------------------------------------------------------------------ */
+/* Variantes de "Imagen a PDF": una página por formato de entrada.      */
+/* ------------------------------------------------------------------ */
+
+function varianteImagenAPdf(clave: "jpg" | "png"): VarianteHerramienta {
+  const F = FORMATOS_IMAGEN[clave].nombre;
+  const ejemplo = clave === "jpg" ? "fotos del celular, escaneos y documentos" : "capturas de pantalla, gráficos y diseños";
+  return {
+    slug: `${clave}-a-pdf`,
+    etiqueta: `${F} a PDF`,
+    h1: `Convertir ${F} a PDF gratis online`,
+    subtitulo: `Convierte una o varias imágenes ${F} en un solo PDF, en el orden que quieras. Sin registro, sin marca de agua y sin subir tus archivos a ningún servidor.`,
+    tituloSeo: `Convertir ${F} a PDF gratis online, sin subir archivos`,
+    descripcionSeo: `Pasa tus ${F} a PDF gratis: una o varias imágenes en un solo documento, con tamaño A4 o Carta. Todo en tu navegador, sin subir nada.`,
+    keywords: [
+      `${clave} a pdf`,
+      `convertir ${clave} a pdf`,
+      `pasar ${clave} a pdf`,
+      `${clave} a pdf gratis online`,
+      `de ${clave} a pdf sin marca de agua`,
+      `varias imagenes ${clave} a un pdf`,
+    ],
+    faq: [
+      {
+        pregunta: `¿Puedo juntar varias ${F} en un solo PDF?`,
+        respuesta: `Sí. Arrastra todas las imágenes (hasta 50), ordénalas con las flechas y se crea un único PDF con una imagen por página. Ideal para ${ejemplo}.`,
+      },
+      {
+        pregunta: "¿Qué tamaño de página tendrá el PDF?",
+        respuesta:
+          "Puedes elegir A4, Carta o que cada página tenga el tamaño exacto de la imagen. La orientación (vertical u horizontal) se detecta sola según la imagen, y puedes ajustar los márgenes.",
+      },
+      {
+        pregunta: "¿Se pierde calidad?",
+        respuesta:
+          "No se nota. Las imágenes se incrustan con calidad alta (equivalente a 300 dpi en A4, calidad de imprenta). Las fotos muy grandes se ajustan a ese tamaño para que el PDF no pese de más.",
+      },
+      {
+        pregunta: "¿Mis fotos o documentos se suben a algún servidor?",
+        respuesta:
+          "No. El PDF se genera dentro de tu navegador. Tus DNI, comprobantes o fotos personales nunca salen de tu dispositivo.",
+      },
+    ],
+    opciones: { formatoEntrada: FORMATOS_IMAGEN[clave].mime, formatoNombre: F },
   };
 }
 
@@ -326,6 +373,60 @@ export const herramientas: Herramienta[] = [
       },
     ],
     cargar: () => import("@/components/tools/unir-pdf/UnirPdfTool"),
+  },
+  {
+    slug: "imagen-a-pdf",
+    nombre: "Imagen a PDF",
+    h1: "Convertir imagen a PDF gratis online",
+    subtitulo:
+      "Pasa tus fotos, capturas o escaneos (JPG, PNG, WEBP) a un PDF en segundos. Una o varias imágenes en un solo documento, sin registro y sin subir nada a internet.",
+    tituloSeo: "Convertir imagen a PDF gratis online (JPG, PNG, WEBP)",
+    descripcionSeo:
+      "Convierte fotos e imágenes JPG, PNG o WEBP a PDF gratis. Varias imágenes en un solo PDF, tamaño A4 o Carta, sin marca de agua y sin subir tus archivos.",
+    descripcionCorta: "Convierte fotos y capturas en un PDF (una o varias en un solo documento).",
+    keywords: [
+      "convertir imagen a pdf",
+      "imagen a pdf gratis online",
+      "pasar foto a pdf",
+      "fotos a pdf",
+      "jpg a pdf",
+      "png a pdf",
+      "varias imagenes a un pdf",
+    ],
+    icono: FileImage,
+    categoria: "pdf",
+    estado: "activa",
+    formatosEntrada: ["image/jpeg", "image/png", "image/webp", "image/gif", "image/bmp", "image/avif"],
+    pasos: [
+      "Arrastra una o varias imágenes al recuadro (JPG, PNG, WEBP, GIF, BMP o AVIF).",
+      "Ordénalas con las flechas si son varias: cada imagen será una página.",
+      "Elige tamaño de página (A4, Carta o igual a la imagen), orientación y márgenes.",
+      "Toca “Crear PDF” y descarga el documento. Sin marcas de agua ni límites.",
+    ],
+    faq: [
+      {
+        pregunta: "¿Puedo juntar varias fotos en un solo PDF?",
+        respuesta:
+          "Sí. Arrastra todas las imágenes (hasta 50), ordénalas con las flechas y se crea un único PDF con una imagen por página. Ideal para enviar documentos escaneados con el celular.",
+      },
+      {
+        pregunta: "¿Qué tamaño de página tendrá el PDF?",
+        respuesta:
+          "Puedes elegir A4, Carta o que cada página tenga el tamaño exacto de la imagen. La orientación se detecta sola según cada imagen, y puedes ajustar los márgenes.",
+      },
+      {
+        pregunta: "¿Las fotos del celular salen giradas?",
+        respuesta:
+          "No. La herramienta lee la orientación guardada en la foto y la corrige automáticamente, así el PDF se ve igual que en la galería de tu teléfono.",
+      },
+      {
+        pregunta: "¿Mis fotos o documentos se suben a algún servidor?",
+        respuesta:
+          "No. El PDF se genera dentro de tu navegador. Tus DNI, comprobantes o fotos personales nunca salen de tu dispositivo.",
+      },
+    ],
+    variantes: [varianteImagenAPdf("jpg"), varianteImagenAPdf("png")],
+    cargar: () => import("@/components/tools/imagen-a-pdf/ImagenAPdfTool"),
   },
 ];
 
