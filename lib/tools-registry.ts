@@ -1,6 +1,6 @@
 import type { ComponentType } from "react";
 import type { LucideIcon } from "lucide-react";
-import { FileImage, FileStack, ImageOff, Repeat } from "lucide-react";
+import { FileImage, FileStack, ImageOff, Minimize2, Repeat, Scaling, Scissors } from "lucide-react";
 
 /**
  * REGISTRY DE HERRAMIENTAS
@@ -201,6 +201,55 @@ function varianteImagenAPdf(clave: "jpg" | "png"): VarianteHerramienta {
         pregunta: "¿Mis fotos o documentos se suben a algún servidor?",
         respuesta:
           "No. El PDF se genera dentro de tu navegador. Tus DNI, comprobantes o fotos personales nunca salen de tu dispositivo.",
+      },
+    ],
+    opciones: { formatoEntrada: FORMATOS_IMAGEN[clave].mime, formatoNombre: F },
+  };
+}
+
+/* ------------------------------------------------------------------ */
+/* Variantes de "Comprimir imagen": una página por formato.             */
+/* ------------------------------------------------------------------ */
+
+function varianteComprimir(clave: "jpg" | "png" | "webp"): VarianteHerramienta {
+  const F = FORMATOS_IMAGEN[clave].nombre;
+  const como =
+    clave === "png"
+      ? "reduciendo la cantidad de colores de forma inteligente (ideal para capturas, logos e ilustraciones)"
+      : "ajustando la calidad de compresión sin que se note a simple vista";
+  return {
+    slug: `comprimir-${clave}`,
+    etiqueta: `Comprimir ${F}`,
+    h1: `Comprimir ${F} gratis online`,
+    subtitulo: `Reduce el peso de tus imágenes ${F} hasta un 80% sin perder calidad visible. Varias a la vez, sin registro y sin subir nada a internet.`,
+    tituloSeo: `Comprimir ${F} online gratis, sin perder calidad`,
+    descripcionSeo: `Comprime imágenes ${F} gratis y reduce su peso hasta un 80%. Varias a la vez, sin límites, sin marca de agua y sin subir tus archivos a ningún servidor.`,
+    keywords: [
+      `comprimir ${clave}`,
+      `comprimir ${clave} online`,
+      `reducir peso ${clave}`,
+      `reducir tamaño ${clave} sin perder calidad`,
+      `comprimir imagen ${clave} gratis`,
+      `optimizar ${clave}`,
+    ],
+    faq: [
+      {
+        pregunta: `¿Cómo se comprime un ${F} sin perder calidad?`,
+        respuesta: `La herramienta reduce el peso ${como}. Con el nivel “Equilibrado” la diferencia es imperceptible; si necesitas el archivo más chico posible, elige “Máxima compresión”.`,
+      },
+      {
+        pregunta: "¿Cuánto se reduce el peso?",
+        respuesta:
+          "Depende de la imagen: fotos y capturas sin optimizar suelen bajar entre un 50% y un 80%. Si la imagen ya estaba optimizada, te lo avisamos y conservamos el original.",
+      },
+      {
+        pregunta: "¿Cambia el tamaño en píxeles?",
+        respuesta:
+          "No, salvo que actives “Reducir también la resolución”, que achica las imágenes grandes a 2000 px. Eso multiplica el ahorro y es ideal para web, WhatsApp o email.",
+      },
+      {
+        pregunta: "¿Mis imágenes se suben a algún servidor?",
+        respuesta: "No. La compresión la hace tu navegador. Tus fotos no salen de tu dispositivo en ningún momento.",
       },
     ],
     opciones: { formatoEntrada: FORMATOS_IMAGEN[clave].mime, formatoNombre: F },
@@ -427,6 +476,183 @@ export const herramientas: Herramienta[] = [
     ],
     variantes: [varianteImagenAPdf("jpg"), varianteImagenAPdf("png")],
     cargar: () => import("@/components/tools/imagen-a-pdf/ImagenAPdfTool"),
+  },
+  {
+    slug: "comprimir-imagen",
+    nombre: "Comprimir imagen",
+    h1: "Comprimir imágenes online gratis sin perder calidad",
+    subtitulo:
+      "Reduce el peso de tus fotos JPG, PNG y WEBP hasta un 80% para enviarlas más rápido o subirlas a tu web. Varias a la vez, sin registro y sin subir nada a internet.",
+    tituloSeo: "Comprimir imagen online gratis (JPG, PNG, WEBP)",
+    descripcionSeo:
+      "Comprime imágenes JPG, PNG y WEBP gratis: menos peso, misma calidad visible. Varias a la vez, sin límites y sin subir tus fotos a ningún servidor.",
+    descripcionCorta: "Reduce el peso de fotos e imágenes hasta un 80% sin que se note.",
+    keywords: [
+      "comprimir imagen",
+      "comprimir imagen online gratis",
+      "reducir peso de imagen",
+      "reducir tamaño de imagen sin perder calidad",
+      "comprimir foto",
+      "comprimir jpg",
+      "comprimir png",
+    ],
+    icono: Minimize2,
+    categoria: "imagen",
+    estado: "activa",
+    formatosEntrada: ["image/jpeg", "image/png", "image/webp", "image/gif", "image/bmp", "image/avif"],
+    pasos: [
+      "Arrastra una o varias imágenes al recuadro.",
+      "Elige el nivel: Alta calidad, Equilibrado o Máxima compresión. Opcionalmente, reduce también la resolución.",
+      "Toca “Comprimir”. Verás el peso antes y después de cada imagen.",
+      "Descarga cada imagen o todas juntas en un ZIP.",
+    ],
+    faq: [
+      {
+        pregunta: "¿De verdad no se pierde calidad?",
+        respuesta:
+          "Se pierde muy poca, de forma imperceptible a simple vista. Los formatos JPG y WEBP guardan información que el ojo no distingue; en PNG se reduce la cantidad de colores de forma inteligente. Siempre puedes comparar el antes y el después.",
+      },
+      {
+        pregunta: "¿Cuánto se reduce el peso?",
+        respuesta:
+          "Depende de la imagen: fotos y capturas sin optimizar suelen bajar entre un 50% y un 80%. Si una imagen ya estaba optimizada, te lo avisamos y conservamos el original.",
+      },
+      {
+        pregunta: "¿Cambia el tamaño en píxeles?",
+        respuesta:
+          "No, salvo que actives “Reducir también la resolución”, que achica las imágenes de más de 2000 px. Eso multiplica el ahorro y es ideal para web, WhatsApp o email.",
+      },
+      {
+        pregunta: "¿Mis imágenes se suben a algún servidor?",
+        respuesta: "No. La compresión la hace tu navegador. Tus fotos no salen de tu dispositivo en ningún momento.",
+      },
+    ],
+    variantes: [varianteComprimir("jpg"), varianteComprimir("png"), varianteComprimir("webp")],
+    cargar: () => import("@/components/tools/comprimir-imagen/ComprimirImagenTool"),
+  },
+  {
+    slug: "redimensionar-imagen",
+    nombre: "Redimensionar imagen",
+    h1: "Redimensionar imagen online gratis",
+    subtitulo:
+      "Cambia el tamaño de tus imágenes en píxeles o por porcentaje, con medidas listas para redes sociales. Varias a la vez, sin registro y sin subir nada a internet.",
+    tituloSeo: "Redimensionar imagen online gratis: cambiar tamaño en píxeles",
+    descripcionSeo:
+      "Cambia el tamaño de una imagen en píxeles o porcentaje, gratis y sin perder proporción. Medidas para Instagram, HD y Full HD. Todo en tu navegador.",
+    descripcionCorta: "Cambia el tamaño en píxeles o porcentaje, con medidas para redes sociales.",
+    keywords: [
+      "redimensionar imagen",
+      "cambiar tamaño de imagen",
+      "cambiar tamaño de imagen online",
+      "reducir tamaño de imagen en pixeles",
+      "agrandar imagen online",
+      "cambiar tamaño de foto para instagram",
+      "redimensionar imagen sin perder calidad",
+    ],
+    icono: Scaling,
+    categoria: "imagen",
+    estado: "activa",
+    formatosEntrada: ["image/jpeg", "image/png", "image/webp", "image/gif", "image/bmp", "image/avif"],
+    pasos: [
+      "Arrastra una o varias imágenes al recuadro. Verás el tamaño actual de cada una.",
+      "Elige el tamaño nuevo en píxeles (o usa un preset como Full HD o Instagram) o un porcentaje.",
+      "Deja marcado “Mantener proporción” para que no se deformen.",
+      "Toca “Redimensionar” y descarga las imágenes, una por una o en ZIP.",
+    ],
+    faq: [
+      {
+        pregunta: "¿Se deforma la imagen?",
+        respuesta:
+          "No si dejas activado “Mantener proporción”: la imagen se ajusta dentro del ancho y alto que indiques conservando su forma. Si lo desactivas, se estira exactamente a esas medidas.",
+      },
+      {
+        pregunta: "¿Puedo agrandar una imagen?",
+        respuesta:
+          "Sí, pero agrandar siempre pierde nitidez porque hay que inventar píxeles que no existen. Por defecto la herramienta no agranda imágenes más chicas que el tamaño pedido; puedes desactivar esa protección.",
+      },
+      {
+        pregunta: "¿Qué medidas uso para redes sociales?",
+        respuesta:
+          "Instagram: 1080×1080 (cuadrado) o 1080×1920 (historias). Full HD para fondos y videos: 1920×1080. Tienes esos presets listos con un clic.",
+      },
+      {
+        pregunta: "¿Mis imágenes se suben a algún servidor?",
+        respuesta: "No. El cambio de tamaño lo hace tu navegador. Tus fotos no salen de tu dispositivo en ningún momento.",
+      },
+    ],
+    cargar: () => import("@/components/tools/redimensionar-imagen/RedimensionarImagenTool"),
+  },
+  {
+    slug: "dividir-pdf",
+    nombre: "Dividir PDF",
+    h1: "Dividir PDF gratis online: separar o extraer páginas",
+    subtitulo:
+      "Separa un PDF en páginas individuales o extrae solo las que necesitas (por ejemplo, 1-3 y 7). Sin registro, sin marca de agua y sin subir tu documento a ningún servidor.",
+    tituloSeo: "Dividir PDF gratis online: separar y extraer páginas",
+    descripcionSeo:
+      "Divide un PDF en páginas sueltas o extrae las páginas que quieras en un nuevo PDF. Gratis, sin límites y sin subir tus documentos: todo en tu navegador.",
+    descripcionCorta: "Separa un PDF en páginas o extrae solo las que necesitas.",
+    keywords: [
+      "dividir pdf",
+      "separar pdf",
+      "separar paginas de un pdf",
+      "extraer paginas de un pdf",
+      "dividir pdf en paginas",
+      "cortar pdf",
+      "dividir pdf gratis online",
+    ],
+    icono: Scissors,
+    categoria: "pdf",
+    estado: "activa",
+    formatosEntrada: ["application/pdf"],
+    pasos: [
+      "Arrastra tu PDF al recuadro. Verás cuántas páginas tiene.",
+      "Elige “Separar todas las páginas” (cada una en un PDF) o “Extraer algunas páginas”.",
+      "Si extraes, escribe las páginas: por ejemplo 1-3, 5, 8-10.",
+      "Toca el botón y descarga el resultado: un PDF, o un ZIP con todas las páginas.",
+    ],
+    faq: [
+      {
+        pregunta: "¿Cómo extraigo solo algunas páginas de un PDF?",
+        respuesta:
+          "Elige “Extraer algunas páginas” y escribe cuáles quieres, separadas por comas y con guion para rangos: 1-3, 5, 8-10. Se crea un PDF nuevo solo con esas páginas, en ese orden.",
+      },
+      {
+        pregunta: "¿Qué recibo al separar todas las páginas?",
+        respuesta:
+          "Un archivo ZIP con un PDF por página, numerados en orden (documento-pagina-01.pdf, -02.pdf…). Tu PDF original no se modifica.",
+      },
+      {
+        pregunta: "¿Se pierde calidad?",
+        respuesta: "No. Las páginas se copian tal cual, con su texto, imágenes y calidad originales.",
+      },
+      {
+        pregunta: "¿Mis documentos se suben a algún servidor?",
+        respuesta:
+          "No. Todo ocurre en tu navegador. Contratos, facturas o apuntes nunca salen de tu dispositivo.",
+      },
+    ],
+    variantes: [
+      {
+        slug: "extraer-paginas-pdf",
+        etiqueta: "Extraer páginas",
+        h1: "Extraer páginas de un PDF gratis online",
+        subtitulo:
+          "Elige las páginas que necesitas de un PDF (por ejemplo, 2-4 y 9) y descárgalas como un PDF nuevo. Sin registro y sin subir tu documento a ningún servidor.",
+        tituloSeo: "Extraer páginas de un PDF gratis online",
+        descripcionSeo:
+          "Extrae una o varias páginas de un PDF y guárdalas como un PDF nuevo, gratis y sin límites. Todo en tu navegador, sin subir tus documentos.",
+        keywords: [
+          "extraer paginas de un pdf",
+          "extraer paginas pdf online",
+          "sacar paginas de un pdf",
+          "guardar una pagina de un pdf",
+          "seleccionar paginas de un pdf",
+        ],
+        opciones: { modo: "rango" },
+      },
+    ],
+    cargar: () => import("@/components/tools/dividir-pdf/DividirPdfTool"),
   },
 ];
 

@@ -9,6 +9,7 @@
  */
 
 import { ErrorImagen, decodificarImagen, exportarCanvas } from "@/lib/imagen";
+import { crearZip as crearZipGenerico } from "@/lib/zip";
 export { formatearBytes } from "@/lib/imagen";
 
 export type FormatoSalida = "image/png" | "image/jpeg" | "image/webp";
@@ -127,52 +128,7 @@ export async function convertirImagen(
   }
 }
 
-/**
- * Convierte varios archivos en serie (uno a la vez evita quedarse sin
- * memoria con lotes grandes) e informa el avance.
- */
-export async function convertirVarias(
-  archivos: File[],
-  opciones: OpcionesConversion,
-  onProgreso?: (hechos: number, total: number, nombre: string) => void,
-): Promise<{ resultados: ResultadoConversion[]; errores: ErrorConversion[] }> {
-  const resultados: ResultadoConversion[] = [];
-  const errores: ErrorConversion[] = [];
-  for (let i = 0; i < archivos.length; i++) {
-    onProgreso?.(i, archivos.length, archivos[i].name);
-    try {
-      resultados.push(await convertirImagen(archivos[i], opciones));
-    } catch (e) {
-      errores.push(
-        e instanceof ErrorConversion ? e : new ErrorConversion(archivos[i].name, "No se pudo convertir."),
-      );
-    }
-  }
-  onProgreso?.(archivos.length, archivos.length, "");
-  return { resultados, errores };
-}
-
-/* ------------------------------------------------------------------ */
-/* ZIP                                                                  */
-/* ------------------------------------------------------------------ */
-
-/** Empaqueta los resultados en un ZIP sin comprimir (las imágenes ya vienen comprimidas). */
-export async function crearZip(resultados: ResultadoConversion[]): Promise<Blob> {
-  const { zip } = await import("fflate");
-  const entradas: Record<string, [Uint8Array, { level: 0 }]> = {};
-  const usados = new Set<string>();
-  for (const r of resultados) {
-    // Evita nombres repetidos dentro del ZIP (foto.jpg, foto (2).jpg...).
-    let nombre = r.nombre;
-    let n = 2;
-    while (usados.has(nombre)) {
-      nombre = r.nombre.replace(/(\.[^.]+)$/, ` (${n++})$1`);
-    }
-    usados.add(nombre);
-    entradas[nombre] = [new Uint8Array(await r.blob.arrayBuffer()), { level: 0 }];
-  }
-  const datos = await new Promise<Uint8Array>((resolver, rechazar) => {
-    zip(entradas, (err, out) => (err ? rechazar(err) : resolver(out)));
-  });
-  return new Blob([datos as BlobPart], { type: "application/zip" });
+/** Empaqueta los resultados en un ZIP (ver lib/zip.ts). */
+export function crearZip(resultados: ResultadoConversion[]): Promise<Blob> {
+  return crearZipGenerico(resultados.map((r) => ({ nombre: r.nombre, blob: r.blob })));
 }
