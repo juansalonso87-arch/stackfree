@@ -49,9 +49,20 @@ export function Footer() {
         </nav>
       </div>
       <div className="border-t">
-        <p className="container mx-auto px-4 py-4 text-xs text-muted-foreground">
-          © {anio} {siteConfig.nombre}. Todos los derechos reservados.
-        </p>
+        <div className="container mx-auto flex flex-wrap items-center justify-between gap-2 px-4 py-4 text-xs text-muted-foreground">
+          <p>© {anio} {siteConfig.nombre}.</p>
+          <p>
+            Código abierto bajo licencia {siteConfig.licencia} ·{" "}
+            <a
+              href={siteConfig.repoUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="underline underline-offset-2 hover:text-foreground"
+            >
+              Ver el código fuente
+            </a>
+          </p>
+        </div>
       </div>
     </footer>
   );

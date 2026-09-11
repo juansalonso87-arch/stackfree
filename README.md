@@ -72,7 +72,13 @@ Mientras la herramienta no esté lista, dejá `estado: "proximamente"`: se muest
 - Alternativa futura: alojar el modelo en `public/` o en un bucket propio (ver "Custom Asset Serving" en la doc de la librería). Ojo con el ancho de banda: en el plan gratuito de Vercel son 100 GB/mes.
 - Toda la lógica está en `components/tools/quitar-fondo/logic.ts`; la interfaz no sabe qué librería se usa, así que cambiarla es tocar un solo archivo.
 
-> ⚠ **Licencia AGPL-3.0.** `@imgly/background-removal` es AGPL. Usarla en un sitio público implica publicar el código fuente del sitio bajo AGPL (este repositorio puede ser público) o comprar una licencia comercial a IMG.LY. Decisión pendiente del dueño del proyecto.
+## Licencia
+
+Este proyecto se publica bajo **GNU AGPL v3** (ver `LICENSE`). Motivo: la herramienta de quitar fondo usa [`@imgly/background-removal`](https://github.com/imgly/background-removal-js), que es AGPL, y esa licencia exige que el sitio completo sea software libre y que los usuarios puedan obtener el código (por eso el footer enlaza a este repositorio).
+
+Si en el futuro se quisiera cerrar el código, alcanza con reemplazar esa librería en `components/tools/quitar-fondo/logic.ts` por una con licencia permisiva (por ejemplo `onnxruntime-web` + un modelo Apache/MIT).
+
+Créditos: modelo ISNet vía IMG.LY · componentes [shadcn/ui](https://ui.shadcn.com) (MIT) · íconos [Lucide](https://lucide.dev) (ISC).
 
 ## Variables de entorno
 

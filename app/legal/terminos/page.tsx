@@ -67,11 +67,19 @@ export default function PaginaTerminos() {
         del sitio, incluida la pérdida de datos.
       </p>
 
-      <h2>6. Propiedad intelectual</h2>
+      <h2>6. Propiedad intelectual y código abierto</h2>
       <p>
-        El diseño, los textos y el código del sitio son propiedad de {siteConfig.nombre} o de sus
-        licenciantes. Algunas herramientas utilizan librerías de código abierto bajo sus respectivas
-        licencias.
+        La marca, el nombre y los textos de {siteConfig.nombre} son propiedad de sus titulares. El
+        código fuente del sitio es software libre publicado bajo la licencia{" "}
+        <a href="https://www.gnu.org/licenses/agpl-3.0.html" target="_blank" rel="noopener noreferrer">
+          GNU AGPL v3
+        </a>{" "}
+        y está disponible en{" "}
+        <a href={siteConfig.repoUrl} target="_blank" rel="noopener noreferrer">
+          {siteConfig.repoUrl.replace("https://", "")}
+        </a>
+        . Las herramientas utilizan librerías de terceros bajo sus respectivas licencias, detalladas
+        en ese repositorio.
       </p>
 
       <h2>7. Publicidad y enlaces de terceros</h2>

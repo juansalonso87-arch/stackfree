@@ -31,6 +31,12 @@ export const siteConfig = {
   url: resolverUrlBase(),
   /** Email de contacto que aparece en las páginas legales. EDITAR. */
   emailContacto: "contacto@tudominio.com",
+  /**
+   * Repositorio público del código. El sitio usa librerías AGPL, que exigen
+   * ofrecer el código fuente a los usuarios: por eso hay un link en el footer.
+   */
+  repoUrl: "https://github.com/juansalonso87-arch/stackfree",
+  licencia: "AGPL-3.0",
   /** Idioma principal del sitio (atributo lang del <html> y Open Graph). */
   idioma: "es",
   localeOpenGraph: "es_ES",
