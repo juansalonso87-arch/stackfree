@@ -48,9 +48,9 @@ export const metadata: Metadata = {
     description: siteConfig.descripcion,
   },
   robots: { index: true, follow: true },
-  verification: process.env.NEXT_PUBLIC_GOOGLE_SITE_VERIFICATION
-    ? { google: process.env.NEXT_PUBLIC_GOOGLE_SITE_VERIFICATION }
-    : undefined,
+  verification: {
+    google: process.env.NEXT_PUBLIC_GOOGLE_SITE_VERIFICATION || siteConfig.googleSiteVerification,
+  },
 };
 
 export const viewport: Viewport = {

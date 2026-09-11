@@ -37,6 +37,12 @@ export const siteConfig = {
    */
   repoUrl: "https://github.com/juansalonso87-arch/stackfree",
   licencia: "AGPL-3.0",
+  /**
+   * Código de verificación de Google Search Console (propiedad
+   * https://stackfree.vercel.app/). No es secreto: va en el HTML público.
+   * Si se cambia de dominio hay que verificar de nuevo y actualizar esto.
+   */
+  googleSiteVerification: "8cTv7V2y4YWfd9xlqKkGXqI-ApQvjVUGYhJVtYMqI_k",
   /** Idioma principal del sitio (atributo lang del <html> y Open Graph). */
   idioma: "es",
   localeOpenGraph: "es_ES",
