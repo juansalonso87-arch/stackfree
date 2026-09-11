@@ -16,12 +16,20 @@ export default function sitemap(): MetadataRoute.Sitemap {
     { url: `${siteConfig.url}/legal/cookies`, lastModified: ahora, changeFrequency: "yearly", priority: 0.2 },
   ];
 
-  const paginasHerramientas: MetadataRoute.Sitemap = herramientasActivas().map((h) => ({
-    url: `${siteConfig.url}${rutaHerramienta(h.slug)}`,
-    lastModified: ahora,
-    changeFrequency: "monthly",
-    priority: 0.9,
-  }));
+  const paginasHerramientas: MetadataRoute.Sitemap = herramientasActivas().flatMap((h) => [
+    {
+      url: `${siteConfig.url}${rutaHerramienta(h.slug)}`,
+      lastModified: ahora,
+      changeFrequency: "monthly" as const,
+      priority: 0.9,
+    },
+    ...(h.variantes ?? []).map((v) => ({
+      url: `${siteConfig.url}${rutaHerramienta(v.slug)}`,
+      lastModified: ahora,
+      changeFrequency: "monthly" as const,
+      priority: 0.8,
+    })),
+  ]);
 
   return [...paginasFijas, ...paginasHerramientas];
 }

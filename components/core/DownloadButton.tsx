@@ -46,6 +46,10 @@ export function DownloadButton({
     setTimeout(() => URL.revokeObjectURL(url), 1000);
   };
 
+  // Sin label queda un botón solo con ícono (útil en listas); el nombre del
+  // archivo va como etiqueta accesible para lectores de pantalla.
+  const soloIcono = label.length === 0;
+
   return (
     <Button
       onClick={descargar}
@@ -53,10 +57,12 @@ export function DownloadButton({
       variant={variant}
       size={size}
       className={className}
+      aria-label={soloIcono ? `Descargar ${nombreArchivo}` : undefined}
+      title={soloIcono ? `Descargar ${nombreArchivo}` : undefined}
     >
-      <Download data-icon="inline-start" />
+      <Download data-icon={soloIcono ? undefined : "inline-start"} />
       {label}
-      {archivo && (
+      {archivo && !soloIcono && (
         <span className="text-xs opacity-70 tabular-nums">({formatearTamano(archivo.size)})</span>
       )}
     </Button>

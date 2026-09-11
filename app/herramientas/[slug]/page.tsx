@@ -6,8 +6,9 @@ import { siteConfig } from "@/lib/site-config";
 import {
   herramientas,
   nombresCategoria,
-  obtenerHerramienta,
+  obtenerPagina,
   rutaHerramienta,
+  todosLosSlugs,
 } from "@/lib/tools-registry";
 import { Badge } from "@/components/ui/badge";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
@@ -25,59 +26,68 @@ import { ToolLoader } from "@/components/core/ToolLoader";
 type Props = { params: Promise<{ slug: string }> };
 
 /**
- * Le decimos a Next qué páginas existen para que las genere como HTML
- * estático en el build (más rápido y mejor para SEO). Cualquier slug que no
- * esté en el registry devuelve 404 gracias a `dynamicParams = false`.
+ * Le decimos a Next qué páginas existen (herramientas + variantes) para que
+ * las genere como HTML estático en el build (más rápido y mejor para SEO).
+ * Cualquier slug que no esté en el registry devuelve 404 gracias a
+ * `dynamicParams = false`.
  */
 export function generateStaticParams() {
-  return herramientas.map((h) => ({ slug: h.slug }));
+  return todosLosSlugs().map((slug) => ({ slug }));
 }
 export const dynamicParams = false;
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { slug } = await params;
-  const h = obtenerHerramienta(slug);
-  if (!h) return {};
+  const p = obtenerPagina(slug);
+  if (!p) return {};
 
-  const ruta = rutaHerramienta(h.slug);
-  const indexable = h.estado === "activa";
+  const ruta = rutaHerramienta(p.slug);
+  const indexable = p.herramienta.estado === "activa";
 
   return {
-    title: h.tituloSeo,
-    description: h.descripcionSeo,
-    keywords: h.keywords,
+    title: p.tituloSeo,
+    description: p.descripcionSeo,
+    keywords: p.keywords,
     alternates: { canonical: ruta },
     // Las herramientas "próximamente" no se indexan: Google penaliza páginas sin contenido útil.
     robots: { index: indexable, follow: true },
     openGraph: {
       type: "website",
       url: ruta,
-      title: h.tituloSeo,
-      description: h.descripcionSeo,
+      title: p.tituloSeo,
+      description: p.descripcionSeo,
       siteName: siteConfig.nombre,
       locale: siteConfig.localeOpenGraph,
     },
     twitter: {
       card: "summary_large_image",
-      title: h.tituloSeo,
-      description: h.descripcionSeo,
+      title: p.tituloSeo,
+      description: p.descripcionSeo,
     },
   };
 }
 
 export default async function PaginaHerramienta({ params }: Props) {
   const { slug } = await params;
-  const h = obtenerHerramienta(slug);
-  if (!h) notFound();
+  const p = obtenerPagina(slug);
+  if (!p) notFound();
 
-  const urlAbsoluta = `${siteConfig.url}${rutaHerramienta(h.slug)}`;
+  const h = p.herramienta;
+  const urlAbsoluta = `${siteConfig.url}${rutaHerramienta(p.slug)}`;
   const otras = herramientas.filter((o) => o.slug !== h.slug).slice(0, 3);
+  // Enlaces entre páginas "hermanas" (la principal + sus variantes), sin la actual.
+  const hermanas = h.variantes
+    ? [
+        { slug: h.slug, etiqueta: "Todos los formatos" },
+        ...h.variantes.map((v) => ({ slug: v.slug, etiqueta: v.etiqueta })),
+      ].filter((x) => x.slug !== p.slug)
+    : [];
 
   // Datos estructurados: FAQ (rich snippets), migas de pan y ficha de la app.
   const jsonLdFaq = {
     "@context": "https://schema.org",
     "@type": "FAQPage",
-    mainEntity: h.faq.map((f) => ({
+    mainEntity: p.faq.map((f) => ({
       "@type": "Question",
       name: f.pregunta,
       acceptedAnswer: { "@type": "Answer", text: f.respuesta },
@@ -88,15 +98,25 @@ export default async function PaginaHerramienta({ params }: Props) {
     "@type": "BreadcrumbList",
     itemListElement: [
       { "@type": "ListItem", position: 1, name: "Inicio", item: siteConfig.url },
-      { "@type": "ListItem", position: 2, name: h.nombre, item: urlAbsoluta },
+      ...(p.variante
+        ? [
+            {
+              "@type": "ListItem",
+              position: 2,
+              name: h.nombre,
+              item: `${siteConfig.url}${rutaHerramienta(h.slug)}`,
+            },
+            { "@type": "ListItem", position: 3, name: p.variante.etiqueta, item: urlAbsoluta },
+          ]
+        : [{ "@type": "ListItem", position: 2, name: h.nombre, item: urlAbsoluta }]),
     ],
   };
   const jsonLdApp = {
     "@context": "https://schema.org",
     "@type": "WebApplication",
-    name: h.h1,
+    name: p.h1,
     url: urlAbsoluta,
-    description: h.descripcionSeo,
+    description: p.descripcionSeo,
     applicationCategory: "MultimediaApplication",
     operatingSystem: "Any",
     browserRequirements: "Requiere un navegador moderno con JavaScript",
@@ -111,7 +131,7 @@ export default async function PaginaHerramienta({ params }: Props) {
       <JsonLd data={jsonLdApp} />
 
       {/* Migas de pan */}
-      <nav aria-label="Migas de pan" className="mb-4 flex items-center gap-1 text-sm text-muted-foreground">
+      <nav aria-label="Migas de pan" className="mb-4 flex flex-wrap items-center gap-1 text-sm text-muted-foreground">
         <Link href="/" className="hover:text-foreground hover:underline">
           Inicio
         </Link>
@@ -120,9 +140,21 @@ export default async function PaginaHerramienta({ params }: Props) {
           Herramientas
         </Link>
         <ChevronRight className="size-3.5" aria-hidden="true" />
-        <span className="text-foreground" aria-current="page">
-          {h.nombre}
-        </span>
+        {p.variante ? (
+          <>
+            <Link href={rutaHerramienta(h.slug)} className="hover:text-foreground hover:underline">
+              {h.nombre}
+            </Link>
+            <ChevronRight className="size-3.5" aria-hidden="true" />
+            <span className="text-foreground" aria-current="page">
+              {p.variante.etiqueta}
+            </span>
+          </>
+        ) : (
+          <span className="text-foreground" aria-current="page">
+            {h.nombre}
+          </span>
+        )}
       </nav>
 
       {/* Encabezado SEO */}
@@ -139,9 +171,9 @@ export default async function PaginaHerramienta({ params }: Props) {
           </Badge>
         </div>
         <h1 className="font-heading text-3xl font-bold tracking-tight text-balance sm:text-4xl">
-          {h.h1}
+          {p.h1}
         </h1>
-        <p className="mt-3 text-lg text-muted-foreground text-pretty">{h.subtitulo}</p>
+        <p className="mt-3 text-lg text-muted-foreground text-pretty">{p.subtitulo}</p>
       </header>
 
       <div className="my-6">
@@ -163,14 +195,29 @@ export default async function PaginaHerramienta({ params }: Props) {
 
           {/* La herramienta en sí: se carga en un paquete JS separado (ver ToolLoader) */}
           <section aria-label={h.nombre}>
-            <ToolLoader slug={h.slug} />
+            <ToolLoader slug={h.slug} opciones={p.opciones} />
           </section>
+
+          {hermanas.length > 0 && (
+            <nav aria-label="Otras conversiones" className="flex flex-wrap items-center gap-2 text-sm">
+              <span className="text-muted-foreground">También:</span>
+              {hermanas.map((x) => (
+                <Link
+                  key={x.slug}
+                  href={rutaHerramienta(x.slug)}
+                  className="rounded-full border px-3 py-1 transition-colors hover:bg-muted"
+                >
+                  {x.etiqueta}
+                </Link>
+              ))}
+            </nav>
+          )}
 
           <AdSlot posicion="in-content" />
 
           <section>
             <h2 className="font-heading text-xl font-semibold tracking-tight">
-              Cómo {h.nombre.toLowerCase()} paso a paso
+              Cómo {p.variante ? `convertir ${p.variante.etiqueta.toLowerCase()}` : h.nombre.toLowerCase()} paso a paso
             </h2>
             <ol className="mt-4 space-y-3">
               {h.pasos.map((paso, i) => (
@@ -187,7 +234,7 @@ export default async function PaginaHerramienta({ params }: Props) {
           <section>
             <h2 className="font-heading text-xl font-semibold tracking-tight">Preguntas frecuentes</h2>
             <Accordion className="mt-2" defaultValue={["faq-0"]}>
-              {h.faq.map((f, i) => (
+              {p.faq.map((f, i) => (
                 <AccordionItem key={i} value={`faq-${i}`}>
                   <AccordionTrigger className="text-base">{f.pregunta}</AccordionTrigger>
                   <AccordionContent className="text-muted-foreground">{f.respuesta}</AccordionContent>

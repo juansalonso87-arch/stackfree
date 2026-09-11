@@ -1,18 +1,18 @@
-import { herramientas, obtenerHerramienta } from "@/lib/tools-registry";
+import { obtenerPagina, todosLosSlugs } from "@/lib/tools-registry";
 import { generarImagenOg, tamanoOg } from "@/lib/og-image";
 
 export const size = tamanoOg;
 export const contentType = "image/png";
 
 export function generateStaticParams() {
-  return herramientas.map((h) => ({ slug: h.slug }));
+  return todosLosSlugs().map((slug) => ({ slug }));
 }
 
 export default async function Image({ params }: { params: Promise<{ slug: string }> }) {
   const { slug } = await params;
-  const h = obtenerHerramienta(slug);
+  const p = obtenerPagina(slug);
   return generarImagenOg({
-    titulo: h?.h1 ?? "Herramienta online gratis",
-    subtitulo: h?.descripcionCorta ?? "",
+    titulo: p?.h1 ?? "Herramienta online gratis",
+    subtitulo: p?.herramienta.descripcionCorta ?? "",
   });
 }
