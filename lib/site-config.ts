@@ -21,7 +21,7 @@ function resolverUrlBase(): string {
 
 export const siteConfig = {
   /** Nombre visible del sitio (header, títulos, Open Graph). */
-  nombre: "Herramientas Online",
+  nombre: "StackFree",
   /** Frase corta que acompaña al nombre en el <title> del homepage. */
   eslogan: "Herramientas gratis que funcionan en tu navegador",
   /** Descripción por defecto para buscadores y redes sociales. */

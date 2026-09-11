@@ -1,4 +1,4 @@
-# Herramientas Online
+# StackFree
 
 Plataforma de herramientas web gratuitas con **procesamiento 100% en el navegador**: los archivos del usuario nunca se suben a un servidor. Se monetiza con Google AdSense y se aloja gratis en Vercel.
 
