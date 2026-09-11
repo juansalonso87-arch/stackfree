@@ -65,6 +65,15 @@ Nada más. Homepage, página, sitemap, footer y SEO se actualizan solos.
 
 Mientras la herramienta no esté lista, dejá `estado: "proximamente"`: se muestra con etiqueta, pero no se indexa ni entra al sitemap. Cuando funcione, cambiá a `"activa"`.
 
+## Herramienta: Quitar fondo de imagen
+
+- Librería: [`@imgly/background-removal`](https://github.com/imgly/background-removal-js) (modelo ISNet sobre WebAssembly, corre en el navegador).
+- El modelo (~40 MB en celulares, ~80 MB en PC) se descarga desde el CDN de IMG.LY la primera vez y queda en la caché del navegador. La foto del usuario nunca se sube.
+- Alternativa futura: alojar el modelo en `public/` o en un bucket propio (ver "Custom Asset Serving" en la doc de la librería). Ojo con el ancho de banda: en el plan gratuito de Vercel son 100 GB/mes.
+- Toda la lógica está en `components/tools/quitar-fondo/logic.ts`; la interfaz no sabe qué librería se usa, así que cambiarla es tocar un solo archivo.
+
+> ⚠ **Licencia AGPL-3.0.** `@imgly/background-removal` es AGPL. Usarla en un sitio público implica publicar el código fuente del sitio bajo AGPL (este repositorio puede ser público) o comprar una licencia comercial a IMG.LY. Decisión pendiente del dueño del proyecto.
+
 ## Variables de entorno
 
 Ver `.env.example`. Ninguna es obligatoria. Las de AdSense se completan cuando Google apruebe la cuenta.

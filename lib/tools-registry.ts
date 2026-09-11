@@ -88,7 +88,7 @@ export const herramientas: Herramienta[] = [
     ],
     icono: ImageOff,
     categoria: "imagen",
-    estado: "proximamente",
+    estado: "activa",
     formatosEntrada: ["image/png", "image/jpeg", "image/webp"],
     pasos: [
       "Sube tu imagen (PNG, JPG o WEBP) arrastrándola o tocando el recuadro.",
@@ -115,7 +115,7 @@ export const herramientas: Herramienta[] = [
       {
         pregunta: "¿Por qué tarda un poco la primera vez?",
         respuesta:
-          "La primera vez el navegador descarga el modelo de inteligencia artificial (unos 40 MB). Las siguientes veces ya queda guardado y el proceso es mucho más rápido.",
+          "La primera vez el navegador descarga el modelo de inteligencia artificial (entre 40 y 80 MB según tu dispositivo). Las siguientes veces ya queda guardado en el navegador y el proceso tarda solo unos segundos.",
       },
     ],
     cargar: () => import("@/components/tools/quitar-fondo/QuitarFondoTool"),
