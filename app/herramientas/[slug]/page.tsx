@@ -1,0 +1,223 @@
+import type { Metadata } from "next";
+import Link from "next/link";
+import { notFound } from "next/navigation";
+import { ChevronRight, Construction, Lock, Sparkles } from "lucide-react";
+import { siteConfig } from "@/lib/site-config";
+import {
+  herramientas,
+  nombresCategoria,
+  obtenerHerramienta,
+  rutaHerramienta,
+} from "@/lib/tools-registry";
+import { Badge } from "@/components/ui/badge";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import {
+  Accordion,
+  AccordionContent,
+  AccordionItem,
+  AccordionTrigger,
+} from "@/components/ui/accordion";
+import { AdSlot } from "@/components/core/AdSlot";
+import { JsonLd } from "@/components/core/JsonLd";
+import { ToolCard } from "@/components/core/ToolCard";
+import { ToolLoader } from "@/components/core/ToolLoader";
+
+type Props = { params: Promise<{ slug: string }> };
+
+/**
+ * Le decimos a Next qué páginas existen para que las genere como HTML
+ * estático en el build (más rápido y mejor para SEO). Cualquier slug que no
+ * esté en el registry devuelve 404 gracias a `dynamicParams = false`.
+ */
+export function generateStaticParams() {
+  return herramientas.map((h) => ({ slug: h.slug }));
+}
+export const dynamicParams = false;
+
+export async function generateMetadata({ params }: Props): Promise<Metadata> {
+  const { slug } = await params;
+  const h = obtenerHerramienta(slug);
+  if (!h) return {};
+
+  const ruta = rutaHerramienta(h.slug);
+  const indexable = h.estado === "activa";
+
+  return {
+    title: h.tituloSeo,
+    description: h.descripcionSeo,
+    keywords: h.keywords,
+    alternates: { canonical: ruta },
+    // Las herramientas "próximamente" no se indexan: Google penaliza páginas sin contenido útil.
+    robots: { index: indexable, follow: true },
+    openGraph: {
+      type: "website",
+      url: ruta,
+      title: h.tituloSeo,
+      description: h.descripcionSeo,
+      siteName: siteConfig.nombre,
+      locale: siteConfig.localeOpenGraph,
+    },
+    twitter: {
+      card: "summary_large_image",
+      title: h.tituloSeo,
+      description: h.descripcionSeo,
+    },
+  };
+}
+
+export default async function PaginaHerramienta({ params }: Props) {
+  const { slug } = await params;
+  const h = obtenerHerramienta(slug);
+  if (!h) notFound();
+
+  const urlAbsoluta = `${siteConfig.url}${rutaHerramienta(h.slug)}`;
+  const otras = herramientas.filter((o) => o.slug !== h.slug).slice(0, 3);
+
+  // Datos estructurados: FAQ (rich snippets), migas de pan y ficha de la app.
+  const jsonLdFaq = {
+    "@context": "https://schema.org",
+    "@type": "FAQPage",
+    mainEntity: h.faq.map((f) => ({
+      "@type": "Question",
+      name: f.pregunta,
+      acceptedAnswer: { "@type": "Answer", text: f.respuesta },
+    })),
+  };
+  const jsonLdMigas = {
+    "@context": "https://schema.org",
+    "@type": "BreadcrumbList",
+    itemListElement: [
+      { "@type": "ListItem", position: 1, name: "Inicio", item: siteConfig.url },
+      { "@type": "ListItem", position: 2, name: h.nombre, item: urlAbsoluta },
+    ],
+  };
+  const jsonLdApp = {
+    "@context": "https://schema.org",
+    "@type": "WebApplication",
+    name: h.h1,
+    url: urlAbsoluta,
+    description: h.descripcionSeo,
+    applicationCategory: "MultimediaApplication",
+    operatingSystem: "Any",
+    browserRequirements: "Requiere un navegador moderno con JavaScript",
+    inLanguage: siteConfig.idioma,
+    offers: { "@type": "Offer", price: "0", priceCurrency: "USD" },
+  };
+
+  return (
+    <article className="container mx-auto px-4 py-8">
+      <JsonLd data={jsonLdFaq} />
+      <JsonLd data={jsonLdMigas} />
+      <JsonLd data={jsonLdApp} />
+
+      {/* Migas de pan */}
+      <nav aria-label="Migas de pan" className="mb-4 flex items-center gap-1 text-sm text-muted-foreground">
+        <Link href="/" className="hover:text-foreground hover:underline">
+          Inicio
+        </Link>
+        <ChevronRight className="size-3.5" aria-hidden="true" />
+        <Link href="/#herramientas" className="hover:text-foreground hover:underline">
+          Herramientas
+        </Link>
+        <ChevronRight className="size-3.5" aria-hidden="true" />
+        <span className="text-foreground" aria-current="page">
+          {h.nombre}
+        </span>
+      </nav>
+
+      {/* Encabezado SEO */}
+      <header className="max-w-3xl">
+        <div className="mb-3 flex flex-wrap gap-2">
+          <Badge variant="outline">{nombresCategoria[h.categoria]}</Badge>
+          <Badge variant="secondary">
+            <Lock data-icon="inline-start" />
+            Sin subir archivos
+          </Badge>
+          <Badge variant="secondary">
+            <Sparkles data-icon="inline-start" />
+            Gratis y sin marca de agua
+          </Badge>
+        </div>
+        <h1 className="font-heading text-3xl font-bold tracking-tight text-balance sm:text-4xl">
+          {h.h1}
+        </h1>
+        <p className="mt-3 text-lg text-muted-foreground text-pretty">{h.subtitulo}</p>
+      </header>
+
+      <div className="my-6">
+        <AdSlot posicion="top-banner" />
+      </div>
+
+      {/* Dos columnas en desktop: contenido + anuncio lateral pegajoso */}
+      <div className="grid gap-8 lg:grid-cols-[minmax(0,1fr)_300px]">
+        <div className="space-y-10">
+          {h.estado === "proximamente" && (
+            <Alert>
+              <Construction />
+              <AlertTitle>Estamos terminando esta herramienta</AlertTitle>
+              <AlertDescription>
+                Ya puedes probar la interfaz, pero el procesamiento estará disponible muy pronto.
+              </AlertDescription>
+            </Alert>
+          )}
+
+          {/* La herramienta en sí: se carga en un paquete JS separado (ver ToolLoader) */}
+          <section aria-label={h.nombre}>
+            <ToolLoader slug={h.slug} />
+          </section>
+
+          <AdSlot posicion="in-content" />
+
+          <section>
+            <h2 className="font-heading text-xl font-semibold tracking-tight">
+              Cómo {h.nombre.toLowerCase()} paso a paso
+            </h2>
+            <ol className="mt-4 space-y-3">
+              {h.pasos.map((paso, i) => (
+                <li key={i} className="flex gap-3">
+                  <span className="flex size-7 shrink-0 items-center justify-center rounded-full bg-primary text-sm font-semibold text-primary-foreground">
+                    {i + 1}
+                  </span>
+                  <p className="pt-0.5 text-muted-foreground">{paso}</p>
+                </li>
+              ))}
+            </ol>
+          </section>
+
+          <section>
+            <h2 className="font-heading text-xl font-semibold tracking-tight">Preguntas frecuentes</h2>
+            <Accordion className="mt-2" defaultValue={["faq-0"]}>
+              {h.faq.map((f, i) => (
+                <AccordionItem key={i} value={`faq-${i}`}>
+                  <AccordionTrigger className="text-base">{f.pregunta}</AccordionTrigger>
+                  <AccordionContent className="text-muted-foreground">{f.respuesta}</AccordionContent>
+                </AccordionItem>
+              ))}
+            </Accordion>
+          </section>
+
+          {otras.length > 0 && (
+            <section>
+              <h2 className="font-heading text-xl font-semibold tracking-tight">Otras herramientas</h2>
+              <div className="mt-4 grid gap-4 sm:grid-cols-2">
+                {otras.map((o) => (
+                  <ToolCard key={o.slug} herramienta={o} />
+                ))}
+              </div>
+            </section>
+          )}
+        </div>
+
+        <aside className="hidden lg:block" aria-label="Publicidad">
+          <div className="sticky top-20">
+            <AdSlot posicion="sidebar" />
+          </div>
+        </aside>
+      </div>
+
+      <div className="mt-10">
+        <AdSlot posicion="bottom-banner" />
+      </div>
+    </article>
+  );
+}
