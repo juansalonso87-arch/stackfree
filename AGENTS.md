@@ -47,4 +47,4 @@ El sitio es **AGPL-3.0** (repo público) porque `@imgly/background-removal` (qui
 ## Pendientes (fuera del código)
 
 - Dominio propio antes de postular a AdSense (Google rechaza `*.vercel.app`).
-- Ideas siguientes por volumen de búsqueda: PDF a imagen (requiere pdf.js), recortar imagen, HEIC a JPG (requiere decodificador).
+- Ideas siguientes por volumen de búsqueda: PDF a imagen (requiere pdf.js), HEIC a JPG (requiere decodificador).

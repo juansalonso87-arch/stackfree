@@ -1,6 +1,6 @@
 import type { ComponentType } from "react";
 import type { LucideIcon } from "lucide-react";
-import { FileImage, FileStack, ImageOff, Minimize2, Repeat, RotateCw, Scaling, Scissors } from "lucide-react";
+import { Crop, FileImage, FileStack, ImageOff, Minimize2, Repeat, RotateCw, Scaling, Scissors } from "lucide-react";
 
 /**
  * REGISTRY DE HERRAMIENTAS
@@ -706,6 +706,101 @@ export const herramientas: Herramienta[] = [
       },
     ],
     cargar: () => import("@/components/tools/rotar-pdf/RotarPdfTool"),
+  },
+  {
+    slug: "recortar-imagen",
+    nombre: "Recortar imagen",
+    h1: "Recortar imagen gratis online",
+    subtitulo:
+      "Recorta una foto o imagen a la medida que necesitas: libre, cuadrada, 16:9, para Instagram o en círculo. Sin registro y sin subir tus fotos a ningún servidor.",
+    tituloSeo: "Recortar imagen gratis online: fotos, JPG y PNG",
+    descripcionSeo:
+      "Recorta imágenes y fotos online gratis: arrastra el recuadro, elige la proporción (1:1, 4:5, 16:9…) o un círculo y descarga. Todo en tu navegador, sin subir nada.",
+    descripcionCorta: "Corta una foto a la medida o proporción que necesitas, o en círculo.",
+    keywords: [
+      "recortar imagen",
+      "recortar foto",
+      "recortar imagen online gratis",
+      "cortar imagen",
+      "recortar png",
+      "recortar jpg",
+      "recortar foto para instagram",
+    ],
+    icono: Crop,
+    categoria: "imagen",
+    estado: "activa",
+    formatosEntrada: ["image/jpeg", "image/png", "image/webp", "image/gif", "image/bmp", "image/avif"],
+    pasos: [
+      "Arrastra tu imagen al recuadro (o tócalo para elegirla).",
+      "Mueve el recuadro y ajústalo desde los bordes. Si quieres, fija una proporción (1:1, 16:9…) o elige círculo.",
+      "Toca “Recortar imagen” y revisa el resultado.",
+      "Descárgala. Si no te convence, vuelve a ajustar el recorte sin cargar la imagen de nuevo.",
+    ],
+    faq: [
+      {
+        pregunta: "¿Se pierde calidad al recortar?",
+        respuesta:
+          "No. El recorte se hace sobre la imagen a tamaño real, píxel por píxel. Solo se descarta lo que queda fuera del recuadro; lo que conservas tiene exactamente la calidad original.",
+      },
+      {
+        pregunta: "¿Puedo recortar con una proporción exacta?",
+        respuesta:
+          "Sí. Elige 1:1 (cuadrada), 4:5 (Instagram), 3:2, 4:3, 16:9 o 9:16 (historias) y el recuadro mantiene esa proporción mientras lo ajustas. Con “Libre” recortas a mano.",
+      },
+      {
+        pregunta: "¿Cómo recorto una foto en círculo?",
+        respuesta:
+          "Elige la forma “Círculo”. El resultado se guarda como PNG con el exterior transparente, listo para usar como foto de perfil o logo.",
+      },
+      {
+        pregunta: "¿Mis fotos se suben a algún servidor?",
+        respuesta:
+          "No. El recorte lo hace tu propio navegador. Tus fotos no salen de tu dispositivo en ningún momento.",
+      },
+    ],
+    variantes: [
+      {
+        slug: "recortar-imagen-circular",
+        etiqueta: "En círculo",
+        h1: "Recortar imagen en círculo gratis online",
+        subtitulo:
+          "Convierte cualquier foto en una imagen circular con fondo transparente, ideal para fotos de perfil, avatares y logos. Sin registro y sin subir tus fotos a ningún servidor.",
+        tituloSeo: "Recortar imagen en círculo gratis online (PNG transparente)",
+        descripcionSeo:
+          "Recorta una foto en forma de círculo y descárgala como PNG con fondo transparente. Perfecto para fotos de perfil y avatares. Gratis y sin subir nada.",
+        keywords: [
+          "recortar imagen en circulo",
+          "recortar foto circular",
+          "imagen circular png",
+          "hacer foto redonda",
+          "recortar imagen redonda online",
+          "foto de perfil circular",
+        ],
+        faq: [
+          {
+            pregunta: "¿El fondo fuera del círculo queda transparente?",
+            respuesta:
+              "Sí. El resultado es un PNG: todo lo que queda fuera del círculo es transparente, así la imagen se ve redonda sobre cualquier fondo.",
+          },
+          {
+            pregunta: "¿Puedo elegir qué parte de la foto queda dentro del círculo?",
+            respuesta:
+              "Sí. Mueve el círculo con el mouse o el dedo y agrándalo o achícalo desde los bordes hasta encuadrar lo que quieras.",
+          },
+          {
+            pregunta: "¿Sirve para foto de perfil de WhatsApp, Instagram o LinkedIn?",
+            respuesta:
+              "Sí. Esas apps ya muestran la foto en círculo, pero recortarla antes te permite elegir exactamente el encuadre. También sirve para avatares, firmas de email o logos redondos.",
+          },
+          {
+            pregunta: "¿Mis fotos se suben a algún servidor?",
+            respuesta: "No. Todo ocurre en tu navegador. Tu foto no sale de tu dispositivo en ningún momento.",
+          },
+        ],
+        opciones: { forma: "circulo" },
+      },
+    ],
+    cargar: () => import("@/components/tools/recortar-imagen/RecortarImagenTool"),
   },
 ];
 

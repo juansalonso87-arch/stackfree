@@ -32,6 +32,9 @@ export interface ImagenDecodificada {
   canvas: CanvasGenerico;
   ancho: number;
   alto: number;
+  /** Tamaño real de la imagen (ya con la orientación EXIF aplicada). */
+  anchoOriginal: number;
+  altoOriginal: number;
   /** true si se achicó por superar `ladoMaximo`. */
   redimensionada: boolean;
 }
@@ -66,7 +69,14 @@ export async function decodificarImagen(
       ctx.fillRect(0, 0, ancho, alto);
     }
     ctx.drawImage(bitmap, 0, 0, ancho, alto);
-    return { canvas, ancho, alto, redimensionada: escala < 1 };
+    return {
+      canvas,
+      ancho,
+      alto,
+      anchoOriginal: bitmap.width,
+      altoOriginal: bitmap.height,
+      redimensionada: escala < 1,
+    };
   } finally {
     bitmap.close();
   }
