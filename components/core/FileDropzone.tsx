@@ -47,10 +47,26 @@ const tipoPorExtension: Record<string, string> = {
   pdf: "application/pdf",
 };
 
+/** Tipos que algunos sistemas informan y que equivalen a otro conocido. */
+const sinonimos: Record<string, string> = {
+  "image/jpg": "image/jpeg",
+  "image/pjpeg": "image/jpeg",
+  "image/heic-sequence": "image/heic",
+  "image/heif-sequence": "image/heif",
+};
+
+/**
+ * Tipo MIME "real" del archivo. Muchos celulares y Windows informan un tipo
+ * vacío o genérico (application/octet-stream) para HEIC y otros formatos:
+ * en ese caso, o si el tipo no es uno que conozcamos, se deduce por la
+ * extensión del nombre.
+ */
 function tipoDe(archivo: File): string {
-  if (archivo.type) return archivo.type;
+  const tipo = (archivo.type || "").toLowerCase();
+  const normalizado = sinonimos[tipo] ?? tipo;
+  if (normalizado in nombresLegibles) return normalizado;
   const extension = archivo.name.split(".").pop()?.toLowerCase() ?? "";
-  return tipoPorExtension[extension] ?? "";
+  return tipoPorExtension[extension] ?? normalizado;
 }
 
 function formatearTipos(tipos: string[]): string {

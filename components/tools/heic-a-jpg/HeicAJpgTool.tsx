@@ -64,7 +64,8 @@ export default function HeicAJpgTool({ opciones }: PropsHerramienta) {
         )}
       </div>
       <p className="text-xs text-muted-foreground">
-        La primera conversión descarga el decodificador de HEIC (menos de 1 MB); las siguientes son inmediatas.
+        La primera conversión descarga el decodificador de HEIC (menos de 1 MB); las siguientes son inmediatas. Si tu
+        celular ya pasó la foto a JPG al elegirla, también sirve.
       </p>
     </div>
   );

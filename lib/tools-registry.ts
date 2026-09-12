@@ -915,7 +915,7 @@ export const herramientas: Herramienta[] = [
     icono: Smartphone,
     categoria: "conversion",
     estado: "activa",
-    formatosEntrada: ["image/heic", "image/heif"],
+    formatosEntrada: ["image/heic", "image/heif", "image/jpeg", "image/png", "image/webp"],
     pasos: [
       "Arrastra tus fotos HEIC al recuadro (o tócalo para elegirlas, hasta 50 a la vez).",
       "Elige JPG (o PNG / WEBP) y, si quieres, ajusta la calidad.",

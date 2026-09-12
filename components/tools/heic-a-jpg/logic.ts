@@ -13,7 +13,16 @@ export { formatearBytes } from "@/lib/imagen";
 
 export const MAX_ARCHIVOS = 50;
 export const MAX_MB = 50;
-export const FORMATOS_ENTRADA = ["image/heic", "image/heif"];
+/**
+ * Además de HEIC/HEIF se aceptan JPG, PNG y WEBP: el iPhone suele convertir
+ * la foto a JPG al elegirla desde Safari, y rechazarla confundiría al usuario.
+ */
+export const FORMATOS_ENTRADA = ["image/heic", "image/heif", "image/jpeg", "image/png", "image/webp"];
+
+/** ¿El archivo parece HEIC/HEIF por su tipo o su extensión? */
+export function pareceHeic(archivo: File): boolean {
+  return /hei[cf]/i.test(archivo.type) || /\.(heic|heif|hif)$/i.test(archivo.name);
+}
 
 export type FormatoSalida = "image/jpeg" | "image/png" | "image/webp";
 
@@ -71,9 +80,16 @@ export async function convertirHeic(archivo: File, opciones: OpcionesHeic): Prom
       fondo: opciones.formato === "image/jpeg" ? "#ffffff" : undefined,
     });
     const blob = await exportarCanvas(imagen.canvas, opciones.formato, opciones.calidad);
-    return { original: archivo, blob, nombre, ancho: imagen.ancho, alto: imagen.alto };
+    return {
+      original: archivo,
+      blob,
+      nombre,
+      ancho: imagen.ancho,
+      alto: imagen.alto,
+      nota: pareceHeic(archivo) ? undefined : "tu dispositivo ya la había pasado a otro formato",
+    };
   } catch {
-    // Lo esperable en Chrome/Edge/Firefox: seguimos con el decodificador.
+    // Lo esperable en Chrome/Edge/Firefox con un HEIC real: seguimos con el decodificador.
   }
 
   // 2) Decodificador WebAssembly (libheif) en un worker.
