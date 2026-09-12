@@ -1,6 +1,6 @@
 import type { ComponentType } from "react";
 import type { LucideIcon } from "lucide-react";
-import { FileImage, FileStack, ImageOff, Minimize2, Repeat, Scaling, Scissors } from "lucide-react";
+import { FileImage, FileStack, ImageOff, Minimize2, Repeat, RotateCw, Scaling, Scissors } from "lucide-react";
 
 /**
  * REGISTRY DE HERRAMIENTAS
@@ -653,6 +653,59 @@ export const herramientas: Herramienta[] = [
       },
     ],
     cargar: () => import("@/components/tools/dividir-pdf/DividirPdfTool"),
+  },
+  {
+    slug: "rotar-pdf",
+    nombre: "Rotar PDF",
+    h1: "Rotar PDF gratis online: girar páginas y guardar",
+    subtitulo:
+      "Gira un PDF 90° o 180°, todas las páginas o solo algunas, y descárgalo ya rotado para siempre. Sin registro, sin marca de agua y sin subir tu documento a ningún servidor.",
+    tituloSeo: "Rotar PDF gratis online: girar páginas y guardar",
+    descripcionSeo:
+      "Rota o gira las páginas de un PDF (90° a la derecha, a la izquierda o 180°) y guárdalo rotado de forma permanente. Gratis, sin límites y sin subir tus documentos.",
+    descripcionCorta: "Gira las páginas de un PDF y guárdalo rotado de forma permanente.",
+    keywords: [
+      "rotar pdf",
+      "girar pdf",
+      "rotar pdf online gratis",
+      "girar paginas de un pdf",
+      "rotar pdf y guardar",
+      "rotar una pagina de un pdf",
+      "pdf al reves como girarlo",
+    ],
+    icono: RotateCw,
+    categoria: "pdf",
+    estado: "activa",
+    formatosEntrada: ["application/pdf"],
+    pasos: [
+      "Arrastra tu PDF al recuadro. Verás cuántas páginas tiene.",
+      "Elige cuánto girar: 90° a la derecha, 90° a la izquierda o 180°.",
+      "Decide si rotar todas las páginas o solo algunas (por ejemplo, 2 y 5-7).",
+      "Toca “Rotar PDF” y descarga el documento ya girado.",
+    ],
+    faq: [
+      {
+        pregunta: "¿La rotación queda guardada de forma permanente?",
+        respuesta:
+          "Sí. A diferencia de girar la vista en un visor (que se pierde al cerrarlo), aquí la rotación se escribe dentro del PDF: se verá girado en cualquier programa, celular o al imprimirlo.",
+      },
+      {
+        pregunta: "¿Puedo rotar solo una página?",
+        respuesta:
+          "Sí. Elige “Solo algunas” y escribe el número de página. También puedes indicar varias separadas por comas o rangos con guion: 2, 5-7.",
+      },
+      {
+        pregunta: "¿Se pierde calidad?",
+        respuesta:
+          "No. No se re-dibuja nada: solo se cambia la orientación de la página. El texto sigue siendo texto, las imágenes conservan su calidad y el archivo pesa prácticamente lo mismo.",
+      },
+      {
+        pregunta: "¿Mis documentos se suben a algún servidor?",
+        respuesta:
+          "No. Todo ocurre en tu navegador. Contratos, escaneos o apuntes nunca salen de tu dispositivo.",
+      },
+    ],
+    cargar: () => import("@/components/tools/rotar-pdf/RotarPdfTool"),
   },
 ];
 

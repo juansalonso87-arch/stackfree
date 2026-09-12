@@ -21,7 +21,7 @@ Plataforma de herramientas online gratuitas (stackfree.vercel.app), monetizada c
 1. **Una herramienta nueva = una entrada en `lib/tools-registry.ts` + una carpeta en `components/tools/<slug>/`** (`<Nombre>Tool.tsx` con `"use client"` + `logic.ts` sin React). No tocar layout, homepage ni core para agregar herramientas.
 2. `logic.ts` nunca importa React ni sabe de la interfaz. Librerías pesadas se importan con `await import()` dentro de la función, nunca arriba del archivo.
 3. Cada herramienta se carga con `dynamic(..., { ssr: false })` desde `components/core/ToolLoader.tsx` (code-splitting real; el homepage no descarga JS de herramientas).
-4. Herramientas de "varias imágenes → varias imágenes" usan `components/core/LoteImagenes.tsx`; utilidades de imagen en `lib/imagen.ts`; ZIP en `lib/zip.ts`.
+4. Herramientas de "varias imágenes → varias imágenes" usan `components/core/LoteImagenes.tsx`; utilidades de imagen en `lib/imagen.ts`; ZIP en `lib/zip.ts`; PDF (carga con errores amigables, rangos "1-3, 5", nombres) en `lib/pdf.ts`.
 5. **Variantes** (`variantes` en el registry) = páginas SEO extra que comparten componente y le pasan `opciones`. Solo para funciones realmente distintas (WEBP→JPG vs PNG→WEBP). Sinónimos ("unir/combinar/juntar pdf") van como keywords de una sola página: Google penaliza duplicados.
 6. Herramientas en `estado: "proximamente"` llevan `noindex` y no entran al sitemap.
 7. Textos para el usuario en español neutro (tuteo). Comentarios de código en español.
@@ -47,4 +47,4 @@ El sitio es **AGPL-3.0** (repo público) porque `@imgly/background-removal` (qui
 ## Pendientes (fuera del código)
 
 - Dominio propio antes de postular a AdSense (Google rechaza `*.vercel.app`).
-- Ideas siguientes por volumen de búsqueda: PDF a imagen (requiere pdf.js), rotar PDF, recortar imagen, HEIC a JPG (requiere decodificador).
+- Ideas siguientes por volumen de búsqueda: PDF a imagen (requiere pdf.js), recortar imagen, HEIC a JPG (requiere decodificador).
