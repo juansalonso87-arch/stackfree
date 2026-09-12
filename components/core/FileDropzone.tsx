@@ -27,6 +27,8 @@ const nombresLegibles: Record<string, string> = {
   "image/gif": "GIF",
   "image/bmp": "BMP",
   "image/avif": "AVIF",
+  "image/heic": "HEIC",
+  "image/heif": "HEIF",
   "application/pdf": "PDF",
 };
 
@@ -39,6 +41,9 @@ const tipoPorExtension: Record<string, string> = {
   gif: "image/gif",
   bmp: "image/bmp",
   avif: "image/avif",
+  heic: "image/heic",
+  heif: "image/heif",
+  hif: "image/heif",
   pdf: "application/pdf",
 };
 

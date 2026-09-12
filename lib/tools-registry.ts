@@ -1,6 +1,18 @@
 import type { ComponentType } from "react";
 import type { LucideIcon } from "lucide-react";
-import { Crop, FileImage, FileStack, ImageOff, Images, Minimize2, Repeat, RotateCw, Scaling, Scissors } from "lucide-react";
+import {
+  Crop,
+  FileImage,
+  FileStack,
+  ImageOff,
+  Images,
+  Minimize2,
+  Repeat,
+  RotateCw,
+  Scaling,
+  Scissors,
+  Smartphone,
+} from "lucide-react";
 
 /**
  * REGISTRY DE HERRAMIENTAS
@@ -880,6 +892,73 @@ export const herramientas: Herramienta[] = [
       },
     ],
     cargar: () => import("@/components/tools/pdf-a-imagen/PdfAImagenTool"),
+  },
+  {
+    slug: "heic-a-jpg",
+    nombre: "HEIC a JPG",
+    h1: "Convertir HEIC a JPG gratis online",
+    subtitulo:
+      "Convierte las fotos HEIC de tu iPhone a JPG para abrirlas en cualquier PC, Android o sitio web. Varias a la vez, sin registro y sin subir tus fotos a ningún servidor.",
+    tituloSeo: "Convertir HEIC a JPG gratis online, sin subir tus fotos",
+    descripcionSeo:
+      "Pasa fotos HEIC (iPhone) a JPG gratis y sin límites. Varias a la vez, con la calidad que elijas. Todo se procesa en tu navegador: tus fotos no se suben a ningún lado.",
+    descripcionCorta: "Pasa las fotos HEIC del iPhone a JPG, PNG o WEBP.",
+    keywords: [
+      "heic a jpg",
+      "convertir heic a jpg",
+      "heic a jpg online gratis",
+      "pasar heic a jpg",
+      "abrir heic en windows",
+      "convertir fotos de iphone a jpg",
+      "heic a jpeg",
+    ],
+    icono: Smartphone,
+    categoria: "conversion",
+    estado: "activa",
+    formatosEntrada: ["image/heic", "image/heif"],
+    pasos: [
+      "Arrastra tus fotos HEIC al recuadro (o tócalo para elegirlas, hasta 50 a la vez).",
+      "Elige JPG (o PNG / WEBP) y, si quieres, ajusta la calidad.",
+      "Toca “Convertir”. La primera vez se descarga el decodificador (menos de 1 MB).",
+      "Descarga las fotos una por una o todas juntas en un ZIP.",
+    ],
+    faq: [
+      {
+        pregunta: "¿Qué es un archivo HEIC y por qué no puedo abrirlo?",
+        respuesta:
+          "HEIC es el formato con el que el iPhone guarda las fotos desde iOS 11: ocupa la mitad que JPG con la misma calidad. El problema es que Windows, muchos Android y la mayoría de los sitios web no lo aceptan. Convertirlo a JPG resuelve eso.",
+      },
+      {
+        pregunta: "¿Se pierde calidad al convertir HEIC a JPG?",
+        respuesta:
+          "Con la calidad por defecto (90%) la diferencia es imperceptible. Si necesitas fidelidad total, elige PNG: no comprime con pérdida, aunque el archivo pesa bastante más.",
+      },
+      {
+        pregunta: "¿Puedo evitar que el iPhone guarde en HEIC?",
+        respuesta:
+          "Sí: en Ajustes → Cámara → Formatos, elige “Más compatible” y las fotos nuevas se guardarán en JPG. Esta herramienta sirve para las que ya tienes en HEIC.",
+      },
+      {
+        pregunta: "¿Mis fotos se suben a algún servidor?",
+        respuesta:
+          "No. La conversión ocurre en tu navegador: se descarga un pequeño decodificador y tus fotos nunca salen de tu dispositivo. Ideal para fotos personales.",
+      },
+    ],
+    variantes: [
+      {
+        slug: "heic-a-png",
+        etiqueta: "HEIC a PNG",
+        h1: "Convertir HEIC a PNG gratis online",
+        subtitulo:
+          "Convierte fotos HEIC de iPhone a PNG sin pérdida de calidad, listas para editar o subir donde no aceptan HEIC. Varias a la vez, sin registro y sin subir tus fotos.",
+        tituloSeo: "Convertir HEIC a PNG gratis online, sin subir tus fotos",
+        descripcionSeo:
+          "Pasa fotos HEIC (iPhone) a PNG gratis y sin pérdida de calidad. Varias a la vez, sin registro. Todo en tu navegador: tus fotos no se suben a ningún lado.",
+        keywords: ["heic a png", "convertir heic a png", "heic a png online gratis", "pasar heic a png", "heic a png sin perder calidad"],
+        opciones: { formatoSalida: "image/png" },
+      },
+    ],
+    cargar: () => import("@/components/tools/heic-a-jpg/HeicAJpgTool"),
   },
 ];
 

@@ -1,12 +1,13 @@
 "use client";
 
 import { useEffect, useMemo, useState, type ReactNode } from "react";
-import { AlertCircle, ShieldCheck, Trash2, X } from "lucide-react";
+import { AlertCircle, ImageIcon, ShieldCheck, Trash2, X } from "lucide-react";
 import { FileDropzone } from "@/components/core/FileDropzone";
 import { ProcessingCard, type EstadoProceso } from "@/components/core/ProcessingCard";
 import { DownloadButton } from "@/components/core/DownloadButton";
 import { Button } from "@/components/ui/button";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { cn } from "@/lib/utils";
 import { formatearBytes } from "@/lib/imagen";
 import { crearZip } from "@/lib/zip";
 
@@ -52,12 +53,34 @@ function useObjectUrls(blobs: Blob[]): string[] {
   return urls;
 }
 
+/** "convertidas a JPG" → "convertida a JPG" cuando hay un solo resultado. */
+function concordar(verbo: string, cantidad: number): string {
+  return cantidad === 1 ? verbo.replace(/^(S+)as/, "$1a") : verbo;
+}
+
 function claveDe(f: File) {
   return `${f.name}|${f.size}|${f.lastModified}`;
 }
 
 const MINIATURA =
   "size-12 shrink-0 rounded border bg-[repeating-conic-gradient(var(--muted)_0%_25%,transparent_0%_50%)] bg-[length:8px_8px] object-contain";
+
+/**
+ * Miniatura con respaldo: si el navegador no puede dibujar el formato
+ * (HEIC en Chrome, por ejemplo) muestra un ícono en vez de la imagen rota.
+ */
+function Miniatura({ src }: { src: string }) {
+  const [fallo, setFallo] = useState(false);
+  if (fallo) {
+    return (
+      <div className={cn(MINIATURA, "flex items-center justify-center text-muted-foreground")} aria-hidden="true">
+        <ImageIcon className="size-5" />
+      </div>
+    );
+  }
+  // eslint-disable-next-line @next/next/no-img-element
+  return <img src={src} alt="" className={MINIATURA} onError={() => setFallo(true)} />;
+}
 
 /**
  * Flujo genérico "varias imágenes → varias imágenes": selección con
@@ -201,8 +224,7 @@ export function LoteImagenes({
               <ul className="divide-y rounded-lg border" aria-label="Imágenes seleccionadas">
                 {archivos.map((a, i) => (
                   <li key={claveDe(a)} className="flex items-center gap-3 p-2 text-sm">
-                    {/* eslint-disable-next-line @next/next/no-img-element */}
-                    <img src={urlsOriginales[i]} alt="" className={MINIATURA} />
+                    <Miniatura src={urlsOriginales[i]} />
                     <div className="min-w-0 flex-1">
                       <p className="truncate font-medium">{a.name}</p>
                       <p className="text-xs text-muted-foreground">
@@ -251,7 +273,8 @@ export function LoteImagenes({
           <div className="flex flex-wrap items-center justify-between gap-2">
             <p className="text-sm">
               <span className="font-medium">
-                {resultados.length} {resultados.length === 1 ? "imagen" : "imágenes"} {verboResultado}
+                {resultados.length} {resultados.length === 1 ? "imagen" : "imágenes"}{" "}
+                {concordar(verboResultado, resultados.length)}
               </span>
               <span className="text-muted-foreground">
                 {" "}
@@ -290,8 +313,7 @@ export function LoteImagenes({
           <ul className="divide-y rounded-lg border" aria-label="Resultados">
             {resultados.map((r, i) => (
               <li key={i} className="flex items-center gap-3 p-2 text-sm">
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img src={urlsResultados[i]} alt="" className={MINIATURA} />
+                <Miniatura src={urlsResultados[i]} />
                 <div className="min-w-0 flex-1">
                   <p className="truncate font-medium">{r.nombre}</p>
                   <p className="text-xs text-muted-foreground">
