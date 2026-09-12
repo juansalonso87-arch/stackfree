@@ -1,6 +1,6 @@
 import type { ComponentType } from "react";
 import type { LucideIcon } from "lucide-react";
-import { Crop, FileImage, FileStack, ImageOff, Minimize2, Repeat, RotateCw, Scaling, Scissors } from "lucide-react";
+import { Crop, FileImage, FileStack, ImageOff, Images, Minimize2, Repeat, RotateCw, Scaling, Scissors } from "lucide-react";
 
 /**
  * REGISTRY DE HERRAMIENTAS
@@ -801,6 +801,85 @@ export const herramientas: Herramienta[] = [
       },
     ],
     cargar: () => import("@/components/tools/recortar-imagen/RecortarImagenTool"),
+  },
+  {
+    slug: "pdf-a-imagen",
+    nombre: "PDF a imagen",
+    h1: "Convertir PDF a imagen gratis online (JPG o PNG)",
+    subtitulo:
+      "Convierte cada página de un PDF en una imagen JPG o PNG, con la calidad que elijas. Todas las páginas o solo algunas. Sin registro y sin subir tu documento a ningún servidor.",
+    tituloSeo: "Convertir PDF a imagen gratis online: PDF a JPG o PNG",
+    descripcionSeo:
+      "Pasa un PDF a imágenes JPG o PNG, una por página, en calidad normal o de imprenta. Gratis, sin límites y sin subir tus documentos: todo en tu navegador.",
+    descripcionCorta: "Convierte las páginas de un PDF en imágenes JPG o PNG.",
+    keywords: [
+      "pdf a imagen",
+      "convertir pdf a imagen",
+      "pdf a imagen online gratis",
+      "pasar pdf a imagen",
+      "convertir pagina de pdf a imagen",
+      "extraer imagen de pdf",
+      "pdf a foto",
+    ],
+    icono: Images,
+    categoria: "conversion",
+    estado: "activa",
+    formatosEntrada: ["application/pdf"],
+    pasos: [
+      "Arrastra tu PDF al recuadro. Verás cuántas páginas tiene.",
+      "Elige JPG (más liviano) o PNG (sin pérdida) y la calidad: pantalla, buena o imprenta.",
+      "Decide si convertir todas las páginas o solo algunas (por ejemplo, 1-3 y 7).",
+      "Toca “Convertir” y descarga las imágenes una por una o todas juntas en un ZIP.",
+    ],
+    faq: [
+      {
+        pregunta: "¿JPG o PNG: cuál me conviene?",
+        respuesta:
+          "JPG pesa mucho menos y es ideal para compartir por WhatsApp, mail o redes. PNG no pierde calidad y deja el texto más nítido: elígelo si vas a imprimir, editar o necesitas máxima fidelidad.",
+      },
+      {
+        pregunta: "¿Qué calidad elijo?",
+        respuesta:
+          "“Buena (150 ppp)” alcanza para casi todo: se lee perfecto en pantalla y pesa poco. “Imprenta (300 ppp)” da el doble de resolución para imprimir o ampliar. “Pantalla (72 ppp)” es la más liviana, para vistas previas o pegar en un chat.",
+      },
+      {
+        pregunta: "¿Puedo convertir solo una página?",
+        respuesta:
+          "Sí. Elige “Solo algunas” y escribe el número de página. También puedes indicar varias separadas por comas o rangos con guion: 1-3, 7.",
+      },
+      {
+        pregunta: "¿Mis documentos se suben a algún servidor?",
+        respuesta:
+          "No. El PDF se dibuja en tu propio navegador con la misma tecnología que usa Firefox para mostrar PDF. Tus documentos nunca salen de tu dispositivo.",
+      },
+    ],
+    variantes: [
+      {
+        slug: "pdf-a-jpg",
+        etiqueta: "PDF a JPG",
+        h1: "Convertir PDF a JPG gratis online",
+        subtitulo:
+          "Convierte las páginas de un PDF en imágenes JPG livianas, listas para compartir por WhatsApp, mail o redes. Sin registro y sin subir tu documento a ningún servidor.",
+        tituloSeo: "Convertir PDF a JPG gratis online, sin subir archivos",
+        descripcionSeo:
+          "Pasa un PDF a JPG gratis: una imagen por página, con la calidad que elijas. Todas las páginas o solo algunas. Sin límites y sin subir tus documentos.",
+        keywords: ["pdf a jpg", "convertir pdf a jpg", "pdf a jpg online gratis", "pasar pdf a jpg", "pdf a jpeg", "transformar pdf a jpg"],
+        opciones: { formato: "image/jpeg" },
+      },
+      {
+        slug: "pdf-a-png",
+        etiqueta: "PDF a PNG",
+        h1: "Convertir PDF a PNG gratis online",
+        subtitulo:
+          "Convierte las páginas de un PDF en imágenes PNG sin pérdida de calidad, ideales para texto nítido, presentaciones y edición. Sin registro y sin subir tu documento a ningún servidor.",
+        tituloSeo: "Convertir PDF a PNG gratis online, sin subir archivos",
+        descripcionSeo:
+          "Pasa un PDF a PNG gratis y sin pérdida de calidad: una imagen por página, en resolución de pantalla o de imprenta. Todo en tu navegador, sin subir nada.",
+        keywords: ["pdf a png", "convertir pdf a png", "pdf a png online gratis", "pasar pdf a png", "pdf a png alta calidad", "transformar pdf a png"],
+        opciones: { formato: "image/png" },
+      },
+    ],
+    cargar: () => import("@/components/tools/pdf-a-imagen/PdfAImagenTool"),
   },
 ];
 

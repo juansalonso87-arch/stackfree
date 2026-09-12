@@ -29,7 +29,7 @@ Plataforma de herramientas online gratuitas (stackfree.vercel.app), monetizada c
 
 ## Licencias
 
-El sitio es **AGPL-3.0** (repo público) porque `@imgly/background-removal` (quitar fondo) es AGPL. Todo lo demás es MIT (pdf-lib, fflate, upng-js, pako, shadcn). El footer enlaza al código fuente (requisito AGPL). Si algún día se quiere cerrar el código, reemplazar esa librería en `components/tools/quitar-fondo/logic.ts`.
+El sitio es **AGPL-3.0** (repo público) porque `@imgly/background-removal` (quitar fondo) es AGPL. Todo lo demás es MIT (pdf-lib, fflate, upng-js, pako, shadcn) o Apache-2.0 (pdfjs-dist). El footer enlaza al código fuente (requisito AGPL). Si algún día se quiere cerrar el código, reemplazar esa librería en `components/tools/quitar-fondo/logic.ts`.
 
 ## Deploy y servicios
 
@@ -43,8 +43,9 @@ El sitio es **AGPL-3.0** (repo público) porque `@imgly/background-removal` (qui
 - `@imgly/background-removal` 1.7.0 declara aceptar `ImageData` pero solo funciona con `Blob` (por eso `logic.ts` re-exporta desde canvas).
 - `next/dynamic` con `ssr:false` solo funciona en componentes de cliente (por eso existe `ToolLoader`).
 - `Button` de shadcn (Base UI): para usarlo como link, `render={<Link />}` + `nativeButton={false}`.
+- pdf.js (`pdfjs-dist` 6.x): el worker se referencia con `new URL("pdfjs-dist/build/pdf.worker.min.mjs", import.meta.url)` y Turbopack lo publica en `/_next/static/media/` (sin copiar nada a `public/`). Renderizar con `intent: "print"`: el modo "display" usa `requestAnimationFrame` y se congela si la pestaña queda en segundo plano.
 
 ## Pendientes (fuera del código)
 
 - Dominio propio antes de postular a AdSense (Google rechaza `*.vercel.app`).
-- Ideas siguientes por volumen de búsqueda: PDF a imagen (requiere pdf.js), HEIC a JPG (requiere decodificador).
+- Ideas siguientes por volumen de búsqueda: HEIC a JPG (requiere decodificador), comprimir PDF (difícil 100 % en navegador), firmar PDF.

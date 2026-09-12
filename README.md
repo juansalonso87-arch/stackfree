@@ -7,6 +7,7 @@ Plataforma de herramientas web gratuitas con **procesamiento 100% en el navegado
 - [Next.js](https://nextjs.org) 16 (App Router) + TypeScript
 - Tailwind CSS 4 + [shadcn/ui](https://ui.shadcn.com)
 - Íconos: Lucide
+- PDF: [pdf-lib](https://pdf-lib.js.org) (crear/editar) y [pdf.js](https://mozilla.github.io/pdf.js/) (dibujar páginas)
 - Analytics: Vercel Analytics (sin cookies)
 - Hosting: Vercel (deploy automático desde GitHub)
 
