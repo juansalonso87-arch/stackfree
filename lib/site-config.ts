@@ -29,8 +29,8 @@ export const siteConfig = {
     "Herramientas online gratuitas para editar imágenes y archivos sin subir nada a ningún servidor. Todo se procesa en tu navegador: rápido, privado y sin límites.",
   /** URL pública del sitio, sin barra final. */
   url: resolverUrlBase(),
-  /** Email de contacto que aparece en las páginas legales. EDITAR. */
-  emailContacto: "contacto@tudominio.com",
+  /** Email de contacto que aparece en las páginas legales. */
+  emailContacto: "juan.s.alonso87@gmail.com",
   /**
    * Repositorio público del código. El sitio usa librerías AGPL, que exigen
    * ofrecer el código fuente a los usuarios: por eso hay un link en el footer.

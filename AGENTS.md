@@ -14,7 +14,7 @@ Contexto que no se deduce del código. Leer junto con `README.md`.
 
 ## Qué es
 
-Plataforma de herramientas online gratuitas (stackfree.vercel.app), monetizada con AdSense, con **procesamiento 100% en el navegador**: ningún archivo del usuario se sube a un servidor. Dueño: John Askew (principiante en desarrollo web; explicarle las decisiones en lenguaje simple, en español rioplatense). Regla del dueño: **gasto $0 en desarrollo e infraestructura**; solo pagaría publicidad o dominio.
+Plataforma de herramientas online gratuitas (stackfree.vercel.app), monetizada con AdSense, con **procesamiento 100% en el navegador**: ningún archivo del usuario se sube a un servidor. Dueño: Juan Alonso (alias "John Askew" en su PC y en línea; principiante en desarrollo web; explicarle las decisiones en lenguaje simple, en español rioplatense). Regla del dueño: **gasto $0 en desarrollo e infraestructura**; solo pagaría publicidad o dominio.
 
 ## Reglas de arquitectura (no romper)
 
@@ -47,5 +47,4 @@ El sitio es **AGPL-3.0** (repo público) porque `@imgly/background-removal` (qui
 ## Pendientes (fuera del código)
 
 - Dominio propio antes de postular a AdSense (Google rechaza `*.vercel.app`).
-- Editar `emailContacto` en `lib/site-config.ts` y `[PAÍS]` en `app/legal/terminos/page.tsx`.
 - Ideas siguientes por volumen de búsqueda: PDF a imagen (requiere pdf.js), rotar PDF, recortar imagen, HEIC a JPG (requiere decodificador).

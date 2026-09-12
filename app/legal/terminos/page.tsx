@@ -4,11 +4,11 @@ import { siteConfig } from "@/lib/site-config";
 
 /*
  * CONTENIDO GENÉRICO EDITABLE.
- * Completá [PAÍS] con tu jurisdicción y revisá el resto según tu caso.
+ * Revisá el contenido según tu caso; la jurisdicción se define abajo.
  */
 
-const ULTIMA_ACTUALIZACION = "11 de septiembre de 2026";
-const JURISDICCION = "[PAÍS]";
+const ULTIMA_ACTUALIZACION = "12 de septiembre de 2026";
+const JURISDICCION = "la República Argentina";
 
 export const metadata: Metadata = {
   title: "Términos de uso",

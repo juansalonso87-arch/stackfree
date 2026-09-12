@@ -95,7 +95,7 @@ Ver `.env.example`. Ninguna es obligatoria. Las de AdSense se completan cuando G
 
 - [ ] Dominio propio (los subdominios `*.vercel.app` suelen ser rechazados).
 - [ ] Al menos una herramienta `activa` con contenido real.
-- [ ] Páginas legales revisadas (editar email de contacto en `lib/site-config.ts` y `[PAÍS]` en términos).
+- [x] Páginas legales revisadas (email de contacto en `lib/site-config.ts`, jurisdicción en términos).
 - [ ] Algo de tráfico orgánico.
 - [ ] Al aprobar: pegar el `ca-pub-...` y los IDs de slot en las variables de entorno de Vercel y redeployar.
 - [ ] Activar en el panel de AdSense **Privacidad y mensajes → Mensaje de consentimiento (GDPR)** para visitantes de Europa. Se inyecta solo con el script; no hay que programar nada.
