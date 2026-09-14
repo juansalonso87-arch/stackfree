@@ -11,6 +11,9 @@ export default function sitemap(): MetadataRoute.Sitemap {
 
   const paginasFijas: MetadataRoute.Sitemap = [
     { url: siteConfig.url, lastModified: ahora, changeFrequency: "weekly", priority: 1 },
+    { url: `${siteConfig.url}/administracion`, lastModified: ahora, changeFrequency: "weekly", priority: 0.95 },
+    { url: `${siteConfig.url}/verificar-privacidad`, lastModified: ahora, changeFrequency: "monthly", priority: 0.6 },
+    { url: `${siteConfig.url}/contacto`, lastModified: ahora, changeFrequency: "yearly", priority: 0.3 },
     { url: `${siteConfig.url}/legal/privacidad`, lastModified: ahora, changeFrequency: "yearly", priority: 0.2 },
     { url: `${siteConfig.url}/legal/terminos`, lastModified: ahora, changeFrequency: "yearly", priority: 0.2 },
     { url: `${siteConfig.url}/legal/cookies`, lastModified: ahora, changeFrequency: "yearly", priority: 0.2 },

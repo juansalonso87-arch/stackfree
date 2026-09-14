@@ -2,12 +2,15 @@
 
 Plataforma de herramientas web gratuitas con **procesamiento 100% en el navegador**: los archivos del usuario nunca se suben a un servidor. Se monetiza con Google AdSense y se aloja gratis en Vercel.
 
+La sección principal es **Administración**: el usuario sube el Excel de movimientos de su banco (Santander, BBVA, Comafi) o el reporte de cobros de Mercado Pago y recibe, en su propio navegador, el análisis por concepto, categoría, día y medio de pago, con controles, en un Excel con fórmulas. Los scripts Python que dieron origen a esos analizadores están en `python/`. La privacidad es verificable: ver `/verificar-privacidad` y la Content-Security-Policy en `lib/csp.ts`.
+
 ## Stack
 
 - [Next.js](https://nextjs.org) 16 (App Router) + TypeScript
 - Tailwind CSS 4 + [shadcn/ui](https://ui.shadcn.com)
 - Íconos: Lucide
 - PDF: [pdf-lib](https://pdf-lib.js.org) (crear/editar) y [pdf.js](https://mozilla.github.io/pdf.js/) (dibujar páginas)
+- Planillas: [SheetJS](https://sheetjs.com) (leer xls/xlsx/xml/html/csv) y [ExcelJS](https://github.com/exceljs/exceljs) (escribir Excel con fórmulas y estilos)
 - HEIC: [heic-to](https://github.com/hoppergee/heic-to) (libheif en WebAssembly)
 - Analytics: Vercel Analytics (sin cookies)
 - Hosting: Vercel (deploy automático desde GitHub)
@@ -53,6 +56,8 @@ components/
   tools/<herramienta>/        Una carpeta por herramienta: <Nombre>Tool.tsx + logic.ts
   ui/                         Componentes de shadcn/ui
 lib/
+  extractos/                  Analizadores de administración: base común + un archivo por banco
+  csp.ts                      Content-Security-Policy (la garantía verificable de privacidad)
   tools-registry.ts           ★ ÚNICA lista de herramientas (metadata + SEO + FAQ)
   site-config.ts              Nombre del sitio, dominio, email de contacto
   ads-config.ts               IDs de AdSense (se leen de variables de entorno)
@@ -84,7 +89,7 @@ Créditos: modelo ISNet vía IMG.LY · componentes [shadcn/ui](https://ui.shadcn
 
 ## Variables de entorno
 
-Ver `.env.example`. Ninguna es obligatoria. Las de AdSense se completan cuando Google apruebe la cuenta.
+Ver `.env.example`. Ninguna es obligatoria. Las de AdSense se completan cuando Google apruebe la cuenta; `NEXT_PUBLIC_WEB3FORMS_KEY` activa el formulario de contacto (sin ella, el botón abre el correo del visitante).
 
 ## Deploy en Vercel
 

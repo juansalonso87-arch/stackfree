@@ -93,9 +93,10 @@ export async function convertirHeic(archivo: File, opciones: OpcionesHeic): Prom
   }
 
   // 2) Decodificador WebAssembly (libheif) en un worker.
-  let heic: typeof import("heic-to");
+  let heic: typeof import("heic-to/csp");
   try {
-    heic = await import("heic-to");
+    // Build "csp": sin `new Function`, compatible con la Content-Security-Policy del sitio.
+    heic = await import("heic-to/csp");
   } catch {
     throw new ErrorImagen("No se pudo descargar el decodificador de HEIC. Revisa tu conexión y vuelve a intentarlo.");
   }
