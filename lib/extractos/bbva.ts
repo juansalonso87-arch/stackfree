@@ -56,14 +56,28 @@ const CATEGORIAS: [string, string[]][] = [
   ["Depósitos en efectivo", ["DEPOSITO", "EFECTIVO"]],
   ["Cheques", ["CHEQUE", "ECHEQ"]],
   ["Dólares / bursátil", ["DOLAR", "MEP", "CCL", "CANJE", "ARBITRAJE", "COMPRA VENTA MONEDA", "BURSATIL"]],
-  ["Transferencias recibidas", ["TRANSFERENCIA RECIBIDA", "ACREDITACION", "RECIBIDA", "CREDITO INMEDIATO", "TRANSFERENCIA A FAVOR", "DNET CREDITO", "DEBIN CREDITO"]],
+  ["Transferencias recibidas", ["TRANSFERENCIA RECIBIDA", "ACREDITACION", "RECIBIDA", "CREDITO INMEDIATO", "TRANSFERENCIA A FAVOR", "DEBIN CREDITO"]],
   ["Servicios y débitos automáticos", ["DEBITO AUTOMATICO", "PAGO ELECTRONICO", "PAGO DIRECTO", "SERVICIOS", "PAGO DE SERVICIOS", "PAGO SERVICIOS", "DEBITO DIRECTO", "OG DEBITO DI", "SEGURO", "ZURICH", "PREPAGA"]],
   // "PAGO A PROVE DB MIN" = pagos a proveedores (confirmado por el dueño con archivo real).
   ["Transferencias enviadas", ["TRANSFERENCIA", "TRF", "PAGO A PROVEEDORES", "PAGO PROVEEDOR", "PAGO BTOB", "B2B", "INTERBANKING", "DNET DEBITO"]],
 ];
 
 /** Plataformas de venta: si aparecen en el concepto o en el detalle, el cobro es de plataforma. */
-const PLATAFORMAS = ["DELIVERY HERO", "PEDIDOSYA", "PEDIDOS YA", "RAPPI", "MERCADO PAGO", "MERCADOPAGO", "MERCADO LIBRE", "MERCADOLIBRE", "MODO", "UALA", "GLOVO"];
+const PLATAFORMAS = [
+  "DELIVERY HERO",
+  "PEDIDOSYA",
+  "PEDIDOS YA",
+  "RAPPI",
+  "MERCADO PAGO",
+  "MERCADOPAGO",
+  "MERCADO LIBRE",
+  "MERCADOLIBRE",
+  "MODO",
+  "UALA",
+  "GLOVO",
+  // En BBVA, "DNET CREDITO" es la liquidación de PedidosYa (confirmado por el dueño con archivo real).
+  "DNET CREDITO",
+];
 
 /** Códigos numéricos que SÍ significan algo: se traducen antes de borrar números (solo el primero que coincide). */
 const CODIGOS_CON_SIGNIFICADO: [RegExp, string][] = [
@@ -190,20 +204,41 @@ export function coincide(concepto: string, clave: string): boolean {
   return false;
 }
 
-function clasificar(conceptoNormalizado: string, detalleNormalizado = ""): string {
-  const n = conceptoNormalizado.toUpperCase();
-  const d = detalleNormalizado.toUpperCase();
-  if (PLATAFORMAS.some((p) => coincide(n, p) || coincide(d, p))) return "Cobros de plataformas";
+/** Categoría de un texto normalizado (concepto o detalle) según las reglas. */
+function clasificarTexto(texto: string): string {
+  const n = texto.toUpperCase();
+  if (!n) return CATEGORIA_DEFECTO;
+  if (PLATAFORMAS.some((p) => coincide(n, p))) return "Cobros de plataformas";
   for (const [categoria, claves] of reglas()) {
     if (claves.some((k) => coincide(n, k))) return categoria;
   }
-  // Último recurso: el detalle (BBVA a veces pone ahí lo que el concepto recorta).
-  if (d) {
-    for (const [categoria, claves] of reglas()) {
-      if (claves.some((k) => coincide(d, k))) return categoria;
-    }
-  }
   return CATEGORIA_DEFECTO;
+}
+
+/**
+ * Categoría de cada CONCEPTO (una sola por concepto, así el resumen por
+ * concepto y el resumen por categoría siempre coinciden). Si el concepto
+ * no dice nada, se vota con los detalles de sus movimientos (BBVA a veces
+ * pone en el detalle lo que recorta en el concepto).
+ */
+function clasificarConceptos(movimientos: { concepto: string; detalle: string }[]): Map<string, string> {
+  const resultado = new Map<string, string>();
+  const detallesPorConcepto = new Map<string, string[]>();
+  for (const m of movimientos) (detallesPorConcepto.get(m.concepto) ?? detallesPorConcepto.set(m.concepto, []).get(m.concepto)!).push(m.detalle);
+  for (const [concepto, detalles] of detallesPorConcepto) {
+    let categoria = clasificarTexto(concepto);
+    if (categoria === CATEGORIA_DEFECTO) {
+      const votos = new Map<string, number>();
+      for (const d of detalles) {
+        const c = clasificarTexto(normalizarConcepto(d));
+        if (c !== CATEGORIA_DEFECTO) votos.set(c, (votos.get(c) ?? 0) + 1);
+      }
+      const ganadora = [...votos.entries()].sort((a, b) => b[1] - a[1])[0];
+      if (ganadora) categoria = ganadora[0];
+    }
+    resultado.set(concepto, categoria);
+  }
+  return resultado;
 }
 
 function buscarColumna(cabecera: string[], ...claves: string[]): number {
@@ -286,6 +321,7 @@ export async function analizarBbva(archivos: File[]): Promise<AnalisisBbva> {
   conceptos = conceptos.map((c) => mapa.get(c) ?? c);
   const unificados = new Set([...mapa.entries()].filter(([o, d]) => o !== d).map(([, d]) => d)).size;
 
+  const categoriaDe = clasificarConceptos(crudos.map((c, i) => ({ concepto: conceptos[i], detalle: c.detalle })));
   const movimientos: Movimiento[] = crudos
     .map((c, i) => ({
       fecha: c.fecha,
@@ -293,7 +329,7 @@ export async function analizarBbva(archivos: File[]): Promise<AnalisisBbva> {
       concepto: conceptos[i],
       conceptoOriginal: c.original,
       detalle: c.detalle,
-      categoria: clasificar(conceptos[i], normalizarConcepto(c.detalle)),
+      categoria: categoriaDe.get(conceptos[i]) ?? CATEGORIA_DEFECTO,
       credito: c.credito,
       debito: c.debito,
       importe: c.credito - c.debito,
