@@ -23,10 +23,10 @@ export const siteConfig = {
   /** Nombre visible del sitio (header, títulos, Open Graph). */
   nombre: "StackFree",
   /** Frase corta que acompaña al nombre en el <title> del homepage. */
-  eslogan: "Herramientas gratis que funcionan en tu navegador",
+  eslogan: "Análisis de movimientos bancarios y herramientas gratis, en tu navegador",
   /** Descripción por defecto para buscadores y redes sociales. */
   descripcion:
-    "Herramientas online gratuitas para editar imágenes y archivos sin subir nada a ningún servidor. Todo se procesa en tu navegador: rápido, privado y sin límites.",
+    "Subí los movimientos de tu banco o Mercado Pago y recibí el análisis por concepto, categoría y día en un Excel con fórmulas. Además, herramientas gratis para imágenes y PDF. Todo se procesa en tu navegador: nada se sube a ningún servidor.",
   /** URL pública del sitio, sin barra final. */
   url: resolverUrlBase(),
   /** Email de contacto que aparece en las páginas legales. */
@@ -48,6 +48,9 @@ export const siteConfig = {
   localeOpenGraph: "es_ES",
   /** Palabras clave generales del sitio (las de cada herramienta van en el registry). */
   keywords: [
+    "analisis de movimientos bancarios",
+    "extracto bancario a excel",
+    "herramientas administracion pymes",
     "herramientas online gratis",
     "editar imagenes online",
     "herramientas sin registro",

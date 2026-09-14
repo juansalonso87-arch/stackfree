@@ -30,6 +30,12 @@ const nombresLegibles: Record<string, string> = {
   "image/heic": "HEIC",
   "image/heif": "HEIF",
   "application/pdf": "PDF",
+  "application/vnd.ms-excel": "Excel (.xls)",
+  "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet": "Excel (.xlsx)",
+  "text/csv": "CSV",
+  "text/plain": "TXT",
+  "text/tab-separated-values": "TSV",
+  "text/xml": "XML",
 };
 
 /** Por si el sistema no informa el tipo MIME (pasa en algunos Windows). */
@@ -45,10 +51,21 @@ const tipoPorExtension: Record<string, string> = {
   heif: "image/heif",
   hif: "image/heif",
   pdf: "application/pdf",
+  xls: "application/vnd.ms-excel",
+  xlsx: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+  xlsm: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+  csv: "text/csv",
+  txt: "text/plain",
+  tsv: "text/tab-separated-values",
+  xml: "text/xml",
 };
 
 /** Tipos que algunos sistemas informan y que equivalen a otro conocido. */
 const sinonimos: Record<string, string> = {
+  "application/xml": "text/xml",
+  "application/excel": "application/vnd.ms-excel",
+  "application/x-excel": "application/vnd.ms-excel",
+  "application/msexcel": "application/vnd.ms-excel",
   "image/jpg": "image/jpeg",
   "image/pjpeg": "image/jpeg",
   "image/heic-sequence": "image/heic",

@@ -6,6 +6,7 @@ import {
   FileStack,
   ImageOff,
   Images,
+  Landmark,
   Minimize2,
   Repeat,
   RotateCw,
@@ -34,7 +35,7 @@ import {
  * componente un objeto `opciones` con valores preconfigurados.
  */
 
-export type CategoriaHerramienta = "imagen" | "pdf" | "conversion";
+export type CategoriaHerramienta = "imagen" | "pdf" | "conversion" | "administracion";
 
 /**
  * - `activa`: se muestra, se indexa en Google y aparece en el sitemap.
@@ -95,10 +96,22 @@ export interface Herramienta {
   formatosEntrada: string[];
   /** Pasos de uso, en orden. Se muestran como lista numerada. */
   pasos: string[];
+  /** Título de la sección de pasos (por defecto "Cómo <nombre> paso a paso"). */
+  tituloPasos?: string;
+  /**
+   * Guía para obtener el archivo de entrada (por ejemplo, cómo exportar los
+   * movimientos desde el home banking). Se muestra como sección propia.
+   */
+  guiaDescarga?: { titulo: string; pasos: string[]; nota?: string };
   /** 3-4 preguntas. Se muestran en la página y se envían a Google como FAQPage. */
   faq: PreguntaFrecuente[];
   /** Páginas SEO adicionales que reutilizan este componente. */
   variantes?: VarianteHerramienta[];
+  /**
+   * Ruta (dentro del repo) del script Python equivalente, para quien prefiera
+   * correrlo en su PC. Se muestra como enlace en la página de la herramienta.
+   */
+  scriptPython?: string;
   /**
    * Carga "a pedido" del componente de la herramienta.
    * Se usa `import()` dinámico para que el JS de cada herramienta viaje en
@@ -960,6 +973,75 @@ export const herramientas: Herramienta[] = [
     ],
     cargar: () => import("@/components/tools/heic-a-jpg/HeicAJpgTool"),
   },
+
+  /* ---------------------------------------------------------------- */
+  /* Administración: extractos bancarios y cobros → informe Excel.     */
+  /* ---------------------------------------------------------------- */
+  {
+    slug: "extracto-santander",
+    nombre: "Análisis de movimientos Santander",
+    h1: "Análisis de movimientos bancarios de Santander: subí tu archivo y recibí el informe completo",
+    subtitulo:
+      "Subís el archivo de movimientos que te da Santander Office Banking y te devolvemos, en segundos, el análisis que un administrador arma a mano cada mes: cuánto entró y cuánto salió por concepto y por categoría (cobros, sueldos, impuestos, comisiones, proveedores), la evolución día por día y los controles de que no falta ningún movimiento. Sin subir tus datos a ningún servidor.",
+    tituloSeo: "Análisis de movimientos Santander: del extracto al informe Excel",
+    descripcionSeo:
+      "Subí los movimientos de Santander Office Banking y recibí un análisis completo: ingresos y egresos por concepto y categoría, evolución diaria y controles, en un Excel con fórmulas. Gratis y sin subir tus datos.",
+    descripcionCorta: "Subí el archivo de movimientos de Santander y recibí el análisis por concepto, categoría y día, con controles.",
+    keywords: [
+      "extracto santander excel",
+      "analizar extracto bancario santander",
+      "santander office banking exportar movimientos",
+      "resumen de cuenta santander a excel",
+      "agrupar movimientos bancarios por concepto",
+      "conciliar extracto santander",
+      "cash management formato excel santander",
+    ],
+    icono: Landmark,
+    categoria: "administracion",
+    estado: "activa",
+    formatosEntrada: ["application/vnd.ms-excel", "text/plain"],
+    guiaDescarga: {
+      titulo: "Cómo descargar los movimientos desde Santander Office Banking",
+      pasos: [
+        "Ingresá a Santander Office Banking (la banca para empresas) con tu usuario.",
+        "Entrá a Consultas → Extracto y elegí la cuenta y el período que querés analizar.",
+        "Tocá Exportar y elegí el formato “Cash Management Formato Excel”. No sirve el PDF ni el Excel “común”.",
+        "Guardá el archivo tal cual se descarga. No lo abras ni lo vuelvas a guardar con Excel: eso le cambia el formato y pierde la línea de totales del banco.",
+      ],
+      nota: "Aunque termine en .xls, ese reporte es un archivo de texto separado por tabulaciones: es justamente lo que permite verificar cada movimiento contra los totales del banco.",
+    },
+    pasos: [
+      "Arrastrá el archivo de movimientos al recuadro (podés sumar varios meses a la vez).",
+      "Tocá “Analizar movimientos”: en segundos ves saldos, entradas, salidas, el resumen por categoría y los controles.",
+      "Revisá en pantalla lo importante: qué categoría concentra los egresos, cuánto se fue en impuestos y comisiones, si algún movimiento quedó sin clasificar.",
+      "Descargá el Excel completo: Resumen por Concepto, Resumen por Categoría, Concepto x Día, Control y Detalle, con fórmulas que se recalculan si corregís algo.",
+    ],
+    faq: [
+      {
+        pregunta: "¿Qué controles hace sobre el extracto?",
+        respuesta:
+          "Compara la cantidad y la suma de débitos y créditos contra los totales que el propio banco escribe al final del archivo, verifica la cadena de saldos movimiento por movimiento (saldo anterior + importe = saldo), comprueba que saldo inicial + movimientos = saldo final y revisa que cada código del banco corresponda a un solo concepto. Si algo no cierra, lo marca en rojo.",
+      },
+      {
+        pregunta: "¿Cómo se clasifican los movimientos?",
+        respuesta:
+          "Por el código numérico que Santander le asigna a cada tipo de movimiento (más confiable que el texto, que cambia de redacción) y, para códigos nuevos, por palabras clave. Lo que no reconoce queda en “Otros”, resaltado en amarillo, para que lo revises.",
+      },
+      {
+        pregunta: "El archivo termina en .xls, ¿por qué dice que no es un Excel?",
+        respuesta:
+          "El reporte “Cash Management Formato Excel” es en realidad un archivo de texto separado por tabulaciones, aunque el banco lo nombre .xls. Si lo abrís con Excel y lo volvés a guardar, se convierte en un Excel “de verdad” y pierde la línea de totales: descargalo de nuevo y subilo sin abrirlo.",
+      },
+      {
+        pregunta: "¿Mi extracto se sube a algún servidor?",
+        respuesta:
+          "No. El archivo se lee y se procesa dentro de tu navegador; el Excel se genera también ahí. Podés comprobarlo desconectando internet después de cargar la página: la herramienta sigue funcionando. El código es público y auditable.",
+      },
+    ],
+    tituloPasos: "Cómo usar el análisis paso a paso",
+    scriptPython: "python/Santander_analizador_extracto.py",
+    cargar: () => import("@/components/tools/extracto-santander/ExtractoSantanderTool"),
+  },
 ];
 
 /* ------------------------------------------------------------------ */
@@ -1038,4 +1120,17 @@ export const nombresCategoria: Record<CategoriaHerramienta, string> = {
   imagen: "Imágenes",
   pdf: "PDF",
   conversion: "Conversión",
+  administracion: "Administración",
 };
+
+/** Orden y descripción de las categorías para el homepage y el footer. */
+export const categorias: { id: CategoriaHerramienta; nombre: string; descripcion: string }[] = [
+  { id: "administracion", nombre: "Administración", descripcion: "Subí los movimientos de tu banco o de Mercado Pago y recibí el análisis completo." },
+  { id: "imagen", nombre: "Imágenes", descripcion: "Editar y optimizar fotos e imágenes." },
+  { id: "pdf", nombre: "PDF", descripcion: "Unir, dividir, rotar y transformar documentos." },
+  { id: "conversion", nombre: "Conversión", descripcion: "Cambiar de un formato a otro." },
+];
+
+export function herramientasPorCategoria(id: CategoriaHerramienta): Herramienta[] {
+  return herramientas.filter((h) => h.categoria === id);
+}

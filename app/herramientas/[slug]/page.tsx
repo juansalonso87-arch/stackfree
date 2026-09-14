@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { ChevronRight, Construction, Lock, Sparkles } from "lucide-react";
+import { ChevronRight, Code2, Construction, Download, Lock, Sparkles } from "lucide-react";
 import { siteConfig } from "@/lib/site-config";
 import {
   herramientas,
@@ -74,7 +74,10 @@ export default async function PaginaHerramienta({ params }: Props) {
 
   const h = p.herramienta;
   const urlAbsoluta = `${siteConfig.url}${rutaHerramienta(p.slug)}`;
-  const otras = herramientas.filter((o) => o.slug !== h.slug).slice(0, 3);
+  const otras = [...herramientas]
+    .filter((o) => o.slug !== h.slug)
+    .sort((a, b) => Number(b.categoria === h.categoria) - Number(a.categoria === h.categoria))
+    .slice(0, 3);
   // Enlaces entre páginas "hermanas" (la principal + sus variantes), sin la actual.
   const hermanas = h.variantes
     ? [
@@ -215,9 +218,30 @@ export default async function PaginaHerramienta({ params }: Props) {
 
           <AdSlot posicion="in-content" />
 
+          {h.guiaDescarga && (
+            <section className="rounded-xl border bg-muted/30 p-5">
+              <h2 className="flex items-center gap-2 font-heading text-xl font-semibold tracking-tight">
+                <Download className="size-5 text-primary" aria-hidden="true" />
+                {h.guiaDescarga.titulo}
+              </h2>
+              <ol className="mt-4 space-y-3">
+                {h.guiaDescarga.pasos.map((paso, i) => (
+                  <li key={i} className="flex gap-3">
+                    <span className="flex size-7 shrink-0 items-center justify-center rounded-full border bg-background text-sm font-semibold">
+                      {i + 1}
+                    </span>
+                    <p className="pt-0.5 text-muted-foreground">{paso}</p>
+                  </li>
+                ))}
+              </ol>
+              {h.guiaDescarga.nota && <p className="mt-4 text-sm text-muted-foreground">{h.guiaDescarga.nota}</p>}
+            </section>
+          )}
+
           <section>
             <h2 className="font-heading text-xl font-semibold tracking-tight">
-              Cómo {p.variante ? `convertir ${p.variante.etiqueta.toLowerCase()}` : h.nombre.toLowerCase()} paso a paso
+              {h.tituloPasos ??
+                `Cómo ${p.variante ? `convertir ${p.variante.etiqueta.toLowerCase()}` : h.nombre.toLowerCase()} paso a paso`}
             </h2>
             <ol className="mt-4 space-y-3">
               {h.pasos.map((paso, i) => (
@@ -242,6 +266,28 @@ export default async function PaginaHerramienta({ params }: Props) {
               ))}
             </Accordion>
           </section>
+
+          {h.scriptPython && (
+            <section className="rounded-lg border bg-muted/30 p-4">
+              <h2 className="flex items-center gap-2 font-heading text-base font-semibold">
+                <Code2 className="size-4 text-primary" aria-hidden="true" />
+                ¿Preferís correrlo en tu computadora?
+              </h2>
+              <p className="mt-1 text-sm text-muted-foreground">
+                Esta herramienta nació como un script de Python. Es el mismo análisis, publicado con el resto del código:
+                podés leerlo, descargarlo y ejecutarlo sin conexión.{" "}
+                <a
+                  href={`${siteConfig.repoUrl}/blob/main/${h.scriptPython}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="underline underline-offset-2 hover:text-foreground"
+                >
+                  Ver el script en GitHub
+                </a>
+                .
+              </p>
+            </section>
+          )}
 
           {otras.length > 0 && (
             <section>

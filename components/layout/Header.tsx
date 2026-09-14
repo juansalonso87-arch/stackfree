@@ -18,6 +18,12 @@ export function Header() {
 
         <nav aria-label="Principal" className="flex items-center gap-1 text-sm">
           <Link
+            href="/administracion"
+            className="rounded-md px-3 py-1.5 font-medium text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+          >
+            Administración
+          </Link>
+          <Link
             href="/#herramientas"
             className="rounded-md px-3 py-1.5 font-medium text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
           >

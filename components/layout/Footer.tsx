@@ -3,6 +3,8 @@ import { siteConfig } from "@/lib/site-config";
 import { herramientas, rutaHerramienta } from "@/lib/tools-registry";
 
 const enlacesLegales = [
+  { href: "/verificar-privacidad", label: "Cómo comprobar la privacidad" },
+  { href: "/contacto", label: "Contacto" },
   { href: "/legal/privacidad", label: "Política de privacidad" },
   { href: "/legal/cookies", label: "Política de cookies" },
   { href: "/legal/terminos", label: "Términos de uso" },
@@ -17,8 +19,8 @@ export function Footer() {
         <div className="space-y-2 lg:col-span-2">
           <p className="font-heading text-base font-semibold">{siteConfig.nombre}</p>
           <p className="max-w-sm text-sm text-muted-foreground">
-            Herramientas gratuitas que se ejecutan en tu navegador. Tus archivos nunca se
-            suben a ningún servidor: la privacidad no es una opción, es cómo funcionamos.
+            Análisis de movimientos bancarios y herramientas gratuitas que se ejecutan en tu navegador. Tus
+            archivos nunca se suben a ningún servidor: la privacidad no es una opción, es cómo funcionamos.
           </p>
         </div>
 
@@ -35,8 +37,8 @@ export function Footer() {
           </ul>
         </nav>
 
-        <nav aria-label="Legal" className="space-y-2">
-          <p className="text-sm font-semibold">Legal</p>
+        <nav aria-label="Sitio" className="space-y-2">
+          <p className="text-sm font-semibold">Sitio</p>
           <ul className="space-y-1.5 text-sm text-muted-foreground">
             {enlacesLegales.map((e) => (
               <li key={e.href}>
