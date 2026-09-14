@@ -19,8 +19,13 @@ export default function ExtractoComafiTool() {
           <Info />
           <AlertTitle>Qué archivo necesitás</AlertTitle>
           <AlertDescription>
-            El Excel de <strong>movimientos de cuenta</strong> que exportás desde el home banking de Comafi (con
-            columnas como Fecha, Descripción, Importe y Saldo). Subilo tal cual lo descargaste.
+            En Comafi: <strong>Cuentas → pestaña “Movimientos” → filtrás las fechas y tocás “Buscar” → botón de
+            descarga</strong> (la flecha hacia abajo a la derecha de la tabla “Últimos Movimientos”). Subí ese archivo tal
+            cual lo bajaste.{" "}
+            <a href="#guia-descarga" className="underline underline-offset-2">
+              Ver la guía paso a paso
+            </a>
+            .
           </AlertDescription>
         </Alert>
       }

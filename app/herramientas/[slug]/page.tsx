@@ -219,7 +219,7 @@ export default async function PaginaHerramienta({ params }: Props) {
           <AdSlot posicion="in-content" />
 
           {h.guiaDescarga && (
-            <section className="rounded-xl border bg-muted/30 p-5">
+            <section id="guia-descarga" className="scroll-mt-20 rounded-xl border bg-muted/30 p-5">
               <h2 className="flex items-center gap-2 font-heading text-xl font-semibold tracking-tight">
                 <Download className="size-5 text-primary" aria-hidden="true" />
                 {h.guiaDescarga.titulo}

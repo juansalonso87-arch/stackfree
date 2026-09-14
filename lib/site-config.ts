@@ -32,6 +32,13 @@ export const siteConfig = {
   /** Email de contacto que aparece en las páginas legales. */
   emailContacto: "juan.s.alonso87@gmail.com",
   /**
+   * Clave de acceso de Web3Forms para el formulario de contacto. Es una clave
+   * PÚBLICA (el servicio la diseñó para usarse desde el navegador): solo permite
+   * enviar mensajes a la casilla registrada, no leer nada. Se puede reemplazar
+   * con la variable NEXT_PUBLIC_WEB3FORMS_KEY sin tocar el código.
+   */
+  claveFormularioContacto: process.env.NEXT_PUBLIC_WEB3FORMS_KEY || "",
+  /**
    * Repositorio público del código. El sitio usa librerías AGPL, que exigen
    * ofrecer el código fuente a los usuarios: por eso hay un link en el footer.
    */

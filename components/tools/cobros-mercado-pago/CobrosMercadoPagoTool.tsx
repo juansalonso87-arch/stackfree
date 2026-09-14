@@ -25,8 +25,12 @@ export default function CobrosMercadoPagoTool() {
           <Info />
           <AlertTitle>Qué archivo necesitás</AlertTitle>
           <AlertDescription>
-            El <strong>reporte de cobros</strong> que exportás desde Mercado Pago (Excel). Tiene que incluir la fecha
-            con hora (columna “Fecha de compra”) para poder aplicar el corte de turno.
+            En Mercado Pago: <strong>Reportes → Cobros → “Detalle de Cobros” → elegís el período → descargar</strong>{" "}
+            (tarda un rato en generarse). Tiene que incluir la fecha con hora para aplicar el corte de turno.{" "}
+            <a href="#guia-descarga" className="underline underline-offset-2">
+              Ver la guía paso a paso
+            </a>
+            .
           </AlertDescription>
         </Alert>
       }

@@ -19,9 +19,13 @@ export default function ExtractoBbvaTool() {
           <Info />
           <AlertTitle>Qué archivo necesitás</AlertTitle>
           <AlertDescription>
-            El archivo de <strong>Movimientos</strong> que exportás desde BBVA (Excel, con columnas Fecha, Concepto,
-            Crédito y Débito). Subilo tal cual lo descargaste; se reconoce aunque el banco lo entregue como .xls, .xlsx
-            o tabla HTML.
+            En BBVA: <strong>Cuentas → “Saldos y Movimientos” → elegís la empresa/cuenta → filtrás las fechas →
+            “Descargar”</strong>. Subí ese archivo tal cual lo bajaste; se reconoce aunque venga como .xls, .xlsx o tabla
+            web.{" "}
+            <a href="#guia-descarga" className="underline underline-offset-2">
+              Ver la guía paso a paso
+            </a>
+            .
           </AlertDescription>
         </Alert>
       }

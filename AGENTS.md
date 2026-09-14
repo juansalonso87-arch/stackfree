@@ -56,6 +56,6 @@ El sitio es **AGPL-3.0** (repo público) porque `@imgly/background-removal` (qui
 
 - Dominio propio antes de postular a AdSense (Google rechaza `*.vercel.app`).
 - Ideas siguientes: más bancos (Galicia, Nación, Macro, Provincia, Brubank/Ualá), conciliación banco↔MP, comprimir PDF (difícil 100 % en navegador), firmar PDF, marca de agua, QR.
-- Confirmar con el dueño los pasos exactos de exportación en BBVA, Comafi y Mercado Pago (`guiaDescarga` en el registry); los de Santander vienen del script original.
-- Obtener la clave de Web3Forms (correo juan.s.alonso87@gmail.com) y cargarla en Vercel como `NEXT_PUBLIC_WEB3FORMS_KEY`.
+- Las guías de exportación (`guiaDescarga`) las confirmó el dueño el 2026-09-14 con los menús reales de cada home banking. Falta validar con archivos reales que el "Descargar movimientos" de Santander entregue el formato "Cash Management" que espera el lector.
+- Clave de Web3Forms: el dueño pasó un código de 6 dígitos (era el de verificación); falta la clave UUID que llega por mail. Va en `siteConfig.claveFormularioContacto` (es pública) o en `NEXT_PUBLIC_WEB3FORMS_KEY`.
 - Nuevo nombre + dominio propio (el actual "StackFree" es provisorio; cambiarlo es `siteConfig.nombre` + README/AGENTS).

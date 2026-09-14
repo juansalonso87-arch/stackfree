@@ -32,7 +32,7 @@ export default function PaginaContacto() {
 
       <div className="mt-8 rounded-xl border p-5 sm:p-6">
         <FormularioContacto
-          claveFormulario={process.env.NEXT_PUBLIC_WEB3FORMS_KEY}
+          claveFormulario={siteConfig.claveFormularioContacto}
           emailContacto={siteConfig.emailContacto}
           herramientas={herramientas.map((h) => h.nombre)}
         />

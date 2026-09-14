@@ -19,9 +19,13 @@ export default function ExtractoSantanderTool() {
           <Info />
           <AlertTitle>Qué archivo necesitás</AlertTitle>
           <AlertDescription>
-            En Santander Office Banking: <strong>Consultas → Extracto → Exportar</strong>, eligiendo el formato{" "}
-            <strong>“{TIPO_REPORTE}”</strong>. Subí ese archivo tal cual lo bajaste: si lo abrís y lo guardás con Excel, se
-            rompe.
+            En Santander Office Banking: <strong>Menú → Cuentas → “Ver saldos y movimientos” → elegís las fechas →
+            “Descargar movimientos”</strong> (formato “{TIPO_REPORTE}”). Subí ese archivo tal cual lo bajaste: si lo abrís y
+            lo guardás con Excel, se rompe.{" "}
+            <a href="#guia-descarga" className="underline underline-offset-2">
+              Ver la guía paso a paso
+            </a>
+            .
           </AlertDescription>
         </Alert>
       }
