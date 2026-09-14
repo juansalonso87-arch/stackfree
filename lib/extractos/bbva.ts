@@ -33,28 +33,40 @@ const HOJA_PREFERIDA = "movimientos historicos";
 /** Índices (base 0) de respaldo si no se reconocen los títulos: Fecha, Concepto, Nro Doc, Crédito, Débito, Detalle. */
 const COLUMNAS_IDX = [0, 2, 4, 6, 7, 8];
 
-/** Se evalúan en orden sobre el concepto YA normalizado. */
+/**
+ * Se evalúan en orden sobre el concepto YA normalizado. BBVA recorta el
+ * concepto a ~12 caracteres ("TRANSFERENCI", "PAGO SERVICI", "RETENCION AR"),
+ * por eso la comparación tolera palabras cortadas (ver `coincide`).
+ */
 const CATEGORIAS: [string, string[]][] = [
   ["Sueldos", ["SUELDO", "HABERES", "PAGO DE HABERES", "JORNAL"]],
-  ["Impuesto débitos/créditos", ["LEY 25413", "IMPUESTO AL CHEQUE"]],
-  ["Retenciones ARBA / IIBB", ["ARBA", "INGRESOS BRUTOS", "IIBB", "SIRCREB", "SIRTAC"]],
-  ["IVA y percepciones", ["IVA", "PERCEPCION", "RETENCION GANANCIAS", "REGIMEN AFIP"]],
-  ["Otros impuestos", ["IMPUESTO", "TASA", "SELLOS"]],
-  ["Mantenimiento de cuenta", ["MANTENIMIENTO"]],
-  ["Comisiones", ["COMISION", "ARANCEL", "CARGO", "GASTO", "SEGURO", "CHEQUERA", "ALQUILER DE"]],
+  ["Impuesto débitos/créditos", ["LEY 25413", "IMPUESTO CHEQUE", "IMPUESTO LEY"]],
+  ["Retenciones ARBA / IIBB", ["ARBA", "INGRESOS BRUTOS", "IIBB", "SIRCREB", "SIRTAC", "RETENCION AR"]],
+  ["IVA y percepciones", ["IVA", "PERCEPCION", "RETENCION GANANCIAS", "REGIMEN AFIP", "RETENCION"]],
+  ["Pagos AFIP / ARCA", ["AFIP", "ARCA", "VEP", "PAGOS AFIP"]],
+  ["Otros impuestos", ["IMPUESTO", "TASA", "SELLOS", "SELLADO"]],
+  ["Mantenimiento de cuenta", ["MANTENIMIENTO", "MANT"]],
+  ["Comisiones", ["COMISION", "ARANCEL", "CARGO", "GASTO", "CHEQUERA", "ALQUILER DE"]],
   ["Plan de pago / préstamos", ["PLAN DE PAGO", "PRESTAMO", "CUOTA", "AMORTIZACION", "INTERES"]],
-  ["Cobros con tarjeta", ["TARJETA", "VISA", "MASTERCARD", "MASTER CARD", "CABAL", "AMEX", "COMERCIOS", "POSNET", "LIQUIDACION TARJETA"]],
+  [
+    "Cobros con tarjeta",
+    ["CUPON", "CUPONES", "CUPON ARGEN", "ARGENCARD", "CABAL", "CUPONES CABA", "MAESTRO", "MAE ACREDITA", "TARJETA", "VISA", "MASTERCARD", "MASTER CARD", "AMEX", "NARANJA", "COMERCIOS", "POSNET", "PRISMA", "FISERV", "PAYWAY", "GETNET", "LIQUIDACION TARJETA"],
+  ],
   ["Depósitos en efectivo", ["DEPOSITO", "EFECTIVO"]],
   ["Cheques", ["CHEQUE", "ECHEQ"]],
   ["Dólares / bursátil", ["DOLAR", "MEP", "CCL", "CANJE", "ARBITRAJE", "COMPRA VENTA MONEDA", "BURSATIL"]],
-  ["Transferencias recibidas", ["TRANSFERENCIA RECIBIDA", "ACREDITACION", "RECIBIDA", "CREDITO INMEDIATO", "TRANSFERENCIA A FAVOR"]],
-  ["Pago de servicios", ["DEBITO AUTOMATICO", "PAGO ELECTRONICO", "PAGO DIRECTO", "SERVICIOS", "PAGO DE SERVICIOS"]],
-  ["Transferencias enviadas", ["TRANSFERENCIA", "PAGO A PROVEEDORES", "PAGO PROVEEDOR"]],
+  ["Transferencias recibidas", ["TRANSFERENCIA RECIBIDA", "ACREDITACION", "RECIBIDA", "CREDITO INMEDIATO", "TRANSFERENCIA A FAVOR", "DNET CREDITO", "DEBIN CREDITO"]],
+  ["Servicios y débitos automáticos", ["DEBITO AUTOMATICO", "PAGO ELECTRONICO", "PAGO DIRECTO", "SERVICIOS", "PAGO DE SERVICIOS", "PAGO SERVICIOS", "DEBITO DIRECTO", "OG DEBITO DI", "SEGURO", "ZURICH", "PREPAGA"]],
+  ["Transferencias enviadas", ["TRANSFERENCIA", "TRF", "PAGO A PROVEEDORES", "PAGO PROVEEDOR", "PAGO BTOB", "B2B", "INTERBANKING", "DNET DEBITO"]],
 ];
+
+/** Plataformas de venta: si aparecen en el concepto o en el detalle, el cobro es de plataforma. */
+const PLATAFORMAS = ["DELIVERY HERO", "PEDIDOSYA", "PEDIDOS YA", "RAPPI", "MERCADO PAGO", "MERCADOPAGO", "MERCADO LIBRE", "MERCADOLIBRE", "MODO", "UALA", "GLOVO"];
 
 /** Códigos numéricos que SÍ significan algo: se traducen antes de borrar números (solo el primero que coincide). */
 const CODIGOS_CON_SIGNIFICADO: [RegExp, string][] = [
-  [/\bLEY\s*(N[°º]?\s*)?25[.\s]?413\b/, "IMPUESTO CHEQUE"],
+  // Ley 25.413 (impuesto al cheque), aunque el banco la recorte a "LEY NRO 25.4".
+  [/\bLEY\s*(N(RO|°|º)?\.?\s*)?25[.,\s]?4(13)?\b/, "IMPUESTO CHEQUE"],
   [/\bR\.?G\.?\s*2408\b/, "PERCEPCION IVA"],
   [/\bR\.?G\.?\s*4622\b/, "PERCEPCION IVA"],
   [/\bR\.?G\.?\s*3337\b/, "RETENCION IVA"],
@@ -158,10 +170,36 @@ function reglas(): [string, string[]][] {
   return categoriasNormalizadas;
 }
 
-function clasificar(conceptoNormalizado: string): string {
-  const n = ` ${conceptoNormalizado.toUpperCase()} `;
+/**
+ * ¿La clave (una o más palabras) aparece en el concepto? Compara palabra
+ * por palabra y acepta palabras RECORTADAS: "TRANSFERENCI" vale por
+ * "TRANSFERENCIA" y "PROVE" por "PROVEEDOR" (mínimo 4 letras para no
+ * confundir siglas). Las claves de 2-3 letras se comparan exactas.
+ */
+export function coincide(concepto: string, clave: string): boolean {
+  const c = concepto.split(" ").filter(Boolean);
+  const k = clave.split(" ").filter(Boolean);
+  if (k.length === 0 || c.length < k.length) return false;
+  const igual = (ct: string, kt: string) =>
+    ct === kt || (ct.length >= 4 && kt.startsWith(ct)) || (kt.length >= 4 && ct.startsWith(kt));
+  for (let i = 0; i + k.length <= c.length; i++) {
+    if (k.every((kt, j) => igual(c[i + j], kt))) return true;
+  }
+  return false;
+}
+
+function clasificar(conceptoNormalizado: string, detalleNormalizado = ""): string {
+  const n = conceptoNormalizado.toUpperCase();
+  const d = detalleNormalizado.toUpperCase();
+  if (PLATAFORMAS.some((p) => coincide(n, p) || coincide(d, p))) return "Cobros de plataformas";
   for (const [categoria, claves] of reglas()) {
-    if (claves.some((k) => n.includes(` ${k} `) || n.includes(k))) return categoria;
+    if (claves.some((k) => coincide(n, k))) return categoria;
+  }
+  // Último recurso: el detalle (BBVA a veces pone ahí lo que el concepto recorta).
+  if (d) {
+    for (const [categoria, claves] of reglas()) {
+      if (claves.some((k) => coincide(d, k))) return categoria;
+    }
   }
   return CATEGORIA_DEFECTO;
 }
@@ -253,7 +291,7 @@ export async function analizarBbva(archivos: File[]): Promise<AnalisisBbva> {
       concepto: conceptos[i],
       conceptoOriginal: c.original,
       detalle: c.detalle,
-      categoria: clasificar(conceptos[i]),
+      categoria: clasificar(conceptos[i], normalizarConcepto(c.detalle)),
       credito: c.credito,
       debito: c.debito,
       importe: c.credito - c.debito,
