@@ -1042,6 +1042,135 @@ export const herramientas: Herramienta[] = [
     scriptPython: "python/Santander_analizador_extracto.py",
     cargar: () => import("@/components/tools/extracto-santander/ExtractoSantanderTool"),
   },
+  {
+    slug: "extracto-bbva",
+    nombre: "Análisis de movimientos BBVA",
+    h1: "Análisis de movimientos bancarios de BBVA: subí tu Excel y recibí el informe completo",
+    subtitulo:
+      "Subís el Excel de movimientos que te da BBVA y te devolvemos, en segundos, el análisis que un administrador arma a mano cada mes: cuánto entró y cuánto salió por concepto y por categoría (cobros, sueldos, impuestos, comisiones, proveedores) y la evolución día por día. Además unifica las distintas redacciones del banco para que “MANT. CTA.” y “MANTENIMIENTO DE CUENTA” cuenten como lo mismo. Sin subir tus datos a ningún servidor.",
+    tituloSeo: "Análisis de movimientos BBVA: del Excel del banco al informe completo",
+    descripcionSeo:
+      "Subí los movimientos de BBVA en Excel y recibí un análisis completo: ingresos y egresos por concepto y categoría, evolución diaria y conceptos unificados. Gratis y sin subir tus datos.",
+    descripcionCorta: "Subí el Excel de movimientos de BBVA y recibí el análisis por concepto, categoría y día.",
+    keywords: [
+      "movimientos bbva excel",
+      "analizar movimientos bbva",
+      "bbva exportar movimientos a excel",
+      "resumen de cuenta bbva por concepto",
+      "agrupar movimientos bancarios por concepto",
+      "bbva net cash movimientos historicos",
+      "extracto bbva a excel",
+    ],
+    icono: Landmark,
+    categoria: "administracion",
+    estado: "activa",
+    formatosEntrada: ["application/vnd.ms-excel", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"],
+    guiaDescarga: {
+      titulo: "Cómo descargar los movimientos desde BBVA",
+      pasos: [
+        "Ingresá al home banking de BBVA (BBVA Net Cash para empresas, o BBVA Net para personas).",
+        "Entrá a Cuentas → elegí la cuenta → Movimientos (en empresas: “Movimientos históricos”).",
+        "Elegí el rango de fechas que querés analizar (el banco suele permitir hasta varios meses).",
+        "Tocá Exportar o Descargar y elegí Excel. Guardá el archivo tal cual se descarga, sin modificarlo.",
+      ],
+      nota: "Si el archivo se descarga como .xls pero al abrirlo parece una tabla web, no pasa nada: la herramienta lo reconoce igual.",
+    },
+    pasos: [
+      "Arrastrá el Excel de movimientos al recuadro (podés sumar varios períodos a la vez).",
+      "Tocá “Analizar movimientos”: en segundos ves entradas, salidas, el resumen por categoría y qué redacciones del banco se unificaron.",
+      "Revisá en pantalla lo importante: qué categoría concentra los egresos, cuánto se fue en impuestos y comisiones, si algo quedó sin clasificar.",
+      "Descargá el Excel completo: Resumen por Concepto, Resumen por Categoría, Concepto x Día, Diagnóstico de Conceptos y Detalle, con fórmulas que se recalculan si corregís algo.",
+    ],
+    tituloPasos: "Cómo usar el análisis paso a paso",
+    faq: [
+      {
+        pregunta: "¿Qué significa que “unifica las redacciones del banco”?",
+        respuesta:
+          "BBVA escribe el mismo tipo de movimiento de muchas formas: con abreviaturas, con el número de comprobante pegado, con o sin acentos. La herramienta traduce las abreviaturas, quita los números que no aportan y agrupa los textos equivalentes, así el resumen tiene un renglón por concepto real. La hoja “Diagnóstico Conceptos” te muestra exactamente qué textos originales se agruparon en cada uno.",
+      },
+      {
+        pregunta: "¿Cómo se clasifican los movimientos en categorías?",
+        respuesta:
+          "Por palabras clave sobre el concepto ya normalizado: sueldos, impuesto al cheque, retenciones de IIBB, IVA y percepciones, mantenimiento, comisiones, préstamos, cobros con tarjeta, depósitos, cheques, dólares, transferencias recibidas y enviadas, pago de servicios. Lo que no reconoce queda en “Otros”, resaltado, para que lo revises.",
+      },
+      {
+        pregunta: "¿Sirve para otros bancos con columnas de Crédito y Débito?",
+        respuesta:
+          "En general sí: la herramienta busca las columnas por su nombre (Fecha, Concepto/Descripción, Crédito/Haber, Débito/Debe). Si tu banco no está en la lista y el archivo se lee bien, contanos para sumarlo con su propia guía.",
+      },
+      {
+        pregunta: "¿Mis movimientos se suben a algún servidor?",
+        respuesta:
+          "No. El archivo se lee y se procesa dentro de tu navegador, y el Excel se genera ahí mismo. Podés comprobarlo desconectando internet después de cargar la página: la herramienta sigue funcionando.",
+      },
+    ],
+    scriptPython: "python/BBVA_movimientos.py",
+    cargar: () => import("@/components/tools/extracto-bbva/ExtractoBbvaTool"),
+  },
+  {
+    slug: "extracto-comafi",
+    nombre: "Análisis de movimientos Comafi",
+    h1: "Análisis de movimientos bancarios de Comafi: subí tu Excel y recibí el informe completo",
+    subtitulo:
+      "Subís el Excel de movimientos de cuenta que te da Comafi y te devolvemos, en segundos, el análisis que un administrador arma a mano cada mes: cuánto entró y cuánto salió por concepto y por categoría (cobros, sueldos, impuestos, comisiones, proveedores), separado por moneda, y la evolución día por día. Sin subir tus datos a ningún servidor.",
+    tituloSeo: "Análisis de movimientos Comafi: del Excel del banco al informe completo",
+    descripcionSeo:
+      "Subí los movimientos de cuenta de Comafi en Excel y recibí un análisis completo: ingresos y egresos por concepto y categoría, por moneda y por día. Gratis y sin subir tus datos.",
+    descripcionCorta: "Subí el Excel de movimientos de Comafi y recibí el análisis por concepto, categoría, moneda y día.",
+    keywords: [
+      "movimientos comafi excel",
+      "analizar movimientos comafi",
+      "comafi exportar movimientos a excel",
+      "resumen de cuenta comafi por concepto",
+      "comafi empresas movimientos de cuenta",
+      "extracto comafi a excel",
+    ],
+    icono: Landmark,
+    categoria: "administracion",
+    estado: "activa",
+    formatosEntrada: ["application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", "application/vnd.ms-excel"],
+    guiaDescarga: {
+      titulo: "Cómo descargar los movimientos desde Comafi",
+      pasos: [
+        "Ingresá al home banking de Comafi (Comafi Empresas o Comafi Online).",
+        "Entrá a Cuentas → elegí la cuenta → Movimientos.",
+        "Elegí el período que querés analizar.",
+        "Tocá Exportar y elegí Excel (.xlsx). Guardá el archivo tal cual se descarga.",
+      ],
+      nota: "El archivo trae las columnas Fecha, ID operación, Descripción, Moneda, Importe y Saldo: la herramienta las reconoce por su nombre, así que no importa el orden.",
+    },
+    pasos: [
+      "Arrastrá el Excel de movimientos al recuadro (podés sumar varios períodos a la vez).",
+      "Tocá “Analizar movimientos”: en segundos ves entradas, salidas, el resumen por categoría y, si el archivo trae saldo, el control de la cadena de saldos.",
+      "Revisá en pantalla lo importante: qué categoría concentra los egresos, cuánto se fue en impuestos y comisiones, si algo quedó sin clasificar.",
+      "Descargá el Excel completo: Resumen por Concepto, Resumen por Categoría, Concepto x Día y Detalle, con fórmulas que se recalculan si corregís algo.",
+    ],
+    tituloPasos: "Cómo usar el análisis paso a paso",
+    faq: [
+      {
+        pregunta: "¿Qué pasa si tengo movimientos en pesos y en dólares?",
+        respuesta:
+          "Se respetan por separado: cada renglón del resumen indica la moneda y los totales no se mezclan. Si el archivo no trae la columna de moneda, se asume que todo es en pesos.",
+      },
+      {
+        pregunta: "¿Cómo se clasifican los movimientos?",
+        respuesta:
+          "Por palabras clave sobre la descripción del banco: sueldos, impuestos y retenciones, comisiones y gastos bancarios, cobros con tarjeta, depósitos, transferencias recibidas y enviadas, pago de servicios y cheques. Lo que no reconoce queda en “Otros”, resaltado, para que lo revises.",
+      },
+      {
+        pregunta: "¿Puedo analizar varios meses juntos?",
+        respuesta:
+          "Sí. Subí un archivo por período y se analizan como un solo conjunto: los resúmenes abarcan todo el rango y la matriz Concepto x Día muestra cada fecha.",
+      },
+      {
+        pregunta: "¿Mis movimientos se suben a algún servidor?",
+        respuesta:
+          "No. El archivo se lee y se procesa dentro de tu navegador, y el Excel se genera ahí mismo. Podés comprobarlo desconectando internet después de cargar la página: la herramienta sigue funcionando.",
+      },
+    ],
+    scriptPython: "python/Comafi_movimientos.py",
+    cargar: () => import("@/components/tools/extracto-comafi/ExtractoComafiTool"),
+  },
 ];
 
 /* ------------------------------------------------------------------ */
