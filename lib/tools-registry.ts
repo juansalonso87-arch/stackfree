@@ -4,6 +4,7 @@ import {
   Crop,
   FileImage,
   FileStack,
+  HandCoins,
   ImageOff,
   Images,
   Landmark,
@@ -1170,6 +1171,71 @@ export const herramientas: Herramienta[] = [
     ],
     scriptPython: "python/Comafi_movimientos.py",
     cargar: () => import("@/components/tools/extracto-comafi/ExtractoComafiTool"),
+  },
+  {
+    slug: "cobros-mercado-pago",
+    nombre: "Análisis de cobros Mercado Pago",
+    h1: "Análisis de cobros de Mercado Pago: subí el reporte y recibí las ventas por turno, hora y medio de pago",
+    subtitulo:
+      "Subís el reporte de cobros que te da Mercado Pago y te devolvemos, en segundos, lo que un dueño de negocio necesita mirar: cuánto cobraste por día de turno (los cobros de la madrugada cuentan para el día anterior, como en gastronomía), qué horas y días de la semana rinden más, cuánto se lleva Mercado Pago entre comisiones y retenciones, qué medios de pago usan tus clientes y qué cobros se rechazaron. Sin subir tus datos a ningún servidor.",
+    tituloSeo: "Análisis de cobros Mercado Pago: ventas por turno, hora y comisiones",
+    descripcionSeo:
+      "Subí el reporte de cobros de Mercado Pago y recibí el análisis: ventas por día de turno y por hora, comisiones y retenciones, medios de pago y rechazos, en un Excel con fórmulas. Gratis y sin subir tus datos.",
+    descripcionCorta: "Subí el reporte de cobros de Mercado Pago y recibí las ventas por turno, hora, medio de pago y lo que descuenta MP.",
+    keywords: [
+      "reporte de cobros mercado pago excel",
+      "analisis de ventas mercado pago",
+      "cuanto cobra mercado pago de comision",
+      "ventas por hora mercado pago",
+      "mercado pago reporte de cobros descargar",
+      "conciliacion mercado pago",
+      "retenciones mercado pago iibb",
+    ],
+    icono: HandCoins,
+    categoria: "administracion",
+    estado: "activa",
+    formatosEntrada: ["application/vnd.ms-excel", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", "text/csv"],
+    guiaDescarga: {
+      titulo: "Cómo descargar el reporte de cobros desde Mercado Pago",
+      pasos: [
+        "Ingresá a Mercado Pago desde la computadora (mercadopago.com.ar) con tu cuenta de vendedor.",
+        "Entrá a Tu negocio → Reportes (o Actividad → Descargar reporte, según la versión).",
+        "Elegí el reporte de Cobros (“Ventas” o “Cobros”), el período que querés analizar y el formato Excel.",
+        "Generalo y descargalo cuando esté listo. Subilo tal cual, sin abrirlo ni modificarlo.",
+      ],
+      nota: "Es importante que el reporte incluya la fecha con hora (columna “Fecha de compra (date_created)”): sin la hora no se puede aplicar el corte de turno y cada cobro queda en su día calendario.",
+    },
+    pasos: [
+      "Arrastrá el reporte de cobros al recuadro (podés sumar varios meses; si se solapan, cada operación se cuenta una sola vez).",
+      "Elegí la hora de corte del turno: con 06:00, un cobro de las 02:30 del sábado cuenta para el viernes.",
+      "Tocá “Analizar cobros”: en segundos ves el bruto, lo que descuenta Mercado Pago, el ticket promedio, el mejor turno, el promedio por día de la semana y los medios de pago.",
+      "Descargá el Excel completo: Cobros por Día, Cobros por Hora, Resumen Mensual, Medios de Pago, Tarifas e Impuestos, No Concretadas y Detalle, con fórmulas que se recalculan si corregís algo.",
+    ],
+    tituloPasos: "Cómo usar el análisis paso a paso",
+    faq: [
+      {
+        pregunta: "¿Qué es el “día de turno” y por qué importa?",
+        respuesta:
+          "En bares, restaurantes y delivery, un cobro de las 2 de la mañana pertenece a la noche anterior, no al día siguiente. Si agrupás por fecha calendario, el viernes queda “corto” y el sábado “inflado”. La herramienta imputa los cobros anteriores a la hora de corte (06:00 por defecto, configurable) al turno del día anterior.",
+      },
+      {
+        pregunta: "¿Qué son las “retenciones no discriminadas”?",
+        respuesta:
+          "El reporte trae el bruto, la comisión de Mercado Pago y el neto acreditado. La diferencia que queda (bruto − comisión − otras tarifas − neto) suele corresponder a retenciones y percepciones (por ejemplo, IIBB) que Mercado Pago aplica como agente de recaudación pero no desglosa. Se muestran como estimación: conviene validarlas con tu contador.",
+      },
+      {
+        pregunta: "¿Qué cuenta como venta?",
+        respuesta:
+          "Los cobros aprobados por QR, link de pago, Point o suscripciones. Las cargas de saldo, transferencias enviadas y retiros no se cuentan como ventas. Los rechazados y cancelados se listan aparte, con el motivo, como alerta operativa.",
+      },
+      {
+        pregunta: "¿Mi reporte se sube a algún servidor?",
+        respuesta:
+          "No. El archivo se lee y se procesa dentro de tu navegador, y el Excel se genera ahí mismo. Podés comprobarlo desconectando internet después de cargar la página: la herramienta sigue funcionando.",
+      },
+    ],
+    scriptPython: "python/MP_analizador_cobros.py",
+    cargar: () => import("@/components/tools/cobros-mercado-pago/CobrosMercadoPagoTool"),
   },
 ];
 
