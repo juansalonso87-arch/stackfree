@@ -37,7 +37,7 @@ export const siteConfig = {
    * enviar mensajes a la casilla registrada, no leer nada. Se puede reemplazar
    * con la variable NEXT_PUBLIC_WEB3FORMS_KEY sin tocar el código.
    */
-  claveFormularioContacto: process.env.NEXT_PUBLIC_WEB3FORMS_KEY || "",
+  claveFormularioContacto: process.env.NEXT_PUBLIC_WEB3FORMS_KEY || "26807a29-3b13-4ff0-87aa-dda167c674e9",
   /**
    * Repositorio público del código. El sitio usa librerías AGPL, que exigen
    * ofrecer el código fuente a los usuarios: por eso hay un link en el footer.
