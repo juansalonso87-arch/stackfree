@@ -49,6 +49,7 @@ const CATEGORIAS: [string, string[]][] = [
   ["Comisiones", ["COMISION", "ARANCEL", "CARGO", "GASTO", "CHEQUERA", "ALQUILER DE"]],
   ["Plan de pago / préstamos", ["PLAN DE PAGO", "PRESTAMO", "CUOTA", "AMORTIZACION", "INTERES"]],
   [
+    // CUPON. ARGEN / CUPONES CABA / MAE-ACREDITA: liquidaciones de cobros con tarjeta (confirmado por el dueño con archivo real).
     "Cobros con tarjeta",
     ["CUPON", "CUPONES", "CUPON ARGEN", "ARGENCARD", "CABAL", "CUPONES CABA", "MAESTRO", "MAE ACREDITA", "TARJETA", "VISA", "MASTERCARD", "MASTER CARD", "AMEX", "NARANJA", "COMERCIOS", "POSNET", "PRISMA", "FISERV", "PAYWAY", "GETNET", "LIQUIDACION TARJETA"],
   ],
@@ -57,6 +58,7 @@ const CATEGORIAS: [string, string[]][] = [
   ["Dólares / bursátil", ["DOLAR", "MEP", "CCL", "CANJE", "ARBITRAJE", "COMPRA VENTA MONEDA", "BURSATIL"]],
   ["Transferencias recibidas", ["TRANSFERENCIA RECIBIDA", "ACREDITACION", "RECIBIDA", "CREDITO INMEDIATO", "TRANSFERENCIA A FAVOR", "DNET CREDITO", "DEBIN CREDITO"]],
   ["Servicios y débitos automáticos", ["DEBITO AUTOMATICO", "PAGO ELECTRONICO", "PAGO DIRECTO", "SERVICIOS", "PAGO DE SERVICIOS", "PAGO SERVICIOS", "DEBITO DIRECTO", "OG DEBITO DI", "SEGURO", "ZURICH", "PREPAGA"]],
+  // "PAGO A PROVE DB MIN" = pagos a proveedores (confirmado por el dueño con archivo real).
   ["Transferencias enviadas", ["TRANSFERENCIA", "TRF", "PAGO A PROVEEDORES", "PAGO PROVEEDOR", "PAGO BTOB", "B2B", "INTERBANKING", "DNET DEBITO"]],
 ];
 
