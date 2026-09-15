@@ -1,15 +1,30 @@
 /**
  * Analizador del extracto de Banco Santander (Argentina).
- * Port de `python/Santander_analizador_extracto.py`.
+ * Port de `python/Santander_analizador_extracto.py`, validado con archivos reales.
  *
- * Solo lee el reporte "Cash Management Formato Excel" (Santander Office
- * Banking → Consultas → Extracto → Exportar). A pesar de la extensión .xls
- * es un archivo de texto separado por tabulaciones: una línea de cabecera
- * (CUIT / cuenta / fecha), una línea por movimiento (7 campos) y una línea
- * final con los totales de control del banco.
+ * Lee el archivo que entrega Santander Office Banking en Cuentas → "Ver
+ * saldos y movimientos" → "Descargar movimientos" (es el mismo reporte
+ * "Cash Management Formato Excel"). A pesar de la extensión .xls es un
+ * archivo de texto separado por tabulaciones: una línea de cabecera
+ * (CUIT / cuenta / "Extracto" / fecha), una línea por movimiento (7 campos:
+ * fecha, concepto " - " detalle, importe, comprobante, sucursal, saldo,
+ * código) y una línea final con los totales de control del banco
+ * (cantidad y suma de débitos, cantidad y suma de créditos).
  */
 
-import { CATEGORIA_DEFECTO, ErrorExtracto, type AnalisisExtracto, type Control, type Movimiento } from "./tipos";
+import {
+  ASEGURADORAS,
+  CATEGORIA as CAT,
+  CATEGORIA_DEFECTO,
+  ErrorExtracto,
+  ORGANISMOS_IMPOSITIVOS,
+  PLATAFORMAS,
+  PROCESADORAS_TARJETA,
+  resolverSentido,
+  type AnalisisExtracto,
+  type Control,
+  type Movimiento,
+} from "./tipos";
 import { aFecha, aNumero, aNumeroSantander, clasificarPorTexto, rangoFechas, sinAcentos, type ReglasCategoria } from "./texto";
 import { arranqueDe, esExcelReal, leerTexto } from "./planilla";
 import {
@@ -32,62 +47,108 @@ export const TIPO_REPORTE = "Cash Management Formato Excel";
 const TOLERANCIA = 0.02;
 const PALETA: Paleta = { principal: "A50E20", total: "F2DCDB" };
 
+/** Marcadores especiales de la tabla de códigos (además de las categorías neutras de tipos.ts). */
+const POR_PAGADOR = "pagador"; // crédito cuya categoría depende de quién paga (plataforma, tarjeta, otro)
+const POR_BENEFICIARIO = "beneficiario"; // débito cuya categoría depende de a quién se paga (impuestos, seguros, servicios)
+
 /**
  * Santander numera cada tipo de movimiento: el código es más confiable que
- * el texto. OJO con 1968 "Pago a proveedores": suena a egreso pero es la
- * liquidación que ENTRA desde la plataforma de delivery; por eso manda el
- * código y no la palabra.
+ * el texto. Los códigos van SIN ceros a la izquierda (el export los trae
+ * como "216" u "0216" según la versión). Relevados con archivos reales
+ * (2026-09). OJO con 1968 "Pago a proveedores" y 216 "Pago a proveedores
+ * recibido": suenan a egreso pero son liquidaciones que ENTRAN (PedidosYa,
+ * Cabal…); por eso se mira quién paga y no la palabra.
  */
 const CATEGORIAS_POR_CODIGO: Record<string, string> = {
-  "2604": "Cobros con tarjeta",
-  "1968": "Cobros de plataformas",
-  "1970": "Cobros de plataformas",
-  "0216": "Cobros de plataformas",
-  "3410": "Transferencias recibidas",
-  "1862": "Sueldos",
-  "1153": "Sueldos",
-  "4712": "Pagos AFIP / impuestos",
-  "4719": "Pago de servicios",
-  "4085": "Pago de servicios",
-  "0824": "Transferencias enviadas",
-  "2822": "Transferencias enviadas",
-  "1252": "Transferencias enviadas",
-  "4648": "Transferencias enviadas",
-  "4713": "Transferencias enviadas",
-  "2571": "Comisiones tarjeta",
-  "2574": "Comisiones tarjeta",
-  "2960": "Comisiones banco",
-  "3489": "Comisiones banco",
-  "0434": "Comisiones banco",
-  "4633": "Impuesto al cheque",
-  "4637": "Impuesto al cheque",
-  "2010": "Retenciones ARBA / IIBB",
-  "1628": "Retenciones ARBA / IIBB",
-  "3254": "IVA y percepciones",
-  "3253": "IVA y percepciones",
+  "2604": CAT.cobrosTarjeta, // Acreditacion a comercio fiserv
+  "1968": POR_PAGADOR, // Pago a proveedores (Delivery Hero → plataforma)
+  "1970": POR_PAGADOR, // Servicios de pago (American Express → tarjeta)
+  "216": POR_PAGADOR, // Pago a proveedores recibido (Cabal → tarjeta)
+  "3410": POR_PAGADOR, // Transf recibida cvu mismo titular (First Data Sur → tarjeta; si no, transferencia recibida)
+  "3413": POR_PAGADOR, // Transf recibida cvu dif titular
+  "4805": POR_PAGADOR, // Transferencia recibida
+  "1253": POR_PAGADOR, // Credito transf online banking emp
+  "1862": CAT.sueldos, // Pago haberes
+  "1153": CAT.sueldos, // Pago de haberes por cci
+  "4712": CAT.impuestos, // Pago afip servicio interbanking
+  "4719": POR_BENEFICIARIO, // Pago de servicios (Edenor → servicios; Arba web → impuestos)
+  "4085": POR_BENEFICIARIO, // Debito automatico (Zurich → seguros)
+  "824": CAT.transfEnviadas, // Transferencia realizada
+  "2822": CAT.transfEnviadas, // Transferencia inmediata
+  "1252": CAT.transfEnviadas, // Debito transf. online banking emp
+  "4648": CAT.transfEnviadas, // Transferencia por sistema mep
+  "5824": CAT.transfEnviadas, // Anul transferencia realizada (crédito que revierte una enviada)
+  "4713": CAT.proveedores, // Pago interbanking b2b
+  "2571": CAT.comisionesTarjeta, // Debito comercio fiserv
+  "2574": CAT.comisionesTarjeta, // Debito comercio payway
+  "2960": CAT.comisiones, // Comision por servicio de cuenta
+  "3489": CAT.comisiones, // Comision servicio cuenta dolares
+  "434": CAT.comisiones, // Comision transf otros bcos canales
+  "4757": CAT.comisiones, // Comision mensual de movs clearing
+  "3629": CAT.comisiones, // Comision gestion de cobertura
+  "4633": CAT.impCheque, // Impuesto ley 25.413 debito 0,6%
+  "4637": CAT.impCheque, // Impuesto ley 25.413 credito 0,6%
+  "9633": CAT.impCheque, // Anul imp ley 25.413 (crédito que revierte)
+  "2010": CAT.iibb, // Retencion arba alicuota u
+  "2009": CAT.iibb, // Retencion arba alicuota t
+  "1628": CAT.iibb, // Iibb percepcion pcia buenos aires
+  "3254": CAT.iva, // Iva 21% reg de transfisc ley 27743
+  "3253": CAT.iva, // Iva percepcion rg 2408
+  "133": "cheque", // Cheque debitado
+  "2029": "efectivo", // Deposito de efectivo
 };
 
-/** Respaldo por palabras clave para códigos que no están en la tabla. */
+/** Respaldo por palabras clave para códigos que no están en la tabla (el orden importa). */
 const CATEGORIAS_POR_TEXTO: ReglasCategoria = [
-  ["Sueldos", ["HABER", "SUELDO", "JORNAL"]],
-  ["Pagos AFIP / impuestos", ["AFIP", "INTERBANKING", "VEP"]],
-  ["Impuesto al cheque", ["LEY 25.413", "LEY 25413"]],
-  ["Retenciones ARBA / IIBB", ["ARBA", "IIBB", "INGRESOS BRUTOS", "SIRCREB"]],
-  ["IVA y percepciones", ["IVA", "PERCEPCION", "RETENCION"]],
-  ["Comisiones banco", ["COMISION", "MANTENIMIENTO", "SERVICIO DE CUENTA"]],
-  ["Cobros con tarjeta", ["ACREDITACION A COMERCIO", "FISERV", "PAYWAY", "POSNET", "TARJETA"]],
-  ["Transferencias recibidas", ["RECIBIDA", "RECIBIDO", "ACREDITACION"]],
-  ["Pago de servicios", ["PAGO DE SERVICIOS", "DEBITO AUTOMATICO"]],
-  ["Transferencias enviadas", ["TRANSFERENCIA", "TRANSF", "PAGO"]],
+  [CAT.sueldos, ["HABER", "SUELDO", "JORNAL"]],
+  [CAT.impCheque, ["LEY 25.413", "LEY 25413"]],
+  [CAT.iibb, ["ARBA", "IIBB", "INGRESOS BRUTOS", "SIRCREB", "AGIP"]],
+  [CAT.iva, ["IVA", "PERCEPCION", "RETENCION"]],
+  [CAT.impuestos, ["AFIP", "ARCA", "VEP"]],
+  [CAT.comisionesTarjeta, ["DEBITO COMERCIO"]],
+  [CAT.comisiones, ["COMISION", "MANTENIMIENTO", "SERVICIO DE CUENTA"]],
+  [CAT.intereses, ["INTERES", "PRESTAMO", "CUOTA", "DESCUBIERTO"]],
+  [CAT.cobrosTarjeta, ["ACREDITACION A COMERCIO", "FISERV", "PAYWAY", "POSNET", "TARJETA"]],
+  ["cheque", ["CHEQUE", "ECHEQ"]],
+  ["efectivo", ["EFECTIVO", "EXTRACCION", "DEPOSITO"]],
+  [CAT.embargos, ["EMBARGO", "JUDICIAL"]],
+  [CAT.dolares, ["DOLAR", "COMPRA MONEDA", "VENTA MONEDA", "BURSATIL"]],
+  [POR_PAGADOR, ["RECIBIDA", "RECIBIDO", "ACREDITACION", "CREDITO TRANSF"]],
+  [POR_BENEFICIARIO, ["PAGO DE SERVICIOS", "DEBITO AUTOMATICO"]],
+  [CAT.proveedores, ["B2B", "INTERBANKING", "PAGO A PROVEEDORES"]],
+  ["transferencia", ["TRANSFERENCIA", "TRANSF", "PAGO"]],
 ];
 
 const MENSAJE_FORMATO =
-  `El archivo no tiene el formato esperado. Esta herramienta solo lee el reporte "${TIPO_REPORTE}" ` +
-  "(Santander Office Banking → Consultas → Extracto → Exportar). Aunque termine en .xls, ese reporte es un " +
+  "El archivo no tiene el formato esperado. Esta herramienta lee el archivo que entrega Santander Office Banking en " +
+  `Cuentas → "Ver saldos y movimientos" → "Descargar movimientos" (reporte "${TIPO_REPORTE}"). Aunque termine en .xls, es un ` +
   "archivo de texto: si lo abriste y lo guardaste con Excel, se rompe; descargalo de nuevo sin abrirlo.";
 
-function clasificar(codigo: string, concepto: string): string {
-  return CATEGORIAS_POR_CODIGO[codigo] ?? clasificarPorTexto(concepto, CATEGORIAS_POR_TEXTO, (t) => sinAcentos(t).toUpperCase());
+const menciona = (texto: string, lista: readonly string[]) => {
+  const t = sinAcentos(texto).toUpperCase();
+  return lista.some((k) => t.includes(k));
+};
+
+/** Créditos: ¿quién paga? Plataforma de ventas, procesadora de tarjetas u otro (transferencia recibida). */
+function porPagador(detalle: string, concepto: string): string {
+  const t = `${concepto} ${detalle}`;
+  if (menciona(t, PLATAFORMAS)) return CAT.plataformas;
+  if (menciona(t, PROCESADORAS_TARJETA)) return CAT.cobrosTarjeta;
+  return CAT.transfRecibidas;
+}
+
+/** Débitos por servicios: ¿a quién se paga? Organismo impositivo, aseguradora u otro (servicio). */
+function porBeneficiario(detalle: string): string {
+  if (menciona(detalle, ORGANISMOS_IMPOSITIVOS)) return CAT.impuestos;
+  if (menciona(detalle, ASEGURADORAS)) return CAT.seguros;
+  return CAT.servicios;
+}
+
+function clasificar(codigo: string, concepto: string, detalle: string, importe: number): string {
+  const base = CATEGORIAS_POR_CODIGO[codigo] ?? clasificarPorTexto(concepto, CATEGORIAS_POR_TEXTO, (t) => sinAcentos(t).toUpperCase());
+  if (base === POR_PAGADOR) return importe >= 0 ? porPagador(detalle, concepto) : CAT.transfEnviadas;
+  if (base === POR_BENEFICIARIO) return porBeneficiario(detalle);
+  return resolverSentido(base, importe > 0);
 }
 
 interface Trailer {
@@ -129,7 +190,9 @@ async function leerArchivo(archivo: File): Promise<Lectura> {
   // Trailer: cant y suma de débitos, cant y suma de créditos (formato argentino).
   let trailer: Trailer | null = null;
   let fin = lineas.length;
+  // La última línea trae los totales; según la versión del export viene con tabulaciones vacías al final.
   const ultima = lineas[lineas.length - 1].split("\t");
+  while (ultima.length > 0 && ultima[ultima.length - 1].trim() === "") ultima.pop();
   if (ultima.length === 4 || ultima.length === 5) {
     const cant = (s: string) => Number((s ?? "").replace(/\D/g, "") || 0);
     trailer = {
@@ -150,13 +213,14 @@ async function leerArchivo(archivo: File): Promise<Lectura> {
       continue;
     }
     const [fecha, conceptoFull, importeTxt, comprobante, sucursal, saldoTxt, codigoTxt] = campos;
-    const codigo = codigoTxt.trim();
+    const codigo = codigoTxt.trim().replace(/^0+(?=\d)/, "");
     const sep = conceptoFull.indexOf(" - ");
     const concepto = (sep >= 0 ? conceptoFull.slice(0, sep) : conceptoFull).trim();
     const detalle = (sep >= 0 ? conceptoFull.slice(sep + 3) : "").trim().replace(/\s{2,}/g, " ");
     const importe = aNumeroSantander(importeTxt);
     movimientos.push({
       fecha: aFecha(fecha.trim()),
+      cuenta,
       codigo,
       concepto,
       detalle,
@@ -164,7 +228,7 @@ async function leerArchivo(archivo: File): Promise<Lectura> {
       saldo: aNumeroSantander(saldoTxt),
       comprobante: comprobante.trim(),
       sucursal: sucursal.trim(),
-      categoria: clasificar(codigo, concepto),
+      categoria: clasificar(codigo, concepto, detalle, importe),
       debito: importe < 0 ? -importe : 0,
       credito: importe > 0 ? importe : 0,
     });
@@ -251,16 +315,35 @@ export async function analizarSantander(archivos: File[]): Promise<AnalisisSanta
     controles.push(control("Totales del banco", "Movimientos totales", movimientos.length, totalDecl, movimientos.length === totalDecl, "ent"));
   }
 
-  // Cadena de saldos en orden cronológico (tal como vino, invertido si era descendente).
-  const crono = primera.ordenDescendente ? [...movimientos].reverse() : [...movimientos];
+  // Cadena de saldos POR CUENTA, en orden cronológico: cada archivo tal como vino (invertido si era
+  // descendente) y los archivos de una misma cuenta encadenados por fecha. Si se suben cuentas distintas,
+  // los saldos inicial/final son la suma de todas.
+  const porCuenta = new Map<string, Lectura[]>();
+  for (const l of lecturas) (porCuenta.get(l.cuenta) ?? porCuenta.set(l.cuenta, []).get(l.cuenta)!).push(l);
+  const sobrevivientes = new Set(movimientos);
   let rupturas = 0;
-  for (let i = 1; i < crono.length; i++) {
-    const esperado = (crono[i - 1].saldo ?? 0) + crono[i].importe;
-    if (Math.abs((crono[i].saldo ?? 0) - esperado) > TOLERANCIA) rupturas++;
+  let eslabones = 0;
+  let saldoInicial = 0;
+  let saldoFinal = 0;
+  for (const lista of porCuenta.values()) {
+    const crono = lista
+      .map((l) => (l.ordenDescendente ? [...l.movimientos].reverse() : [...l.movimientos]))
+      .sort((a, b) => (a[0]?.fecha?.getTime() ?? 0) - (b[0]?.fecha?.getTime() ?? 0))
+      .flat()
+      .filter((m) => sobrevivientes.has(m));
+    if (crono.length === 0) continue;
+    for (let i = 1; i < crono.length; i++) {
+      eslabones++;
+      const esperado = (crono[i - 1].saldo ?? 0) + crono[i].importe;
+      if (Math.abs((crono[i].saldo ?? 0) - esperado) > TOLERANCIA) rupturas++;
+    }
+    saldoInicial += (crono[0].saldo ?? 0) - crono[0].importe;
+    saldoFinal += crono[crono.length - 1].saldo ?? 0;
   }
-  controles.push(control("Cadena de saldos", "Eslabones sin ruptura", crono.length - 1 - rupturas, crono.length - 1, rupturas === 0, "ent"));
-  const saldoInicial = (crono[0].saldo ?? 0) - crono[0].importe;
-  const saldoFinal = crono[crono.length - 1].saldo ?? 0;
+  if (porCuenta.size > 1) {
+    avisos.push(`Se analizaron ${porCuenta.size} cuentas distintas: la cadena de saldos se controló por cuenta y los saldos inicial y final son la suma de todas.`);
+  }
+  controles.push(control("Cadena de saldos", "Eslabones sin ruptura", eslabones - rupturas, eslabones, rupturas === 0, "ent"));
   const sumaTotal = movimientos.reduce((s, m) => s + m.importe, 0);
   controles.push(
     control("Cadena de saldos", "Saldo inicial + movimientos = saldo final", saldoInicial + sumaTotal, saldoFinal, Math.abs(saldoInicial + sumaTotal - saldoFinal) <= TOLERANCIA),
@@ -297,7 +380,7 @@ export async function analizarSantander(archivos: File[]): Promise<AnalisisSanta
     movimientos,
     desde,
     hasta,
-    cuenta: primera.cuenta,
+    cuenta: [...porCuenta.keys()].join(", "),
     cuit: primera.cuit,
     saldoInicial,
     saldoFinal,
@@ -315,6 +398,7 @@ export async function analizarSantander(archivos: File[]): Promise<AnalisisSanta
 const ESQUEMA: EsquemaDetalle = {
   columnas: [
     { id: "fecha", titulo: "Fecha", ancho: 12, valor: (m) => m.fecha, formato: FMT_FECHA },
+    { id: "cuenta", titulo: "Cuenta", ancho: 17, valor: (m) => m.cuenta ?? "" },
     { id: "codigo", titulo: "Código", ancho: 9, valor: (m) => m.codigo ?? "" },
     { id: "concepto", titulo: "Concepto", ancho: 36, valor: (m) => m.concepto },
     { id: "categoria", titulo: "Categoría", ancho: 26, valor: (m) => m.categoria },
@@ -343,10 +427,12 @@ export async function generarExcelSantander(a: AnalisisSantander): Promise<Blob>
       nombreHoja: "Resumen por Concepto",
       titulo: "Resumen por concepto",
       subtitulo,
-      claves: [{ titulo: "Código", columna: "codigo", ancho: 9 }],
-      extras: [
-        { titulo: "Concepto", ancho: 38, valor: (g) => g[0].concepto },
-        { titulo: "Categoría", ancho: 26, valor: (g) => g[0].categoria },
+      // Un mismo código puede tener dos categorías (ej. "Transf recibida" de una procesadora de tarjetas o de un cliente),
+      // por eso la categoría es parte de la clave: cada renglón cierra con el Resumen por Categoría.
+      claves: [
+        { titulo: "Código", columna: "codigo", ancho: 9 },
+        { titulo: "Concepto", columna: "concepto", ancho: 38 },
+        { titulo: "Categoría", columna: "categoria", ancho: 30 },
       ],
       columnaCategoria: "categoria",
     },
@@ -384,7 +470,7 @@ export async function generarExcelSantander(a: AnalisisSantander): Promise<Blob>
     det,
     {
       subtitulo: `Reporte requerido: ${TIPO_REPORTE}  |  Archivo: ${a.archivos.join(", ")}  |  Generado: ${formatearFecha(new Date())}`,
-      recordatorio: `El archivo de entrada debe ser el reporte "${TIPO_REPORTE}". No abrirlo ni volver a guardarlo con Excel antes de procesarlo: eso rompe el formato.`,
+      recordatorio: `El archivo de entrada es el que entrega "Descargar movimientos" (reporte "${TIPO_REPORTE}"). No abrirlo ni volver a guardarlo con Excel antes de procesarlo: eso rompe el formato.`,
       lineasDescartadas: a.descartadas,
     },
     PALETA,

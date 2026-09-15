@@ -16,7 +16,7 @@ export const FORMATOS_ENTRADA = ["application/vnd.ms-excel", "text/plain", "text
 export async function analizar(archivos: File[]): Promise<ResultadoAnalisis> {
   const a = await analizarSantander(archivos);
   return resultadoDesdeAnalisis(a, {
-    titulo: `Movimientos Santander · cuenta ${a.cuenta}`,
+    titulo: `Movimientos Santander · ${a.cuenta?.includes(",") ? "cuentas" : "cuenta"} ${a.cuenta}`,
     nombreExcel: nombreSalida(archivos, "_analisis"),
     generarExcel: () => generarExcelSantander(a),
   });

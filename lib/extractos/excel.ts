@@ -419,6 +419,8 @@ function obtenerPorId(m: Movimiento, id: string): unknown {
       return m.comprobante ?? "";
     case "sucursal":
       return m.sucursal ?? "";
+    case "cuenta":
+      return m.cuenta ?? "";
     case "detalle":
       return m.detalle ?? "";
     default:

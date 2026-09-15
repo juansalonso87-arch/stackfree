@@ -1008,7 +1008,7 @@ export const herramientas: Herramienta[] = [
         "Abrí el Menú y entrá a Cuentas (en el menú vertical de la derecha).",
         "Sobre la cuenta que querés analizar, tocá “Ver saldos y movimientos”.",
         "Elegí el rango de fechas que querés ver (por ejemplo, el mes completo).",
-        "Tocá “Descargar movimientos”. Si te ofrece varios formatos, elegí “Cash Management Formato Excel”. Ese archivo es el que subís acá.",
+        "Tocá “Descargar movimientos”. Ese archivo (el banco lo llama “Cash Management Formato Excel”) es el que subís acá.",
         "Guardalo tal cual se descarga: no lo abras ni lo vuelvas a guardar con Excel, porque le cambia el formato y pierde la línea de totales del banco.",
       ],
       nota: "Aunque termine en .xls, el archivo es texto separado por tabulaciones con una línea final de totales: es justamente lo que permite verificar cada movimiento contra lo que declara el banco.",
@@ -1028,7 +1028,7 @@ export const herramientas: Herramienta[] = [
       {
         pregunta: "¿Cómo se clasifican los movimientos?",
         respuesta:
-          "Por el código numérico que Santander le asigna a cada tipo de movimiento (más confiable que el texto, que cambia de redacción) y, para códigos nuevos, por palabras clave. Lo que no reconoce queda en “Otros”, resaltado en amarillo, para que lo revises.",
+          "Por el código numérico que Santander le asigna a cada tipo de movimiento (más confiable que el texto, que cambia de redacción) y, para códigos nuevos, por palabras clave. Cuando el código no alcanza, mira quién paga o a quién se paga: una “Transferencia recibida” de First Data o Cabal es un cobro con tarjeta, un “Pago a proveedores” que viene de Delivery Hero es un cobro de PedidosYa, un “Pago de servicios” a ARBA o AFIP es un pago de impuestos y un débito automático de Zurich es un seguro. Las categorías son las mismas para todos los bancos (cobros con tarjeta, cobros de plataformas, transferencias recibidas y enviadas, pagos a proveedores, sueldos, impuesto al cheque, retenciones de IIBB, IVA, pagos de impuestos, comisiones, seguros, servicios, cheques, efectivo…). Lo que no reconoce queda en “Otros”, resaltado en amarillo, para que lo revises.",
       },
       {
         pregunta: "El archivo termina en .xls, ¿por qué dice que no es un Excel?",

@@ -23,7 +23,17 @@
  * el resumen por categoría.
  */
 
-import { CATEGORIA_DEFECTO, ErrorExtracto, type AnalisisExtracto, type Control, type DiagnosticoConcepto, type Movimiento } from "./tipos";
+import {
+  CATEGORIA as CAT,
+  CATEGORIA_DEFECTO,
+  ErrorExtracto,
+  PLATAFORMAS,
+  resolverSentido,
+  type AnalisisExtracto,
+  type Control,
+  type DiagnosticoConcepto,
+  type Movimiento,
+} from "./tipos";
 import { aFecha, aNumero, formatearFecha, rangoFechas, sinAcentos } from "./texto";
 import { detectarFilaCabecera, leerPlanilla, type Celda, type Hoja } from "./planilla";
 import {
@@ -47,45 +57,8 @@ const HOJA_PREFERIDA = "movimientos historicos";
 const COLUMNAS_IDX = { fecha: 0, concepto: 2, codigo: 3, nroDoc: 4, oficina: 5, credito: 6, debito: 7, detalle: 8 };
 
 /* ------------------------------------------------------------------ */
-/* Categorías                                                           */
+/* Categorías (vocabulario compartido en tipos.ts)                      */
 /* ------------------------------------------------------------------ */
-
-const CAT = {
-  sueldos: "Sueldos",
-  impCheque: "Impuesto débitos/créditos",
-  iibb: "Retenciones y percepciones IIBB",
-  iva: "IVA y percepciones",
-  afip: "Pagos AFIP / ARCA",
-  otrosImp: "Otros impuestos",
-  mantenimiento: "Mantenimiento de cuenta",
-  comisiones: "Comisiones",
-  intereses: "Intereses y préstamos",
-  pagoTarjeta: "Pago de tarjeta de crédito",
-  comprasDebito: "Compras con tarjeta de débito",
-  cobrosTarjeta: "Cobros con tarjeta",
-  plataformas: "Cobros de plataformas",
-  seguros: "Seguros y prepagas",
-  servicios: "Servicios y débitos automáticos",
-  proveedores: "Pagos a proveedores",
-  embargos: "Embargos y judiciales",
-  dolares: "Dólares / bursátil",
-  transfRecibidas: "Transferencias recibidas",
-  transfEnviadas: "Transferencias enviadas",
-  depositos: "Depósitos en efectivo",
-  extracciones: "Extracciones de efectivo",
-  chequesDep: "Cheques depositados",
-  chequesPag: "Cheques pagados",
-} as const;
-
-/**
- * Categorías "neutras": el nombre final depende del sentido del movimiento
- * (crédito → primera, débito → segunda).
- */
-const NEUTRAS: Record<string, [string, string]> = {
-  transferencia: [CAT.transfRecibidas, CAT.transfEnviadas],
-  efectivo: [CAT.depositos, CAT.extracciones],
-  cheque: [CAT.chequesDep, CAT.chequesPag],
-};
 
 /**
  * Códigos de operación de BBVA → categoría. Relevados de archivos reales
@@ -115,7 +88,7 @@ const CODIGOS_BBVA: Record<string, string> = {
   "319": "transferencia", // TRANSFERENCI (Francés Net Cash)
   "362": CAT.proveedores, // PAGO A PROVE DB MIN (confirmado por el dueño)
   "372": CAT.iva, // IVA SERV DIG (IVA sobre servicios digitales del exterior)
-  "381": CAT.afip, // PAGOS AFIP VEP
+  "381": CAT.impuestos, // PAGOS AFIP VEP
   "388": CAT.iibb, // RETENCION AR (SIRCREB / ARBA)
   "401": CAT.proveedores, // FB-PAGO A PR DB MIN
   "403": CAT.comisiones, // FB-COMISION (comisión del pago a proveedores)
@@ -134,7 +107,7 @@ const CODIGOS_BBVA: Record<string, string> = {
   // 983 DNET CREDITO: crédito por Datanet/Interbanking. En los archivos del dueño es siempre PedidosYa (Delivery Hero en el
   // detalle) → plataforma si el detalle lo nombra; si otra empresa pagara por Datanet, quedaría como transferencia recibida.
   "983": "transferencia",
-  "984": CAT.afip, // PAGOS AFIP NE
+  "984": CAT.impuestos, // PAGOS AFIP NE
   "997": CAT.mantenimiento, // COM MANT FRA
 };
 
@@ -148,7 +121,7 @@ const CATEGORIAS: [string, string[]][] = [
   [CAT.sueldos, ["SUELDO", "HABERES", "PAGO DE HABERES", "JORNAL"]],
   [CAT.impCheque, ["LEY 25413", "IMPUESTO CHEQUE", "IMPUESTO LEY"]],
   [CAT.iibb, ["ARBA", "AGIP", "INGRESOS BRUTOS", "IIBB", "SIRCREB", "SIRTAC", "RETENCION AR", "PERCEPCION IIBB"]],
-  [CAT.afip, ["AFIP", "ARCA", "VEP", "PAGOS AFIP", "PLAN DE PAGOS AFIP"]],
+  [CAT.impuestos, ["AFIP", "ARCA", "VEP", "PAGOS AFIP", "PLAN DE PAGOS AFIP"]],
   [CAT.iva, ["IVA", "PERCEPCION", "RETENCION GANANCIAS", "REGIMEN AFIP", "RETENCION"]],
   [CAT.otrosImp, ["IMPUESTO", "TASA", "SELLOS", "SELLADO"]],
   [CAT.mantenimiento, ["MANTENIMIENTO", "MANT"]],
@@ -174,9 +147,6 @@ const CATEGORIAS: [string, string[]][] = [
   [CAT.proveedores, ["PAGO A PROVEEDORES", "PAGO PROVEEDOR", "PAGO BTOB", "B2B", "INTERBANKING", "DNET DEBITO"]],
   ["transferencia", ["TRANSFERENCIA", "TRF", "TRANSF", "DNET CREDITO"]],
 ];
-
-/** Plataformas de venta: si aparecen en el concepto o en el detalle de una transferencia recibida, el cobro es de plataforma. */
-const PLATAFORMAS = ["DELIVERY HERO", "PEDIDOSYA", "PEDIDOS YA", "RAPPI", "MERCADO PAGO", "MERCADOPAGO", "MERCADO LIBRE", "MERCADOLIBRE", "MODO", "UALA", "GLOVO"];
 
 /* ------------------------------------------------------------------ */
 /* Normalización de conceptos                                           */
@@ -335,12 +305,6 @@ function clasificarTexto(texto: string): string {
     if (claves.some((k) => coincide(n, k))) return categoria;
   }
   return CATEGORIA_DEFECTO;
-}
-
-/** Nombre final de una categoría base según el sentido del movimiento. */
-function resolverSentido(base: string, esCredito: boolean): string {
-  const neutra = NEUTRAS[base];
-  return neutra ? (esCredito ? neutra[0] : neutra[1]) : base;
 }
 
 interface Crudo {

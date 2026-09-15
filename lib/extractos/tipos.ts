@@ -25,6 +25,8 @@ export interface Movimiento {
   codigo?: string;
   moneda?: string;
   sucursal?: string;
+  /** Cuenta de origen (cuando se analizan varias cuentas juntas). */
+  cuenta?: string;
 }
 
 /** Una verificación: lo calculado contra lo que declara el banco o se espera. */
@@ -79,6 +81,61 @@ export interface AnalisisExtracto {
 }
 
 export const CATEGORIA_DEFECTO = "Otros";
+
+/**
+ * Vocabulario ÚNICO de categorías para todos los bancos, con los nombres
+ * que usa un administrador. Cada analizador mapea sus códigos/textos a
+ * estas claves, así los informes de distintos bancos se pueden comparar.
+ */
+export const CATEGORIA = {
+  sueldos: "Sueldos",
+  impCheque: "Impuesto débitos/créditos",
+  iibb: "Retenciones y percepciones IIBB",
+  iva: "IVA y percepciones",
+  impuestos: "Pagos de impuestos (AFIP, ARBA)",
+  otrosImp: "Otros impuestos",
+  mantenimiento: "Mantenimiento de cuenta",
+  comisiones: "Comisiones",
+  comisionesTarjeta: "Comisiones de tarjeta",
+  intereses: "Intereses y préstamos",
+  pagoTarjeta: "Pago de tarjeta de crédito",
+  comprasDebito: "Compras con tarjeta de débito",
+  cobrosTarjeta: "Cobros con tarjeta",
+  plataformas: "Cobros de plataformas",
+  seguros: "Seguros y prepagas",
+  servicios: "Servicios y débitos automáticos",
+  proveedores: "Pagos a proveedores",
+  embargos: "Embargos y judiciales",
+  dolares: "Dólares / bursátil",
+  transfRecibidas: "Transferencias recibidas",
+  transfEnviadas: "Transferencias enviadas",
+  depositos: "Depósitos en efectivo",
+  extracciones: "Extracciones de efectivo",
+  chequesDep: "Cheques depositados",
+  chequesPag: "Cheques pagados",
+} as const;
+
+/**
+ * Categorías "neutras": el nombre final depende del sentido del movimiento
+ * (crédito → primera, débito → segunda). Ver `resolverSentido`.
+ */
+export const CATEGORIAS_NEUTRAS: Record<string, [string, string]> = {
+  transferencia: [CATEGORIA.transfRecibidas, CATEGORIA.transfEnviadas],
+  efectivo: [CATEGORIA.depositos, CATEGORIA.extracciones],
+  cheque: [CATEGORIA.chequesDep, CATEGORIA.chequesPag],
+};
+
+/** Nombre final de una categoría base según el sentido del movimiento. */
+export function resolverSentido(base: string, esCredito: boolean): string {
+  const neutra = CATEGORIAS_NEUTRAS[base];
+  return neutra ? (esCredito ? neutra[0] : neutra[1]) : base;
+}
+
+/** Quién paga o cobra, según el detalle: plataforma de ventas, procesadora de tarjetas, o nadie reconocible. */
+export const PLATAFORMAS = ["DELIVERY HERO", "PEDIDOSYA", "PEDIDOS YA", "RAPPI", "MERCADO PAGO", "MERCADOPAGO", "MERCADO LIBRE", "MERCADOLIBRE", "MODO", "UALA", "GLOVO"];
+export const PROCESADORAS_TARJETA = ["FIRST DATA", "FISERV", "PRISMA", "PAYWAY", "POSNET", "CABAL", "AMERICAN EXPRESS", "AMEX", "NARANJA", "ARGENCARD", "MASTERCARD", "VISA", "GETNET", "LAPOS", "CLOVER"];
+export const ASEGURADORAS = ["ZURICH", "SANCOR", "GALENO", "OSDE", "SWISS MEDICAL", "PREPAGA", "SEGURO", "LA CAJA", "ALLIANZ", "MAPFRE", "FEDERACION PATRONAL", "PROVINCIA SEG", "SAN CRISTOBAL", "ORBIS", "RIVADAVIA", "MEDIFE", "OMINT"];
+export const ORGANISMOS_IMPOSITIVOS = ["AFIP", "ARCA", "ARBA", "AGIP", "RENTAS", "ATM ", "DGR", "API SANTA FE", "MUNICIPALIDAD", "TASA MUNICIPAL"];
 
 /** Error con mensaje pensado para el usuario (no técnico). */
 export class ErrorExtracto extends Error {

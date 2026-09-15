@@ -7,7 +7,7 @@
  * cada concepto por palabras clave y arma los resúmenes.
  */
 
-import { CATEGORIA_DEFECTO, ErrorExtracto, type AnalisisExtracto, type Control, type Movimiento } from "./tipos";
+import { CATEGORIA as CAT, CATEGORIA_DEFECTO, ErrorExtracto, PLATAFORMAS, resolverSentido, type AnalisisExtracto, type Control, type Movimiento } from "./tipos";
 import { aFecha, aNumero, clasificarPorTexto, formatearFecha, normalizarBasico, rangoFechas, type ReglasCategoria } from "./texto";
 import { detectarFilaCabecera, leerPlanilla, type Celda } from "./planilla";
 import {
@@ -28,17 +28,34 @@ import {
 const PALETA: Paleta = { principal: "1F3864", total: "D9E1F2" };
 const TOLERANCIA = 0.02;
 
-/** Se evalúa en orden: gana la primera categoría cuya palabra clave aparezca. */
+/**
+ * Se evalúa en orden: gana la primera categoría cuya palabra clave aparezca.
+ * Usa el vocabulario único de categorías (tipos.ts); "transferencia",
+ * "efectivo" y "cheque" se resuelven después según el sentido del importe.
+ * Pendiente: validar con archivos reales de Comafi (hoy solo sintéticos).
+ */
 const CATEGORIAS: ReglasCategoria = [
-  ["Sueldos", ["sueldo", "haberes", "acreditacion de sueldos"]],
-  ["Impuestos", ["impuesto", "imp.", "iva", "percepcion", "retencion", "iibb", "ingresos brutos", "sircreb", "ley 25413"]],
-  ["Comisiones y gastos banco", ["comision", "mantenimiento", "gastos", "seguro", "chequera", "arancel"]],
-  ["Cobros con tarjeta", ["comercios", "master card", "mastercard", "visa", "cabal", "amex", "american express", "liquidacion tarjeta"]],
-  ["Depósitos en efectivo", ["deposito", "efectivo"]],
-  ["Transferencias recibidas", ["recibida", "recibido", "acreditacion", "credito inmediato"]],
-  ["Pago de servicios", ["pago electronico de servicios", "pago de servicios", "pago directo", "debito automatico"]],
-  ["Transferencias enviadas", ["transferencia", "transf", "pago a proveedores"]],
-  ["Cheques", ["cheque", "echeq"]],
+  [CAT.plataformas, PLATAFORMAS.map((p) => p.toLowerCase())],
+  [CAT.sueldos, ["sueldo", "haberes", "acreditacion de sueldos"]],
+  [CAT.impCheque, ["ley 25413", "ley 25.413", "imp. deb", "imp. cred", "impuesto debitos", "impuesto creditos"]],
+  [CAT.iibb, ["iibb", "ingresos brutos", "sircreb", "arba", "agip"]],
+  [CAT.iva, ["iva", "percepcion", "retencion"]],
+  [CAT.impuestos, ["afip", "arca", "vep"]],
+  [CAT.otrosImp, ["impuesto", "imp.", "sellos", "sellado"]],
+  [CAT.mantenimiento, ["mantenimiento"]],
+  [CAT.seguros, ["seguro", "prepaga", "zurich", "sancor", "galeno", "osde", "swiss medical"]],
+  [CAT.comisiones, ["comision", "gastos", "chequera", "arancel", "cargo"]],
+  [CAT.intereses, ["interes", "prestamo", "cuota", "descubierto"]],
+  [CAT.pagoTarjeta, ["pago tarjeta", "pago visa", "pago master", "pago amex"]],
+  [CAT.cobrosTarjeta, ["comercios", "master card", "mastercard", "visa", "cabal", "amex", "american express", "liquidacion tarjeta", "fiserv", "prisma", "payway", "posnet"]],
+  ["efectivo", ["deposito", "efectivo", "extraccion", "cajero"]],
+  [CAT.embargos, ["embargo", "judicial"]],
+  [CAT.dolares, ["dolar", "compra moneda", "venta moneda", "mep", "bursatil"]],
+  [CAT.transfRecibidas, ["recibida", "recibido", "acreditacion", "credito inmediato"]],
+  [CAT.servicios, ["pago electronico de servicios", "pago de servicios", "pago directo", "debito automatico", "servicios"]],
+  [CAT.proveedores, ["pago a proveedores", "proveedores", "b2b", "interbanking"]],
+  ["transferencia", ["transferencia", "transf"]],
+  ["cheque", ["cheque", "echeq"]],
 ];
 
 /** Nombres de columna que se reconocen (normalizados, sin acentos). */
@@ -109,7 +126,7 @@ export async function analizarComafi(archivos: File[]): Promise<AnalisisComafi> 
         fecha,
         comprobante: cols.id !== undefined ? String(fila[cols.id] ?? "").trim() : "",
         concepto,
-        categoria: clasificarPorTexto(concepto, CATEGORIAS),
+        categoria: resolverSentido(clasificarPorTexto(concepto, CATEGORIAS), importe > 0),
         moneda: cols.moneda !== undefined ? String(fila[cols.moneda] ?? "PESOS").trim().toUpperCase() || "PESOS" : "PESOS",
         importe,
         debito: importe < 0 ? -importe : 0,
