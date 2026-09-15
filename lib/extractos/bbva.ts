@@ -97,7 +97,7 @@ const CODIGOS_BBVA: Record<string, string> = {
   "013": CAT.comisiones, // COM.TRANSFER
   "015": CAT.comisiones, // COM.TRANSF
   "024": CAT.embargos, // SUCES/EMBG ALTA EMBARGO
-  "026": CAT.intereses, // INTERES COBR (intereses por descubierto)
+  "026": CAT.intereses, // INTERES COBR: intereses que cobra el banco (el dueño confirma el concepto, no sobre qué se calculan)
   "030": CAT.otrosImp, // SELLADO (impuesto de sellos)
   "129": "transferencia", // TRF IN COEL (transferencia inmediata, cualquier sentido)
   "137": CAT.servicios, // PAGO SERVICI (pago de servicios por banca online)
@@ -121,7 +121,7 @@ const CODIGOS_BBVA: Record<string, string> = {
   "403": CAT.comisiones, // FB-COMISION (comisión del pago a proveedores)
   "456": CAT.cobrosTarjeta, // CUPONES CABAL
   "457": CAT.proveedores, // PAGO BTOB (Interbanking)
-  "515": CAT.pagoTarjeta, // PAGO VISA-IN (pago del resumen de la tarjeta)
+  "515": CAT.pagoTarjeta, // PAGO VISA-IN: débito automático de las tarjetas de crédito de la empresa (confirmado por el dueño)
   "522": CAT.comprasDebito, // PAGO CON VIS (compra con Visa Débito)
   "543": CAT.iva, // PERCEPCION I
   "544": CAT.iva, // PERCEPCION R (RG sobre compras en moneda extranjera)
@@ -131,7 +131,8 @@ const CODIGOS_BBVA: Record<string, string> = {
   // 761 OG-DEBITO DI: débito directo genérico → decide el texto (Zurich, plan AFIP, cuotas, servicios)
   "879": CAT.sueldos, // OG-DEBITO HABERES OL
   "933": "transferencia", // TRANSFERENCI -CU (con NRO.TRANSF.)
-  // 983 DNET CREDITO: crédito por Datanet/Interbanking → plataforma si el detalle lo dice, si no transferencia recibida
+  // 983 DNET CREDITO: crédito por Datanet/Interbanking. En los archivos del dueño es siempre PedidosYa (Delivery Hero en el
+  // detalle) → plataforma si el detalle lo nombra; si otra empresa pagara por Datanet, quedaría como transferencia recibida.
   "983": "transferencia",
   "984": CAT.afip, // PAGOS AFIP NE
   "997": CAT.mantenimiento, // COM MANT FRA
