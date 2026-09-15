@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { ChevronRight, Code2, FileSpreadsheet, Lock, ShieldCheck, WifiOff } from "lucide-react";
 import { siteConfig } from "@/lib/site-config";
+import { urlContacto } from "@/lib/contacto";
 import { herramientasPorCategoria } from "@/lib/tools-registry";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -154,7 +155,7 @@ export default function PaginaAdministracion() {
         </div>
         <p className="mt-3 text-sm text-muted-foreground">
           ¿Tu banco no está?{" "}
-          <Link href="/contacto" className="underline underline-offset-2 hover:text-foreground">
+          <Link href={urlContacto({ motivo: "banco" })} className="underline underline-offset-2 hover:text-foreground">
             Contanos cuál usás
           </Link>{" "}
           y lo sumamos.

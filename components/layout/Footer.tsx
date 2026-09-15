@@ -22,6 +22,13 @@ export function Footer() {
             Análisis de movimientos bancarios y herramientas gratuitas que se ejecutan en tu navegador. Tus
             archivos nunca se suben a ningún servidor: la privacidad no es una opción, es cómo funcionamos.
           </p>
+          <p className="max-w-sm text-sm text-muted-foreground">
+            ¿Viste algo raro o un archivo no se leyó?{" "}
+            <Link href="/contacto" className="font-medium text-foreground underline underline-offset-2">
+              Contanos en dos líneas
+            </Link>
+            : cada aviso mejora la herramienta para todos.
+          </p>
         </div>
 
         <nav aria-label="Herramientas" className="space-y-2">

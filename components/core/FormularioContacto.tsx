@@ -1,29 +1,48 @@
 "use client";
 
 import { useState, type FormEvent } from "react";
+import { useSearchParams } from "next/navigation";
 import { CheckCircle2, Loader2, Mail, Send } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { MOTIVOS_CONTACTO, PARAMETROS_CONTACTO, esMotivoContacto, type MotivoContacto } from "@/lib/contacto";
 
 const CAMPO =
   "w-full rounded-lg border border-input bg-background px-3 py-2 text-sm outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50";
+
+const OPCION_BANCO_NUEVO = "Un banco que no está";
 
 interface Props {
   /** Clave pública de Web3Forms (NEXT_PUBLIC_WEB3FORMS_KEY). Sin clave, se ofrece el correo directo. */
   claveFormulario?: string;
   emailContacto: string;
-  /** Nombres de herramientas para el selector "¿Sobre qué herramienta?". */
-  herramientas: string[];
+  /** Herramientas para el selector "¿Sobre qué herramienta?" (el slug permite precargar desde la URL). */
+  herramientas: { slug: string; nombre: string }[];
 }
-
-const MOTIVOS = ["Reportar un error", "Pedir un banco o una herramienta nueva", "Sugerencia", "Otro"];
 
 /**
  * Formulario de contacto sin servidor propio: el mensaje viaja al servicio
  * Web3Forms (gratuito), que lo reenvía por correo. Es la única página del
  * sitio con permiso para conectarse a un servicio externo (ver lib/csp.ts).
+ *
+ * Acepta parámetros en la URL (ver lib/contacto.ts) para llegar con el
+ * motivo, la herramienta y un resumen técnico ya escritos: así, reportar
+ * algo raro desde una herramienta es un clic y dos líneas.
  */
 export function FormularioContacto({ claveFormulario, emailContacto, herramientas }: Props) {
+  const parametros = useSearchParams();
+  const motivoInicial: MotivoContacto = (() => {
+    const m = parametros.get(PARAMETROS_CONTACTO.motivo);
+    return esMotivoContacto(m) ? m : "error";
+  })();
+  const slugInicial = parametros.get(PARAMETROS_CONTACTO.herramienta) ?? "";
+  const herramientaInicial =
+    herramientas.find((h) => h.slug === slugInicial)?.nombre ?? (slugInicial ? OPCION_BANCO_NUEVO : "");
+  const contexto = parametros.get(PARAMETROS_CONTACTO.contexto)?.trim();
+  const mensajeInicial = contexto
+    ? `${contexto}\n\n— Qué vi raro / qué esperaba: \n`
+    : "";
+
   const [estado, setEstado] = useState<"idle" | "enviando" | "enviado" | "error">("idle");
   const [error, setError] = useState<string>();
 
@@ -81,9 +100,10 @@ export function FormularioContacto({ claveFormulario, emailContacto, herramienta
     return (
       <Alert>
         <CheckCircle2 />
-        <AlertTitle>Mensaje enviado</AlertTitle>
+        <AlertTitle>Mensaje enviado. ¡Gracias de verdad!</AlertTitle>
         <AlertDescription>
-          Gracias. Lo leemos y te respondemos al correo que indicaste.{" "}
+          Cada aviso nos sirve para que la herramienta funcione mejor para todos. Lo leemos y te respondemos al correo que
+          indicaste.{" "}
           <button type="button" className="underline underline-offset-2" onClick={() => setEstado("idle")}>
             Enviar otro
           </button>
@@ -111,8 +131,8 @@ export function FormularioContacto({ claveFormulario, emailContacto, herramienta
           <label htmlFor="motivo" className="text-sm font-medium">
             Motivo
           </label>
-          <select id="motivo" name="motivo" className={CAMPO} defaultValue={MOTIVOS[0]}>
-            {MOTIVOS.map((m) => (
+          <select id="motivo" name="motivo" className={CAMPO} defaultValue={MOTIVOS_CONTACTO[motivoInicial]}>
+            {Object.values(MOTIVOS_CONTACTO).map((m) => (
               <option key={m}>{m}</option>
             ))}
           </select>
@@ -121,12 +141,12 @@ export function FormularioContacto({ claveFormulario, emailContacto, herramienta
           <label htmlFor="herramienta" className="text-sm font-medium">
             ¿Sobre qué herramienta?
           </label>
-          <select id="herramienta" name="herramienta" className={CAMPO} defaultValue="">
+          <select id="herramienta" name="herramienta" className={CAMPO} defaultValue={herramientaInicial}>
             <option value="">— Ninguna en particular —</option>
             {herramientas.map((h) => (
-              <option key={h}>{h}</option>
+              <option key={h.slug}>{h.nombre}</option>
             ))}
-            <option>Un banco que no está</option>
+            <option>{OPCION_BANCO_NUEVO}</option>
           </select>
         </div>
       </div>
@@ -134,9 +154,20 @@ export function FormularioContacto({ claveFormulario, emailContacto, herramienta
         <label htmlFor="mensaje" className="text-sm font-medium">
           Mensaje <span className="text-destructive">*</span>
         </label>
-        <textarea id="mensaje" name="mensaje" required rows={6} className={CAMPO} maxLength={4000} placeholder="Contanos qué pasó, con qué archivo (tipo y banco) y qué esperabas que hiciera." />
+        <textarea
+          id="mensaje"
+          name="mensaje"
+          required
+          rows={contexto ? 10 : 6}
+          className={CAMPO}
+          maxLength={4000}
+          defaultValue={mensajeInicial}
+          placeholder="Contanos qué pasó, con qué archivo (tipo y banco) y qué esperabas que hiciera."
+        />
         <p className="text-xs text-muted-foreground">
-          No adjuntes ni pegues tu extracto: si querés compartir un ejemplo, quitale los datos personales primero.
+          {contexto
+            ? "Arriba va un resumen técnico del análisis (cantidades, sin importes ni datos personales); podés editarlo. Agregá abajo qué te pareció raro."
+            : "No adjuntes ni pegues tu extracto: si querés compartir un ejemplo, quitale los datos personales primero."}
         </p>
       </div>
       {/* Campo trampa para bots (oculto para las personas). */}

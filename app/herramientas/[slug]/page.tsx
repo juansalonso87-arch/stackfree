@@ -20,6 +20,7 @@ import {
 } from "@/components/ui/accordion";
 import { AdSlot } from "@/components/core/AdSlot";
 import { JsonLd } from "@/components/core/JsonLd";
+import { PedidoDevolucion } from "@/components/core/PedidoDevolucion";
 import { ToolCard } from "@/components/core/ToolCard";
 import { ToolLoader } from "@/components/core/ToolLoader";
 
@@ -184,7 +185,7 @@ export default async function PaginaHerramienta({ params }: Props) {
       </div>
 
       {/* Dos columnas en desktop: contenido + anuncio lateral pegajoso */}
-      <div className="grid gap-8 lg:grid-cols-[minmax(0,1fr)_300px]">
+      <div className="grid grid-cols-[minmax(0,1fr)] gap-8 lg:grid-cols-[minmax(0,1fr)_300px]">
         <div className="space-y-10">
           {h.estado === "proximamente" && (
             <Alert>
@@ -197,8 +198,18 @@ export default async function PaginaHerramienta({ params }: Props) {
           )}
 
           {/* La herramienta en sí: se carga en un paquete JS separado (ver ToolLoader) */}
-          <section aria-label={h.nombre}>
+          <section aria-label={h.nombre} className="space-y-3">
             <ToolLoader slug={h.slug} opciones={p.opciones} />
+            {/* Administración: los bancos cambian sus exportaciones sin avisar; pedimos devolución desde el primer momento. */}
+            {h.categoria === "administracion" && (
+              <PedidoDevolucion
+                variante="linea"
+                slug={h.slug}
+                texto="Esta herramienta se afina con archivos reales de cada banco. Si tu archivo no se lee, un movimiento queda mal clasificado o algo no cuadra, contanos qué pasó: lo corregimos para todos."
+                etiquetaBoton="Reportar algo raro"
+                className="px-1"
+              />
+            )}
           </section>
 
           {hermanas.length > 0 && (

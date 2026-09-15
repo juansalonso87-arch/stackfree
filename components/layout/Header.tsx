@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { ShieldCheck, Sparkles } from "lucide-react";
+import { MessageSquareWarning, ShieldCheck, Sparkles } from "lucide-react";
 import { siteConfig } from "@/lib/site-config";
 
 export function Header() {
@@ -16,20 +16,30 @@ export function Header() {
           {siteConfig.nombre}
         </Link>
 
-        <nav aria-label="Principal" className="flex items-center gap-1 text-sm">
+        {/* En celular el ancho es justo: "Herramientas" aparece desde tablet (queda en la home y el footer) y contacto es solo ícono. */}
+        <nav aria-label="Principal" className="flex items-center gap-0.5 text-sm sm:gap-1">
           <Link
             href="/administracion"
-            className="rounded-md px-3 py-1.5 font-medium text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+            className="rounded-md px-2 py-1.5 font-medium text-muted-foreground transition-colors hover:bg-muted hover:text-foreground sm:px-3"
           >
             Administración
           </Link>
           <Link
             href="/#herramientas"
-            className="rounded-md px-3 py-1.5 font-medium text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+            className="hidden rounded-md px-3 py-1.5 font-medium text-muted-foreground transition-colors hover:bg-muted hover:text-foreground sm:inline-block"
           >
             Herramientas
           </Link>
-          <span className="hidden items-center gap-1 rounded-md px-3 py-1.5 text-xs text-muted-foreground sm:inline-flex">
+          {/* Contacto siempre a la vista: mientras validamos con archivos reales, cada reporte cuenta. */}
+          <Link
+            href="/contacto"
+            title="Reportar algo raro o escribirnos"
+            className="inline-flex items-center gap-1.5 rounded-md border border-amber-200 bg-amber-50 p-1.5 font-medium text-amber-900 transition-colors hover:bg-amber-100 sm:px-2.5"
+          >
+            <MessageSquareWarning className="size-4" aria-hidden="true" />
+            <span className="sr-only sm:not-sr-only">Reportar algo raro</span>
+          </Link>
+          <span className="hidden items-center gap-1 rounded-md px-3 py-1.5 text-xs text-muted-foreground md:inline-flex">
             <ShieldCheck className="size-3.5 text-primary" aria-hidden="true" />
             Sin subir archivos
           </span>

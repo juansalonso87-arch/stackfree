@@ -5,6 +5,7 @@ import Link from "next/link";
 import { AlertCircle, CheckCircle2, Download, FileSpreadsheet, Loader2, ShieldCheck, X, XCircle } from "lucide-react";
 import { FileDropzone } from "@/components/core/FileDropzone";
 import { ProcessingCard, type EstadoProceso } from "@/components/core/ProcessingCard";
+import { PedidoDevolucion } from "@/components/core/PedidoDevolucion";
 import { Button } from "@/components/ui/button";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { cn } from "@/lib/utils";
@@ -265,6 +266,16 @@ export function AnalizadorExtracto({
           </div>
           {errorExcel && <p className="text-sm text-destructive">{errorExcel}</p>}
 
+          {/* Pedido de devolución: mientras validamos con archivos reales, cada aviso del usuario corrige el analizador para todos. */}
+          <PedidoDevolucion
+            contexto={contextoDevolucion(resultado)}
+            titulo={
+              controlesFallidos > 0
+                ? "Un control no cerró: ¿nos ayudás a entender por qué?"
+                : "¿Algo no cuadra con tu extracto o te pareció raro?"
+            }
+          />
+
           {resultado.controles && resultado.controles.length > 0 && (
             <section>
               <h3 className="flex items-center gap-2 text-sm font-semibold">
@@ -345,4 +356,28 @@ function formatearControl(n: number, formato: Control["formato"]): string {
   return formato === "ent"
     ? new Intl.NumberFormat("es-AR", { maximumFractionDigits: 0 }).format(n)
     : new Intl.NumberFormat("es-AR", { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(n);
+}
+
+/**
+ * Resumen técnico que viaja ya escrito al formulario de contacto. Solo
+ * cantidades, nombres de controles y avisos: nunca importes, saldos ni el
+ * nombre del archivo (que suele llevar el nombre de la empresa).
+ */
+function contextoDevolucion(r: ResultadoAnalisis): string {
+  const sinImportes = (t: string) => t.replace(/\$\s?[\d.,]+/g, "$…");
+  const lineas = [`Herramienta: ${r.titulo}`];
+  // El subtítulo termina con el nombre del archivo: se descarta ese último tramo.
+  if (r.subtitulo) lineas.push(`Análisis: ${r.subtitulo.split(" · ").slice(0, -1).join(" · ")}`);
+
+  const fallidos = r.controles?.filter((c) => !c.ok) ?? [];
+  if (fallidos.length) lineas.push(`Controles que NO cerraron: ${fallidos.map((c) => `${c.grupo} / ${c.control}`).join("; ")}`);
+  else if (r.controles?.length) lineas.push(`Controles: los ${r.controles.length} cerraron bien`);
+
+  for (const t of r.tablas) {
+    for (const fila of t.resaltar ? t.filas.filter(t.resaltar) : []) {
+      lineas.push(`${t.titulo}: fila "${fila[0]}" con ${fila[1]} ${String(t.columnas[1] ?? "").toLowerCase()}`);
+    }
+  }
+  if (r.avisos.length) lineas.push(`Avisos: ${r.avisos.map(sinImportes).join(" | ")}`);
+  return lineas.join("\n");
 }

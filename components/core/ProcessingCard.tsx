@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Progress } from "@/components/ui/progress";
+import { PedidoDevolucion } from "@/components/core/PedidoDevolucion";
 
 /**
  * Estados por los que pasa cualquier herramienta:
@@ -98,6 +99,13 @@ export function ProcessingCard({
                 </Button>
               )}
             </div>
+            {/* El mensaje de error viaja al formulario para que el reporte llegue con el dato técnico. */}
+            <PedidoDevolucion
+              variante="linea"
+              texto="¿El archivo debería haber funcionado? Avisanos y lo revisamos: el error que viste ya va incluido en el mensaje."
+              etiquetaBoton="Reportar este error"
+              contexto={`Error mostrado: ${mensajeError ?? "No pudimos procesar el archivo."}`}
+            />
           </div>
         )}
 

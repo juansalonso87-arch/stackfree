@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { ArrowRight, CheckCircle2, Infinity as InfinityIcon, ShieldCheck, Zap } from "lucide-react";
 import { siteConfig } from "@/lib/site-config";
+import { urlContacto } from "@/lib/contacto";
 import { categorias, herramientasPorCategoria } from "@/lib/tools-registry";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -117,7 +118,7 @@ export default function HomePage() {
         </div>
         <p className="mt-3 text-sm text-muted-foreground">
           ¿Tu banco no está?{" "}
-          <Link href="/contacto" className="underline underline-offset-2 hover:text-foreground">
+          <Link href={urlContacto({ motivo: "banco" })} className="underline underline-offset-2 hover:text-foreground">
             Contanos cuál usás
           </Link>{" "}
           y lo sumamos.
