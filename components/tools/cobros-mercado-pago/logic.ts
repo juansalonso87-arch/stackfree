@@ -10,6 +10,7 @@ import {
   HORA_CORTE_DEFECTO,
   analizarMercadoPago,
   porDiaDeTurno,
+  porLocal,
   porMedioDePago,
   promedioPorDiaSemana,
   resumenMensual,
@@ -32,6 +33,7 @@ export async function analizar(archivos: File[], horaCorte: number): Promise<Res
   const neto = a.cobros.reduce((s, c) => s + c.neto, 0);
   const descontado = bruto - neto;
   const noCobrado = a.noConcretadas.reduce((s, n) => s + n.bruto, 0);
+  const devuelto = a.cobros.reduce((s, c) => s + c.devuelto, 0);
   const mejor = [...porDiaDeTurno(a.cobros)].sort((x, y) => y.bruto - x.bruto)[0];
   const periodos = [...new Set(a.cobros.map((c) => c.periodo))].sort();
 
@@ -46,6 +48,7 @@ export async function analizar(archivos: File[], horaCorte: number): Promise<Res
       ...(a.noConcretadas.length
         ? [{ etiqueta: "No concretados", valor: `${formatearEntero(a.noConcretadas.length)} · ${formatearPesos(noCobrado)}`, tono: "negativo" as const }]
         : []),
+      ...(devuelto > 0 ? [{ etiqueta: "Devoluciones parciales", valor: formatearPesos(devuelto), tono: "negativo" as const }] : []),
       ...(mejor ? [{ etiqueta: "Mejor turno", valor: `${mejor.diaSemana} ${formatearFecha(mejor.dia)} · ${formatearPesos(mejor.bruto)}` }] : []),
     ],
     avisos: a.avisos,
@@ -56,6 +59,16 @@ export async function analizar(archivos: File[], horaCorte: number): Promise<Res
         numericas: [1, 2],
         filas: promedioPorDiaSemana(a.cobros).map((d) => [d.dia, formatearEntero(d.turnos), formatearPesos(d.promedio)]),
       },
+      ...(new Set(a.cobros.map((c) => c.local || "Sin local")).size > 1
+        ? [
+            {
+              titulo: "Cobros por local",
+              columnas: ["Local", "Cobros", "Bruto", "% del total", "Neto recibido"],
+              numericas: [1, 2, 3, 4],
+              filas: porLocal(a.cobros).map((l) => [l.local, formatearEntero(l.cobros), formatearPesos(l.bruto), `${bruto ? ((l.bruto / bruto) * 100).toFixed(1) : "0"} %`, formatearPesos(l.neto)]),
+            },
+          ]
+        : []),
       {
         titulo: "Medios de pago",
         columnas: ["Medio de pago", "Cobros", "Bruto", "% del total"],

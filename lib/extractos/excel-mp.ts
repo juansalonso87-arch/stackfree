@@ -36,7 +36,7 @@ const GRIS_ALT = "F2F2F2";
 const HOJA_DETALLE = "Detalle Cobros";
 
 /** Columnas del Detalle (todas las fórmulas dependen de este orden). */
-const COL = { momento: "A", diaTurno: "B", diaSemana: "C", hora: "D", periodo: "E", medio: "F", tipo: "G", bruto: "H", comision: "I", otras: "J", retenc: "K", neto: "L", nro: "M" };
+const COL = { momento: "A", diaTurno: "B", diaSemana: "C", hora: "D", periodo: "E", medio: "F", tipo: "G", bruto: "H", comision: "I", otras: "J", retenc: "K", neto: "L", nro: "M", devuelto: "N", local: "O" };
 
 function rango(col: string, fin: number): string {
   return `${refHoja(HOJA_DETALLE)}!$${col}$2:$${col}$${fin}`;
@@ -239,6 +239,57 @@ export async function generarExcelMercadoPago(a: AnalisisMercadoPago): Promise<B
     congelar(ws, fc);
   }
 
+  /* ---------------- Por Local (si hay más de uno) ---------------- */
+  const locales = [...new Set(a.cobros.map((c) => c.local || "Sin local"))];
+  if (locales.length > 1) {
+    const ws = wb.addWorksheet("Por Local");
+    const cab = ["Período", "Local", "Cobros", "Bruto", "% del período", "Neto recibido", "Ticket promedio"];
+    encabezadoHoja(ws, "Cobros por local / sucursal", subtitulo, cab.length, PALETA);
+    const fc = 4;
+    filaCabecera(ws, fc, cab, PALETA);
+    const rPer = rango(COL.periodo, fin);
+    const rLocal = rango(COL.local, fin);
+    const rBruto = rango(COL.bruto, fin);
+    const rNeto = rango(COL.neto, fin);
+    const grupos = new Map<string, { periodo: string; local: string; bruto: number }>();
+    for (const c of a.cobros) {
+      const local = c.local || "Sin local";
+      const k = `${c.periodo}|${local}`;
+      const g = grupos.get(k) ?? { periodo: c.periodo, local, bruto: 0 };
+      g.bruto += c.bruto;
+      grupos.set(k, g);
+    }
+    const orden = [...grupos.values()].sort((x, y) => x.periodo.localeCompare(y.periodo) || y.bruto - x.bruto);
+    let f = fc + 1;
+    const primera = f;
+    for (const g of orden) {
+      ws.getCell(f, 1).value = g.periodo;
+      ws.getCell(f, 2).value = g.local;
+      ws.getCell(f, 3).value = formula(`COUNTIFS(${rPer},$A${f},${rLocal},$B${f})`);
+      ws.getCell(f, 4).value = formula(`SUMIFS(${rBruto},${rPer},$A${f},${rLocal},$B${f})`);
+      ws.getCell(f, 5).value = formula(`IFERROR(D${f}/SUMIFS(${rBruto},${rPer},$A${f}),"")`);
+      ws.getCell(f, 6).value = formula(`SUMIFS(${rNeto},${rPer},$A${f},${rLocal},$B${f})`);
+      ws.getCell(f, 7).value = formula(`IFERROR(D${f}/C${f},"")`);
+      f++;
+    }
+    const ultima = f - 1;
+    const total = f;
+    ws.getCell(total, 1).value = "TOTAL";
+    for (const col of ["C", "D", "F"]) ws.getCell(`${col}${total}`).value = formula(`SUM(${col}${primera}:${col}${ultima})`);
+    ws.getCell(`G${total}`).value = formula(`IFERROR(D${total}/C${total},"")`);
+    for (let r = primera; r <= total; r++) {
+      if (r === total) estiloTotal(ws, r, cab.length, PALETA);
+      else filaNormal(ws, r, cab.length, (r - primera) % 2 === 1 ? GRIS_ALT : undefined);
+      ws.getCell(r, 3).numFmt = FMT_ENT;
+      ws.getCell(r, 4).numFmt = FMT_PESOS;
+      ws.getCell(r, 5).numFmt = FMT_PCT;
+      ws.getCell(r, 6).numFmt = FMT_PESOS;
+      ws.getCell(r, 7).numFmt = FMT_PESOS;
+    }
+    anchos(ws, [12, 30, 10, 18, 14, 18, 16]);
+    congelar(ws, fc);
+  }
+
   /* ---------------- Tarifas e Impuestos ---------------- */
   {
     const ws = wb.addWorksheet("Tarifas e Impuestos");
@@ -289,7 +340,7 @@ export async function generarExcelMercadoPago(a: AnalisisMercadoPago): Promise<B
   if (a.noConcretadas.length > 0) {
     const ws = wb.addWorksheet("No Concretadas");
     const cab = ["Período", "Motivo", "Cantidad", "Monto no cobrado"];
-    encabezadoHoja(ws, "Cobros rechazados y cancelados", `${subtitulo}  |  No son facturación, pero sirven como alerta operativa`, cab.length, PALETA);
+    encabezadoHoja(ws, "Cobros rechazados, cancelados, devueltos y pendientes", `${subtitulo}  |  No son facturación, pero sirven como alerta operativa`, cab.length, PALETA);
     const fc = 4;
     filaCabecera(ws, fc, cab, PALETA);
     const grupos = new Map<string, { periodo: string; motivo: string; cantidad: number; monto: number }>();
@@ -327,7 +378,7 @@ export async function generarExcelMercadoPago(a: AnalisisMercadoPago): Promise<B
   /* ---------------- Detalle Cobros ---------------- */
   {
     const ws = wb.addWorksheet(HOJA_DETALLE);
-    const cab = ["Fecha y hora", "Día de turno", "Día", "Hora", "Período", "Medio de pago", "Tipo de operación", "Bruto", "Comisión MP", "Otras tarifas", "Retenciones (est.)", "Neto recibido", "Nº operación"];
+    const cab = ["Fecha y hora", "Día de turno", "Día", "Hora", "Período", "Medio de pago", "Tipo de operación", "Bruto", "Comisión MP", "Otras tarifas", "Retenciones (est.)", "Neto recibido", "Nº operación", "Devuelto", "Local"];
     filaCabecera(ws, 1, cab, PALETA);
     a.cobros.forEach((c, i) => {
       const f = i + 2;
@@ -345,6 +396,8 @@ export async function generarExcelMercadoPago(a: AnalisisMercadoPago): Promise<B
         c.retenciones,
         c.neto,
         c.nroOperacion,
+        c.devuelto,
+        c.local,
       ];
       valores.forEach((v, j) => {
         const celda = ws.getCell(f, j + 1);
@@ -353,9 +406,9 @@ export async function generarExcelMercadoPago(a: AnalisisMercadoPago): Promise<B
       });
       ws.getCell(f, 1).numFmt = FMT_FECHAHORA;
       ws.getCell(f, 2).numFmt = FMT_FECHA;
-      for (const c of [8, 9, 10, 11, 12]) ws.getCell(f, c).numFmt = FMT_PESOS;
+      for (const c of [8, 9, 10, 11, 12, 14]) ws.getCell(f, c).numFmt = FMT_PESOS;
     });
-    anchos(ws, [18, 13, 11, 7, 10, 30, 18, 15, 14, 14, 16, 15, 16]);
+    anchos(ws, [18, 13, 11, 7, 10, 30, 18, 15, 14, 14, 16, 15, 16, 13, 24]);
     congelar(ws, 1);
     autofiltro(ws, 1, 1, fin, cab.length);
   }

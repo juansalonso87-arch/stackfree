@@ -1218,7 +1218,7 @@ export const herramientas: Herramienta[] = [
       "Arrastrá el reporte de cobros al recuadro (podés sumar varios meses; si se solapan, cada operación se cuenta una sola vez).",
       "Elegí la hora de corte del turno: con 06:00, un cobro de las 02:30 del sábado cuenta para el viernes.",
       "Tocá “Analizar cobros”: en segundos ves el bruto, lo que descuenta Mercado Pago, el ticket promedio, el mejor turno, el promedio por día de la semana y los medios de pago.",
-      "Descargá el Excel completo: Cobros por Día, Cobros por Hora, Resumen Mensual, Medios de Pago, Tarifas e Impuestos, No Concretadas y Detalle, con fórmulas que se recalculan si corregís algo.",
+      "Descargá el Excel completo: Cobros por Día, Cobros por Hora, Resumen Mensual, Medios de Pago, Por Local (si hay más de uno), Tarifas e Impuestos, No Concretadas y Detalle, con fórmulas que se recalculan si corregís algo.",
     ],
     tituloPasos: "Cómo usar el análisis paso a paso",
     faq: [
@@ -1235,7 +1235,7 @@ export const herramientas: Herramienta[] = [
       {
         pregunta: "¿Qué cuenta como venta?",
         respuesta:
-          "Los cobros aprobados por QR, link de pago, Point o suscripciones. Las cargas de saldo, transferencias enviadas y retiros no se cuentan como ventas. Los rechazados y cancelados se listan aparte, con el motivo, como alerta operativa.",
+          "Los cobros aprobados por QR, link de pago, Point o suscripciones. Las cargas de saldo, transferencias enviadas y retiros no se cuentan como ventas. Los rechazados, cancelados, devueltos (reembolso total), con contracargo o pendientes se listan aparte, con el motivo, como alerta operativa. Si un cobro tuvo una devolución parcial, figura completo en el bruto y lo devuelto aparece en la columna “Devuelto”. Y si subís reportes de varios locales, aparece un cuadro “Por Local”.",
       },
       {
         pregunta: "¿Mi reporte se sube a algún servidor?",

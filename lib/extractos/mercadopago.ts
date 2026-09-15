@@ -38,9 +38,34 @@ const ETIQUETAS_MOTIVO: Record<string, string> = {
   cc_rejected_bad_filled_date: "Rechazo: fecha de tarjeta incorrecta",
   cc_rejected_high_risk: "Rechazo: riesgo detectado",
   cc_rejected_bad_filled_card_number: "Rechazo: número de tarjeta incorrecto",
+  cc_rejected_bad_filled_other: "Rechazo: datos de la tarjeta incorrectos",
+  cc_rejected_blacklist: "Rechazo: tarjeta bloqueada por prevención de fraude",
+  cc_rejected_duplicated_payment: "Rechazo: pago duplicado",
+  cc_rejected_max_attempts: "Rechazo: superó el máximo de intentos",
+  cc_rejected_invalid_installments: "Rechazo: cuotas no disponibles",
   expired: "Cancelada: QR / cobro expirado sin pago",
   cancelled: "Cancelada por el vendedor o el comprador",
+  by_collector: "Cancelada por el vendedor",
+  by_payer: "Cancelada por el comprador",
 };
+
+/** Estados que no son un cobro aprobado ni un rechazo: se listan aparte para que no pasen desapercibidos. */
+const ESTADOS_ESPECIALES: Record<string, string> = {
+  refunded: "Devuelto al cliente (reembolso total)",
+  charged_back: "Contracargo (el banco del cliente revirtió el pago)",
+  in_mediation: "En mediación (reclamo abierto)",
+  in_process: "Pendiente de acreditación",
+  pending: "Pendiente de acreditación",
+  authorized: "Autorizado, pendiente de captura",
+};
+
+/** "cc_rejected_algo_raro" → "Rechazo: algo raro" cuando el motivo no está en la tabla. */
+function etiquetaMotivo(detalle: string, estado: string): string {
+  if (ETIQUETAS_MOTIVO[detalle]) return ETIQUETAS_MOTIVO[detalle];
+  if (detalle.startsWith("cc_rejected_")) return `Rechazo: ${detalle.slice(12).replace(/_/g, " ")}`;
+  if (detalle.startsWith("rejected_")) return `Rechazo: ${detalle.slice(9).replace(/_/g, " ")}`;
+  return detalle || estado;
+}
 
 export const DIAS_SEMANA = ["Lunes", "Martes", "Miércoles", "Jueves", "Viernes", "Sábado", "Domingo"];
 const OTRAS_TARIFAS = ["marketplace_fee", "shipping_cost", "financing_fee"];
@@ -58,7 +83,11 @@ export interface Cobro {
   otrasTarifas: number;
   retenciones: number;
   neto: number;
+  /** Parte del cobro devuelta al cliente después (amount_refunded). */
+  devuelto: number;
   nroOperacion: string;
+  /** Local / sucursal de Mercado Pago ("Nombre del local"), si el reporte lo trae. */
+  local: string;
 }
 
 export interface NoConcretada {
@@ -184,11 +213,15 @@ export async function analizarMercadoPago(archivos: File[], horaCorte = HORA_COR
         // Lo no discriminado (suele ser IIBB que MP retiene como agente): bruto − tarifas − neto.
         retenciones: round2(bruto - comisionMp - otrasTarifas - neto),
         neto,
+        devuelto: Math.abs(aNumero(f.amount_refunded)),
         nroOperacion: texto(f.operation_id),
+        local: texto(f.description) || texto(f.store_name) || "",
       });
     } else if (estado === "rejected" || estado === "cancelled") {
       const detalle = texto(f.status_detail);
-      noConcretadas.push({ periodo, motivo: ETIQUETAS_MOTIVO[detalle] ?? detalle ?? estado, bruto });
+      noConcretadas.push({ periodo, motivo: etiquetaMotivo(detalle, estado), bruto });
+    } else if (ESTADOS_ESPECIALES[estado] && !OPERACIONES_QUE_NO_SON_VENTA.includes(tipo)) {
+      noConcretadas.push({ periodo, motivo: ESTADOS_ESPECIALES[estado], bruto });
     } else if (OPERACIONES_QUE_NO_SON_VENTA.includes(tipo) && ESTADOS_COBRO.includes(estado)) {
       fondeos.cantidad++;
       fondeos.monto += bruto;
@@ -206,6 +239,14 @@ export async function analizarMercadoPago(archivos: File[], horaCorte = HORA_COR
         `Regla del turno (corte ${String(horaCorte).padStart(2, "0")}:00): ${madrugada.length} cobros por ${monto.toLocaleString("es-AR", { style: "currency", currency: "ARS" })} (${((monto / total) * 100).toFixed(1)} % del total) se imputaron al día anterior.`,
       );
     }
+  }
+
+  const parciales = cobros.filter((c) => c.devuelto > 0);
+  if (parciales.length) {
+    const monto = parciales.reduce((s, c) => s + c.devuelto, 0);
+    avisos.push(
+      `${parciales.length} cobro(s) tuvieron una devolución parcial por ${monto.toLocaleString("es-AR", { style: "currency", currency: "ARS" })}: figuran completos en el bruto y lo devuelto en la columna "Devuelto".`,
+    );
   }
 
   const dias = cobros.map((c) => c.diaTurno.getTime());
@@ -262,6 +303,20 @@ export function resumenMensual(cobros: Cobro[]) {
     mapa.set(c.periodo, f);
   }
   return [...mapa.values()].sort((a, b) => a.periodo.localeCompare(b.periodo));
+}
+
+/** Cobros por local (solo tiene sentido cuando el reporte trae más de un local). */
+export function porLocal(cobros: Cobro[]) {
+  const mapa = new Map<string, { local: string; cobros: number; bruto: number; neto: number }>();
+  for (const c of cobros) {
+    const k = c.local || "Sin local";
+    const f = mapa.get(k) ?? { local: k, cobros: 0, bruto: 0, neto: 0 };
+    f.cobros++;
+    f.bruto += c.bruto;
+    f.neto += c.neto;
+    mapa.set(k, f);
+  }
+  return [...mapa.values()].sort((a, b) => b.bruto - a.bruto);
 }
 
 export function porMedioDePago(cobros: Cobro[]) {
