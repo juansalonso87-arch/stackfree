@@ -109,6 +109,7 @@ export const CATEGORIA = {
   dolares: "Dólares / bursátil",
   transfRecibidas: "Transferencias recibidas",
   transfEnviadas: "Transferencias enviadas",
+  propias: "Transferencias entre cuentas propias",
   depositos: "Depósitos en efectivo",
   extracciones: "Extracciones de efectivo",
   chequesDep: "Cheques depositados",

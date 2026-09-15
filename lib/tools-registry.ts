@@ -1165,12 +1165,12 @@ export const herramientas: Herramienta[] = [
       {
         pregunta: "¿Cómo se clasifican los movimientos?",
         respuesta:
-          "Por palabras clave sobre la descripción del banco: sueldos, impuestos y retenciones, comisiones y gastos bancarios, cobros con tarjeta, depósitos, transferencias recibidas y enviadas, pago de servicios y cheques. Lo que no reconoce queda en “Otros”, resaltado, para que lo revises.",
+          "Por palabras clave sobre la descripción del banco (“Impuesto a los débitos”, “Imp. IB s/Acred. Bcarias.”, “Créditos a comercios Master Card”, “Transf inmed sueldos”…) y, cuando la descripción no alcanza, por lo que dicen las columnas “Descripción Ampliada”: una “Transferencia recibida - Datanet” que viene de Delivery Hero es un cobro de PedidosYa, una “Transferencia terceros recibida - Coelsa” de Cabal es un cobro con tarjeta. Las categorías son las mismas que para los otros bancos (cobros con tarjeta, cobros de plataformas, transferencias recibidas, enviadas y entre cuentas propias, sueldos, impuesto al cheque, retenciones de IIBB, IVA, comisiones, mantenimiento, servicios…). Lo que no reconoce queda en “Otros”, resaltado, para que lo revises.",
       },
       {
         pregunta: "¿Puedo analizar varios meses juntos?",
         respuesta:
-          "Sí. Subí un archivo por período y se analizan como un solo conjunto: los resúmenes abarcan todo el rango y la matriz Concepto x Día muestra cada fecha.",
+          "Sí. Subí un archivo por período y se analizan como un solo conjunto: los resúmenes abarcan todo el rango, la matriz Concepto x Día muestra cada fecha y la cadena de saldos se controla de corrido entre un mes y el siguiente (si falta algún movimiento entre archivos, el control lo marca).",
       },
       {
         pregunta: "¿Mis movimientos se suben a algún servidor?",

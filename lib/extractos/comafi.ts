@@ -7,8 +7,20 @@
  * cada concepto por palabras clave y arma los resúmenes.
  */
 
-import { CATEGORIA as CAT, CATEGORIA_DEFECTO, ErrorExtracto, PLATAFORMAS, resolverSentido, type AnalisisExtracto, type Control, type Movimiento } from "./tipos";
-import { aFecha, aNumero, clasificarPorTexto, formatearFecha, normalizarBasico, rangoFechas, type ReglasCategoria } from "./texto";
+import {
+  ASEGURADORAS,
+  CATEGORIA as CAT,
+  CATEGORIA_DEFECTO,
+  ErrorExtracto,
+  ORGANISMOS_IMPOSITIVOS,
+  PLATAFORMAS,
+  PROCESADORAS_TARJETA,
+  resolverSentido,
+  type AnalisisExtracto,
+  type Control,
+  type Movimiento,
+} from "./tipos";
+import { aFecha, aNumero, clasificarPorTexto, formatearFecha, normalizarBasico, rangoFechas, sinAcentos, type ReglasCategoria } from "./texto";
 import { detectarFilaCabecera, leerPlanilla, type Celda } from "./planilla";
 import {
   control,
@@ -29,16 +41,21 @@ const PALETA: Paleta = { principal: "1F3864", total: "D9E1F2" };
 const TOLERANCIA = 0.02;
 
 /**
- * Se evalúa en orden: gana la primera categoría cuya palabra clave aparezca.
- * Usa el vocabulario único de categorías (tipos.ts); "transferencia",
- * "efectivo" y "cheque" se resuelven después según el sentido del importe.
- * Pendiente: validar con archivos reales de Comafi (hoy solo sintéticos).
+ * Se evalúa en orden: gana la primera categoría cuya palabra clave aparezca
+ * en la Descripción. Usa el vocabulario único de categorías (tipos.ts);
+ * "transferencia", "efectivo" y "cheque" se resuelven después según el
+ * sentido del importe, y los créditos por transferencia se refinan mirando
+ * quién paga en las columnas "Descripción Ampliada" (Cabal → tarjeta,
+ * Delivery Hero → plataforma). Vocabulario relevado con archivos reales
+ * (2026-09): "Impuesto a los debitos - tasa general", "Imp. IB s/Acred.
+ * Bcarias.Prov. Bs.As.", "Creditos a comercios Master Card", "Transferencia
+ * recibida - Datanet", "Transf Inmed Propias eBanking"…
  */
 const CATEGORIAS: ReglasCategoria = [
   [CAT.plataformas, PLATAFORMAS.map((p) => p.toLowerCase())],
   [CAT.sueldos, ["sueldo", "haberes", "acreditacion de sueldos"]],
-  [CAT.impCheque, ["ley 25413", "ley 25.413", "imp. deb", "imp. cred", "impuesto debitos", "impuesto creditos"]],
-  [CAT.iibb, ["iibb", "ingresos brutos", "sircreb", "arba", "agip"]],
+  [CAT.impCheque, ["ley 25413", "ley 25.413", "impuesto a los debitos", "impuesto a los creditos", "imp. a los deb", "imp. a los cred", "imp. deb", "imp. cred", "impuesto debitos", "impuesto creditos"]],
+  [CAT.iibb, ["iibb", "ingresos brutos", "sircreb", "arba", "agip", "imp. ib", "imp ib", "ib s/acred", "percepcion ib", "retencion ib"]],
   [CAT.iva, ["iva", "percepcion", "retencion"]],
   [CAT.impuestos, ["afip", "arca", "vep"]],
   [CAT.otrosImp, ["impuesto", "imp.", "sellos", "sellado"]],
@@ -51,6 +68,7 @@ const CATEGORIAS: ReglasCategoria = [
   ["efectivo", ["deposito", "efectivo", "extraccion", "cajero"]],
   [CAT.embargos, ["embargo", "judicial"]],
   [CAT.dolares, ["dolar", "compra moneda", "venta moneda", "mep", "bursatil"]],
+  [CAT.propias, ["propias", "cuentas propias", "mismo titular", "entre cuentas"]],
   [CAT.transfRecibidas, ["recibida", "recibido", "acreditacion", "credito inmediato"]],
   [CAT.servicios, ["pago electronico de servicios", "pago de servicios", "pago directo", "debito automatico", "servicios"]],
   [CAT.proveedores, ["pago a proveedores", "proveedores", "b2b", "interbanking"]],
@@ -58,88 +76,137 @@ const CATEGORIAS: ReglasCategoria = [
   ["cheque", ["cheque", "echeq"]],
 ];
 
+const menciona = (texto: string, lista: readonly string[]) => {
+  const t = sinAcentos(texto).toUpperCase();
+  return lista.some((k) => t.includes(k));
+};
+
+/** Categoría final: reglas por texto + sentido + quién paga / a quién se paga (según el detalle). */
+function clasificar(concepto: string, detalle: string, importe: number): string {
+  const base = resolverSentido(clasificarPorTexto(concepto, CATEGORIAS), importe > 0);
+  const todo = `${concepto} ${detalle}`;
+  if (base === CAT.transfRecibidas || base === CAT.propias) {
+    if (menciona(todo, PLATAFORMAS)) return CAT.plataformas;
+    if (menciona(todo, PROCESADORAS_TARJETA)) return CAT.cobrosTarjeta;
+  }
+  if (base === CAT.servicios || base === CAT.transfEnviadas) {
+    if (menciona(detalle, ORGANISMOS_IMPOSITIVOS)) return CAT.impuestos;
+    if (menciona(detalle, ASEGURADORAS)) return CAT.seguros;
+  }
+  return base;
+}
+
 /** Nombres de columna que se reconocen (normalizados, sin acentos). */
 const ALIAS: Record<string, string[]> = {
-  concepto: ["descripcion", "concepto", "detalle", "movimiento", "descripcion movimiento"],
+  concepto: ["descripcion", "concepto", "movimiento", "descripcion movimiento"],
   fecha: ["fecha", "fecha movimiento", "fecha operacion"],
   id: ["id operacion", "id", "nro operacion", "numero de operacion", "comprobante"],
   moneda: ["moneda", "divisa"],
   importe: ["importe", "monto", "importe movimiento", "credito/debito"],
   saldo: ["saldo", "saldo acumulado"],
 };
+/** Columnas de detalle: se concatenan todas las que existan (Comafi trae "Descripción Ampliada 1/2/3"). */
+const ALIAS_DETALLE = ["descripcion ampliada", "detalle", "referencia", "observacion", "leyenda"];
 
-function mapearColumnas(cabecera: Celda[]): Record<string, number> {
+function mapearColumnas(cabecera: Celda[]): { cols: Record<string, number>; detalle: number[] } {
   const encontradas: Record<string, number> = {};
   const usadas = new Set<number>();
   const normalizadas = cabecera.map((c) => normalizarBasico(c));
   for (const [clave, alias] of Object.entries(ALIAS)) {
-    for (let i = 0; i < normalizadas.length; i++) {
-      const n = normalizadas[i];
-      if (!n || usadas.has(i)) continue;
-      if (alias.includes(n) || alias.some((a) => n.startsWith(a))) {
-        encontradas[clave] = i;
-        usadas.add(i);
-        break;
-      }
+    // Coincidencia exacta primero; después, por prefijo.
+    let idx = normalizadas.findIndex((n, i) => !usadas.has(i) && alias.includes(n));
+    if (idx < 0) idx = normalizadas.findIndex((n, i) => !usadas.has(i) && alias.some((a) => n.startsWith(a)));
+    if (idx >= 0) {
+      encontradas[clave] = idx;
+      usadas.add(idx);
     }
   }
-  return encontradas;
+  const detalle = normalizadas.map((n, i) => (!usadas.has(i) && ALIAS_DETALLE.some((a) => n.startsWith(a)) ? i : -1)).filter((i) => i >= 0);
+  return { cols: encontradas, detalle };
 }
 
 export interface AnalisisComafi extends AnalisisExtracto {
   banco: "comafi";
 }
 
+/** Lectura de un archivo en el orden cronológico del banco (el export viene del más nuevo al más viejo). */
+interface LecturaComafi {
+  movimientos: Movimiento[];
+  conSaldo: boolean;
+}
+
+async function leerArchivo(archivo: File): Promise<LecturaComafi & { ilegibles: number }> {
+  const hojas = await leerPlanilla(archivo);
+  const hoja = hojas.find((h) => h.filas.length > 1) ?? hojas[0];
+  const filaCab = detectarFilaCabecera(
+    hoja.filas,
+    (celdas) => celdas.some((c) => ALIAS.concepto.includes(c)) && celdas.some((c) => ALIAS.importe.includes(c)),
+  );
+  if (filaCab < 0) {
+    throw new ErrorExtracto(
+      `No encontré las columnas de movimientos en "${archivo.name}". Se esperan títulos como "Descripción" e "Importe". ` +
+        `Verificá que sea el Excel de movimientos de cuenta exportado desde Comafi.`,
+    );
+  }
+  const { cols, detalle: colsDetalle } = mapearColumnas(hoja.filas[filaCab]);
+  if (cols.concepto === undefined || cols.importe === undefined) {
+    throw new ErrorExtracto(`No encontré las columnas "Descripción" e "Importe" en "${archivo.name}".`);
+  }
+  const texto = (fila: Celda[], i: number) => String(fila[i] ?? "").trim().replace(/\s{2,}/g, " ");
+
+  const movimientos: Movimiento[] = [];
+  let ilegibles = 0;
+  for (const fila of hoja.filas.slice(filaCab + 1)) {
+    const concepto = texto(fila, cols.concepto);
+    if (!concepto || /^(nan|total|totales)$/i.test(concepto)) continue;
+    const importe = aNumero(fila[cols.importe]);
+    const fecha = cols.fecha !== undefined ? aFecha(fila[cols.fecha]) : null;
+    if (cols.fecha !== undefined && !fecha) ilegibles++;
+    const detalle = colsDetalle.map((i) => texto(fila, i)).filter(Boolean).join(" | ");
+    movimientos.push({
+      fecha,
+      comprobante: cols.id !== undefined ? texto(fila, cols.id) : "",
+      concepto,
+      detalle,
+      categoria: clasificar(concepto, detalle, importe),
+      moneda: cols.moneda !== undefined ? texto(fila, cols.moneda).toUpperCase() || "PESOS" : "PESOS",
+      importe,
+      debito: importe < 0 ? -importe : 0,
+      credito: importe > 0 ? importe : 0,
+      saldo: cols.saldo !== undefined ? aNumero(fila[cols.saldo]) : null,
+    });
+  }
+  // El export de Comafi viene del más nuevo al más viejo: se invierte para tener el orden cronológico del banco.
+  const primera = movimientos[0]?.fecha;
+  const ultima = movimientos[movimientos.length - 1]?.fecha;
+  if (primera && ultima && primera > ultima) movimientos.reverse();
+  return { movimientos, conSaldo: cols.saldo !== undefined, ilegibles };
+}
+
 export async function analizarComafi(archivos: File[]): Promise<AnalisisComafi> {
   if (archivos.length === 0) throw new ErrorExtracto("No hay archivos para analizar.");
-  const movimientos: Movimiento[] = [];
-  const avisos: string[] = [];
-  let ilegibles = 0;
-  let saldoDisponible = true;
+  const lecturas: (LecturaComafi & { ilegibles: number })[] = [];
+  for (const a of archivos) lecturas.push(await leerArchivo(a));
+  // Archivos en orden cronológico (varios meses juntos), cada uno con el orden interno del banco.
+  lecturas.sort((a, b) => (a.movimientos[0]?.fecha?.getTime() ?? 0) - (b.movimientos[0]?.fecha?.getTime() ?? 0));
 
-  for (const archivo of archivos) {
-    const hojas = await leerPlanilla(archivo);
-    const hoja = hojas.find((h) => h.filas.length > 1) ?? hojas[0];
-    const filaCab = detectarFilaCabecera(
-      hoja.filas,
-      (celdas) => celdas.some((c) => ALIAS.concepto.includes(c)) && celdas.some((c) => ALIAS.importe.includes(c)),
-    );
-    if (filaCab < 0) {
-      throw new ErrorExtracto(
-        `No encontré las columnas de movimientos en "${archivo.name}". Se esperan títulos como "Descripción" e "Importe". ` +
-          `Verificá que sea el Excel de movimientos de cuenta exportado desde Comafi.`,
-      );
-    }
-    const cols = mapearColumnas(hoja.filas[filaCab]);
-    if (cols.concepto === undefined || cols.importe === undefined) {
-      throw new ErrorExtracto(`No encontré las columnas "Descripción" e "Importe" en "${archivo.name}".`);
-    }
-    if (cols.saldo === undefined) saldoDisponible = false;
-
-    for (const fila of hoja.filas.slice(filaCab + 1)) {
-      const concepto = String(fila[cols.concepto] ?? "").trim();
-      if (!concepto || /^(nan|total|totales)$/i.test(concepto)) continue;
-      const importe = aNumero(fila[cols.importe]);
-      const fecha = cols.fecha !== undefined ? aFecha(fila[cols.fecha]) : null;
-      if (cols.fecha !== undefined && !fecha) ilegibles++;
-      movimientos.push({
-        fecha,
-        comprobante: cols.id !== undefined ? String(fila[cols.id] ?? "").trim() : "",
-        concepto,
-        categoria: resolverSentido(clasificarPorTexto(concepto, CATEGORIAS), importe > 0),
-        moneda: cols.moneda !== undefined ? String(fila[cols.moneda] ?? "PESOS").trim().toUpperCase() || "PESOS" : "PESOS",
-        importe,
-        debito: importe < 0 ? -importe : 0,
-        credito: importe > 0 ? importe : 0,
-        saldo: cols.saldo !== undefined ? aNumero(fila[cols.saldo]) : null,
-      });
-    }
-  }
+  let movimientos = lecturas.flatMap((l) => l.movimientos);
   if (movimientos.length === 0) throw new ErrorExtracto("No se encontraron movimientos en el archivo.");
+  const avisos: string[] = [];
+  const ilegibles = lecturas.reduce((s, l) => s + l.ilegibles, 0);
+  const saldoDisponible = lecturas.every((l) => l.conSaldo);
 
-  movimientos.sort(
-    (a, b) => (a.fecha?.getTime() ?? 0) - (b.fecha?.getTime() ?? 0) || (a.comprobante ?? "").localeCompare(b.comprobante ?? ""),
-  );
+  if (archivos.length > 1) {
+    const antes = movimientos.length;
+    const vistos = new Set<string>();
+    movimientos = movimientos.filter((m) => {
+      const k = [m.fecha?.getTime(), m.comprobante, m.importe, m.saldo].join("|");
+      if (vistos.has(k)) return false;
+      vistos.add(k);
+      return true;
+    });
+    if (antes - movimientos.length > 0) avisos.push(`Se descartaron ${antes - movimientos.length} movimientos duplicados entre archivos.`);
+  }
 
   const controles: Control[] = [];
   const sinCategoria = movimientos.filter((m) => m.categoria === CATEGORIA_DEFECTO).length;
@@ -149,23 +216,36 @@ export async function analizarComafi(archivos: File[]): Promise<AnalisisComafi> 
   if (ilegibles) avisos.push(`${ilegibles} movimiento(s) con fecha ilegible: quedan sin fecha en el Detalle.`);
   if (sinCategoria) avisos.push(`${sinCategoria} movimiento(s) quedaron en "Otros": revisalos en el resumen (fila amarilla).`);
 
-  // Si el archivo trae saldo, se verifica la cadena movimiento por movimiento (por moneda).
+  // Si el archivo trae saldo, se verifica la cadena movimiento por movimiento, por moneda, en el orden del banco.
   let saldoInicial: number | undefined;
   let saldoFinal: number | undefined;
-  if (saldoDisponible && archivos.length === 1 && movimientos.every((m) => typeof m.saldo === "number")) {
-    const pesos = movimientos.filter((m) => m.moneda === "PESOS" || movimientos.every((x) => x.moneda === m.moneda));
+  if (saldoDisponible && movimientos.every((m) => typeof m.saldo === "number")) {
+    const monedas = [...new Set(movimientos.map((m) => m.moneda ?? "PESOS"))];
     let rupturas = 0;
-    for (let i = 1; i < pesos.length; i++) {
-      const esperado = (pesos[i - 1].saldo ?? 0) + pesos[i].importe;
-      if (Math.abs((pesos[i].saldo ?? 0) - esperado) > TOLERANCIA) rupturas++;
+    let eslabones = 0;
+    for (const moneda of monedas) {
+      const lista = movimientos.filter((m) => (m.moneda ?? "PESOS") === moneda);
+      for (let i = 1; i < lista.length; i++) {
+        eslabones++;
+        const esperado = (lista[i - 1].saldo ?? 0) + lista[i].importe;
+        if (Math.abs((lista[i].saldo ?? 0) - esperado) > TOLERANCIA) rupturas++;
+      }
+      if (moneda === "PESOS" || monedas.length === 1) {
+        saldoInicial = (lista[0].saldo ?? 0) - lista[0].importe;
+        saldoFinal = lista[lista.length - 1].saldo ?? 0;
+      }
     }
-    if (pesos.length > 1) {
-      controles.push(control("Cadena de saldos", "Eslabones sin ruptura", pesos.length - 1 - rupturas, pesos.length - 1, rupturas === 0, "ent"));
-      saldoInicial = (pesos[0].saldo ?? 0) - pesos[0].importe;
-      saldoFinal = pesos[pesos.length - 1].saldo ?? 0;
+    if (eslabones > 0) {
+      controles.push(control("Cadena de saldos", "Eslabones sin ruptura", eslabones - rupturas, eslabones, rupturas === 0, "ent"));
+      if (saldoInicial !== undefined && saldoFinal !== undefined) {
+        const suma = movimientos.filter((m) => (m.moneda ?? "PESOS") === (monedas.length === 1 ? monedas[0] : "PESOS")).reduce((s, m) => s + m.importe, 0);
+        controles.push(
+          control("Cadena de saldos", "Saldo inicial + movimientos = saldo final", saldoInicial + suma, saldoFinal, Math.abs(saldoInicial + suma - saldoFinal) <= TOLERANCIA),
+        );
+      }
       if (rupturas > 0) {
         avisos.push(
-          "La cadena de saldos no cierra en algunos puntos: puede que el archivo esté ordenado de otra forma o mezcle monedas. Los totales igual son correctos.",
+          "La cadena de saldos no cierra en algunos puntos: puede que falten movimientos entre dos archivos o que el archivo esté ordenado de otra forma. Los totales igual son correctos.",
         );
       }
     }
@@ -196,6 +276,7 @@ const ESQUEMA: EsquemaDetalle = {
     { id: "credito", titulo: "Crédito", ancho: 16, valor: (m) => m.credito, formato: FMT_NUM },
     { id: "importe", titulo: "Importe", ancho: 16, valor: (m) => m.importe, formato: FMT_NUM },
     { id: "saldo", titulo: "Saldo", ancho: 16, valor: (m) => m.saldo ?? null, formato: FMT_NUM },
+    { id: "detalle", titulo: "Detalle (descripción ampliada)", ancho: 44, valor: (m) => m.detalle ?? "" },
   ],
 };
 
@@ -215,8 +296,9 @@ export async function generarExcelComafi(a: AnalisisComafi): Promise<Blob> {
       nombreHoja: "Resumen por Concepto",
       titulo: "Resumen por concepto",
       subtitulo,
-      claves: [{ titulo: "Concepto", columna: "concepto", ancho: 44 }, claveMoneda],
-      extras: [{ titulo: "Categoría", ancho: 26, valor: (g) => g[0].categoria }],
+      // La categoría es parte de la clave: un mismo concepto ("Transferencia recibida - Datanet") puede ser
+      // cobro de plataforma o cobro con tarjeta según quién paga, y cada renglón cierra con el Resumen por Categoría.
+      claves: [{ titulo: "Concepto", columna: "concepto", ancho: 44 }, claveMoneda, { titulo: "Categoría", columna: "categoria", ancho: 30 }],
       columnaCategoria: "categoria",
     },
     PALETA,
