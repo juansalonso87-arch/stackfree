@@ -64,7 +64,7 @@ const CATEGORIAS_POR_CODIGO: Record<string, string> = {
   "1968": POR_PAGADOR, // Pago a proveedores (Delivery Hero → plataforma)
   "1970": POR_PAGADOR, // Servicios de pago (American Express → tarjeta)
   "216": POR_PAGADOR, // Pago a proveedores recibido (Cabal → tarjeta)
-  "3410": POR_PAGADOR, // Transf recibida cvu mismo titular (First Data Sur → tarjeta; si no, transferencia recibida)
+  "3410": POR_PAGADOR, // Transf recibida cvu mismo titular: con "first data sur" son liquidaciones de Fiserv por CVU (confirmado por el dueño); si no, transferencia recibida
   "3413": POR_PAGADOR, // Transf recibida cvu dif titular
   "4805": POR_PAGADOR, // Transferencia recibida
   "1253": POR_PAGADOR, // Credito transf online banking emp
