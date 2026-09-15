@@ -1095,7 +1095,12 @@ export const herramientas: Herramienta[] = [
       {
         pregunta: "¿Cómo se clasifican los movimientos en categorías?",
         respuesta:
-          "Por palabras clave sobre el concepto ya normalizado: sueldos, impuesto al cheque, retenciones de IIBB, IVA y percepciones, mantenimiento, comisiones, préstamos, cobros con tarjeta, depósitos, cheques, dólares, transferencias recibidas y enviadas, pago de servicios. Lo que no reconoce queda en “Otros”, resaltado, para que lo revises.",
+          "Primero por el código de operación que BBVA pone en cada movimiento (la columna “Codigo”, que es la misma para todas las cuentas: 213 y 215 son cobros con tarjeta, 362 pagos a proveedores, 388 retenciones de IIBB, 589 y 609 el impuesto al cheque…) y, si el código no está en la tabla, por palabras clave sobre el concepto. Las categorías son las que mira un administrador: cobros con tarjeta, cobros de plataformas (PedidosYa, Rappi, Mercado Pago), transferencias recibidas y enviadas, pagos a proveedores, sueldos, impuesto al cheque, retenciones y percepciones de IIBB, IVA y percepciones, pagos a AFIP/ARCA (incluidos los planes de pago), comisiones, mantenimiento, intereses y préstamos, seguros y prepagas, servicios y débitos automáticos, pago de tarjeta de crédito, compras con tarjeta de débito, depósitos y extracciones de efectivo, cheques, embargos. Lo que no reconoce queda en “Otros”, resaltado, para que lo revises.",
+      },
+      {
+        pregunta: "¿Una transferencia recibida y una enviada pueden tener el mismo concepto?",
+        respuesta:
+          "Sí, BBVA usa el mismo texto (“TRF IN COEL”, “TRANSFERENCI”) para los dos sentidos. La herramienta mira si el movimiento es crédito o débito y lo manda a “Transferencias recibidas” o “Transferencias enviadas”; lo mismo con el efectivo (depósito o extracción) y los cheques (depositado o pagado). En el Resumen por Concepto esos casos aparecen en dos renglones, uno por sentido, así los totales cierran con el Resumen por Categoría.",
       },
       {
         pregunta: "¿Sirve para otros bancos con columnas de Crédito y Débito?",

@@ -274,8 +274,9 @@ export default async function PaginaHerramienta({ params }: Props) {
                 ¿Preferís correrlo en tu computadora?
               </h2>
               <p className="mt-1 text-sm text-muted-foreground">
-                Esta herramienta nació como un script de Python. Es el mismo análisis, publicado con el resto del código:
-                podés leerlo, descargarlo y ejecutarlo sin conexión.{" "}
+                Esta herramienta nació como un script de Python, publicado con el resto del código: podés leerlo,
+                descargarlo y ejecutarlo sin conexión. La versión web suma las mejoras que vamos incorporando con archivos
+                reales (más categorías, más redacciones del banco).{" "}
                 <a
                   href={`${siteConfig.repoUrl}/blob/main/${h.scriptPython}`}
                   target="_blank"
