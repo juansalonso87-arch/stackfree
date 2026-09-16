@@ -35,10 +35,14 @@ export const adsConfig = {
   } satisfies Record<PosicionAnuncio, string>,
 
   /**
-   * Si no hay anuncios reales, ¿mostrar el recuadro placeholder?
-   * Poné NEXT_PUBLIC_ADS_PLACEHOLDER=false para ocultarlos del todo.
+   * Si no hay anuncios reales, ¿mostrar el recuadro placeholder? Solo en
+   * desarrollo (sirve para ver el layout); en el sitio publicado quedan
+   * invisibles hasta que existan los bloques de AdSense. Se puede forzar con
+   * NEXT_PUBLIC_ADS_PLACEHOLDER=true|false.
    */
-  mostrarPlaceholder: process.env.NEXT_PUBLIC_ADS_PLACEHOLDER !== "false",
+  mostrarPlaceholder:
+    process.env.NEXT_PUBLIC_ADS_PLACEHOLDER === "true" ||
+    (process.env.NEXT_PUBLIC_ADS_PLACEHOLDER !== "false" && process.env.VERCEL_ENV !== "production"),
 };
 
 /** Hay AdSense configurado cuando existe el ID de cliente. */
