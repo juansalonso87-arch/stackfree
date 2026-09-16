@@ -14,6 +14,7 @@ import {
   Scaling,
   Scissors,
   Smartphone,
+  UtensilsCrossed,
 } from "lucide-react";
 
 /**
@@ -1245,6 +1246,76 @@ export const herramientas: Herramienta[] = [
     ],
     scriptPython: "python/MP_analizador_cobros.py",
     cargar: () => import("@/components/tools/cobros-mercado-pago/CobrosMercadoPagoTool"),
+  },
+  {
+    slug: "ventas-pedidosya",
+    nombre: "Análisis de ventas PedidosYa",
+    h1: "Análisis de ventas de PedidosYa: subí el reporte de pedidos y recibí las ventas por local, día y producto",
+    subtitulo:
+      "Subís el reporte de pedidos del Portal Partner de PedidosYa (puede traer varios locales) y te devolvemos, en segundos, lo que un dueño de gastronomía necesita mirar: cuánto vendió cada local, cuánto se lleva PedidosYa entre comisión, tarifa de pago online, impuestos y cargos por reclamos, cuánto te queda neto y cuánto tenés a cobrar, qué días y horas rinden más, qué productos se venden más en cada local, cuánto tardás en preparar y qué pedidos se cancelaron o tuvieron reclamos. Sin subir tus datos a ningún servidor.",
+    tituloSeo: "Análisis de ventas PedidosYa: reporte de pedidos a Excel por local y producto",
+    descripcionSeo:
+      "Subí el reporte de pedidos de PedidosYa (Portal Partner) y recibí ventas por local, día y hora, comisiones y cargos, neto a cobrar, productos más vendidos, cancelaciones y reclamos en un Excel con fórmulas. Gratis y sin subir tus datos.",
+    descripcionCorta: "Subí el reporte de pedidos de PedidosYa y recibí las ventas por local, día, hora y producto, y lo que descuenta PedidosYa.",
+    keywords: [
+      "reporte de pedidos pedidosya excel",
+      "analisis de ventas pedidosya",
+      "cuanto cobra pedidosya de comision",
+      "portal partner pedidosya reportes",
+      "liquidacion pedidosya",
+      "ventas por local pedidosya",
+      "productos mas vendidos pedidosya",
+      "reclamos pedidosya cargos",
+    ],
+    icono: UtensilsCrossed,
+    categoria: "administracion",
+    estado: "activa",
+    formatosEntrada: ["application/vnd.ms-excel", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", "text/csv"],
+    guiaDescarga: {
+      titulo: "Cómo obtener el reporte de pedidos en el Portal Partner de PedidosYa",
+      pasos: [
+        "Ingresá al Portal Partner de PedidosYa con tu usuario de local.",
+        "Entrá a Reportes → Pedidos.",
+        "Filtrá los locales que querés analizar (podés elegir varios a la vez) y el período de tiempo.",
+        "Tocá “Descargar” y exportá en .xls. Ese archivo es el que subís acá, tal cual se descarga, sin abrirlo ni modificarlo.",
+      ],
+      nota: "Si el reporte incluye varios locales, el análisis los separa solo: vas a ver un cuadro por local y una matriz local × día. Podés subir varios reportes juntos (por ejemplo, un mes por archivo): si se pisan, cada pedido se cuenta una sola vez.",
+    },
+    pasos: [
+      "Arrastrá el reporte de pedidos al recuadro (podés sumar varios períodos o varios locales).",
+      "Elegí la hora de corte del turno: con 06:00, un pedido de las 00:30 del sábado cuenta para el viernes.",
+      "Tocá “Analizar ventas”: en segundos ves la venta, lo que se lleva PedidosYa, el neto para el local, lo que tenés a cobrar, el ticket promedio, los productos más vendidos y los reclamos.",
+      "Descargá el Excel completo: Resumen por Local, Ventas por Día, Local × Día, Ventas por Hora, Día de la Semana, Deducciones, Productos, Cancelados y Reclamos, Revisar, Control y Detalle, con fórmulas que se recalculan si corregís algo.",
+    ],
+    tituloPasos: "Cómo usar el análisis paso a paso",
+    faq: [
+      {
+        pregunta: "¿Qué diferencia hay entre venta, neto y a cobrar?",
+        respuesta:
+          "La venta es lo que compró el cliente a precio de carta (columna “Total parcial”). El neto para el local es el “Ingreso estimado” que informa PedidosYa: la venta menos los descuentos que financiás vos, la comisión, la tarifa de pago online, los impuestos sobre esas comisiones, los cargos por reclamos y el marketing. Y lo que tenés a cobrar es el neto menos lo que ya cobraste en efectivo: en los pedidos en efectivo el cliente te pagó a vos, así que le adeudás a PedidosYa las comisiones y eso se compensa con los pagos.",
+      },
+      {
+        pregunta: "¿Qué son los “Cargos”?",
+        respuesta:
+          "Casi siempre son reclamos: el cliente se quejó (producto faltante, incorrecto, calidad, orden equivocada), PedidosYa le devolvió parte o todo el pedido y te lo descuenta a vos. También aparecen como penalidad cuando una cancelación se atribuye al local (por ejemplo, “local cerrado”). La hoja “Cancelados y Reclamos” los lista por motivo y pedido por pedido, con el número, para que puedas reclamar.",
+      },
+      {
+        pregunta: "¿Qué es la hoja “Revisar”?",
+        respuesta:
+          "Ahí van los pedidos entregados cuya liquidación no cierra: los que figuran sin pago, sin deuda ni efectivo (PedidosYa todavía no los procesó o quedaron trabados) y los que tienen un ingreso estimado que no coincide con venta − deducciones. Son pocos, pero es plata: conviene consultarlos en el Portal Partner con el número de pedido.",
+      },
+      {
+        pregunta: "¿Cómo se arma el ranking de productos?",
+        respuesta:
+          "A partir de la columna “Artículos” del reporte, que trae cada pedido como “2 Empanadas, 1 Pizza mozzarella [1 grande]”. Se cuentan las unidades de cada producto por local; las opciones entre corchetes (guarniciones, gustos, tamaños) no se cuentan como producto aparte. Si el mismo producto está escrito distinto en dos locales, aparece en cada uno con su redacción.",
+      },
+      {
+        pregunta: "¿Mi reporte se sube a algún servidor?",
+        respuesta:
+          "No. El archivo se lee y se procesa dentro de tu navegador, y el Excel se genera ahí mismo. Podés comprobarlo desconectando internet después de cargar la página: la herramienta sigue funcionando.",
+      },
+    ],
+    cargar: () => import("@/components/tools/ventas-pedidosya/VentasPedidosYaTool"),
   },
 ];
 

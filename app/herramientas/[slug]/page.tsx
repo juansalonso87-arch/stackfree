@@ -205,7 +205,7 @@ export default async function PaginaHerramienta({ params }: Props) {
               <PedidoDevolucion
                 variante="linea"
                 slug={h.slug}
-                texto="Esta herramienta se afina con archivos reales de cada banco. Si tu archivo no se lee, un movimiento queda mal clasificado o algo no cuadra, contanos qué pasó: lo corregimos para todos."
+                texto="Esta herramienta se afina con archivos reales de cada banco y plataforma. Si tu archivo no se lee, algo queda mal clasificado o un número no cuadra, contanos qué pasó: lo corregimos para todos."
                 etiquetaBoton="Reportar algo raro"
                 className="px-1"
               />

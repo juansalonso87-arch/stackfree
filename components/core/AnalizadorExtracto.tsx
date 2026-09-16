@@ -374,8 +374,9 @@ function contextoDevolucion(r: ResultadoAnalisis): string {
   else if (r.controles?.length) lineas.push(`Controles: los ${r.controles.length} cerraron bien`);
 
   for (const t of r.tablas) {
+    // Solo las dos primeras columnas (nombre y cantidad): las demás suelen ser importes.
     for (const fila of t.resaltar ? t.filas.filter(t.resaltar) : []) {
-      lineas.push(`${t.titulo}: fila "${fila[0]}" con ${fila[1]} ${String(t.columnas[1] ?? "").toLowerCase()}`);
+      lineas.push(`${t.titulo}: ${t.columnas[0]} "${fila[0]}" · ${t.columnas[1]}: ${fila[1]}`);
     }
   }
   if (r.avisos.length) lineas.push(`Avisos: ${r.avisos.map(sinImportes).join(" | ")}`);
