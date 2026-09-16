@@ -21,9 +21,12 @@ const OPERACIONES_VENTA_CONOCIDAS = ["regular_payment", "point_payment", "pos_pa
  * En Argentina es muy común cobrar "por transferencia al alias" en vez de QR
  * para esquivar la comisión. En el reporte esas ventas NO vienen como pago:
  * llegan como `account_fund` (ingreso de dinero a la cuenta) con medio
- * `bank_transfer`, igual que una carga de saldo propia; o como `money_transfer`
- * cuando el cliente transfiere desde otra cuenta de Mercado Pago. Con la opción
- * `transferenciasComoCobro` (activa por defecto) se cuentan como cobros.
+ * `bank_transfer`, igual que una carga de saldo propia, y así vienen tanto si el
+ * cliente transfirió desde un banco como desde su propia cuenta de Mercado Pago
+ * (confirmado por el dueño: en 266 transferencias de un mes no apareció ninguna
+ * con otra etiqueta). Con la opción `transferenciasComoCobro` (activa por
+ * defecto) se cuentan como cobros. Por las dudas también se acepta
+ * `money_transfer` con plata efectivamente recibida, y se informa aparte.
  */
 export const MEDIO_TRANSFERENCIA_RECIBIDA = "Transferencia recibida (alias / CVU)";
 
@@ -117,7 +120,7 @@ export interface AnalisisMercadoPago {
   /** Cargas de saldo y movimientos propios que no se contaron como venta. */
   fondeos: { cantidad: number; monto: number };
   /** Transferencias recibidas: cuántas se contaron como cobro (o se dejaron afuera si la opción está apagada). */
-  transferencias: { cantidad: number; monto: number; retenido: number; contadas: boolean };
+  transferencias: { cantidad: number; monto: number; retenido: number; contadas: boolean; desdeMercadoPago: number };
   tieneHora: boolean;
   horaCorte: number;
   desde: Date;
@@ -211,7 +214,7 @@ export async function analizarMercadoPago(
   const cobros: Cobro[] = [];
   const noConcretadas: NoConcretada[] = [];
   const fondeos = { cantidad: 0, monto: 0 };
-  const transferencias = { cantidad: 0, monto: 0, retenido: 0, contadas: transferenciasComoCobro };
+  const transferencias = { cantidad: 0, monto: 0, retenido: 0, contadas: transferenciasComoCobro, desdeMercadoPago: 0 };
   for (const { f, momento } of conFecha) {
     const estado = texto(f.status) || "approved";
     const tipo = texto(f.operation_type) || "regular_payment";
@@ -221,12 +224,15 @@ export async function analizarMercadoPago(
     const bruto = aNumero(f.transaction_amount);
     // Plata que entró por transferencia (alias/CVU o desde otra cuenta de MP): puede ser un cobro.
     const esTransferenciaRecibida =
-      ESTADOS_COBRO.includes(estado) && bruto > 0 && ((tipo === "account_fund" && tipoPago === "bank_transfer") || tipo === "money_transfer");
+      ESTADOS_COBRO.includes(estado) &&
+      bruto > 0 &&
+      ((tipo === "account_fund" && tipoPago === "bank_transfer") || (tipo === "money_transfer" && aNumero(f.net_received_amount) > 0));
     const esVenta = ESTADOS_COBRO.includes(estado) && !OPERACIONES_QUE_NO_SON_VENTA.includes(tipo);
     if (esTransferenciaRecibida) {
       transferencias.cantidad++;
       transferencias.monto += bruto;
       transferencias.retenido += round2(bruto - Math.abs(aNumero(f.mercadopago_fee)) - aNumero(f.net_received_amount));
+      if (tipo === "money_transfer") transferencias.desdeMercadoPago++;
     }
 
     if (esVenta || (esTransferenciaRecibida && transferenciasComoCobro)) {
@@ -278,7 +284,7 @@ export async function analizarMercadoPago(
     const pct = transferencias.monto ? ((transferencias.retenido / transferencias.monto) * 100).toFixed(2) : "0";
     avisos.push(
       transferenciasComoCobro
-        ? `${transferencias.cantidad} transferencias recibidas por ${pesos(transferencias.monto)} se contaron como cobros (venta por alias/CVU). Mercado Pago no cobra comisión por recibirlas, pero retuvo ${pesos(transferencias.retenido)} (${pct} %; suele ser IIBB). Si en realidad son cargas de saldo tuyas, desactivá la opción "Contar transferencias recibidas como cobros".`
+        ? `${transferencias.cantidad} transferencias recibidas por ${pesos(transferencias.monto)} se contaron como cobros (venta por alias/CVU)${transferencias.desdeMercadoPago ? `, ${transferencias.desdeMercadoPago} de ellas con la etiqueta "money_transfer": si no son cobros, avisanos` : ""}. Mercado Pago no cobra comisión por recibirlas, pero retuvo ${pesos(transferencias.retenido)} (${pct} %; suele ser IIBB). Si en realidad son cargas de saldo tuyas, desactivá la opción "Contar transferencias recibidas como cobros".`
         : `${transferencias.cantidad} transferencias recibidas por ${pesos(transferencias.monto)} quedaron afuera del análisis porque la opción "Contar transferencias recibidas como cobros" está desactivada. Si tus clientes te pagan por alias/CVU, activala.`,
     );
   }
