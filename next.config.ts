@@ -15,7 +15,8 @@ const nextConfig: NextConfig = {
         source: "/:path*",
         has: [{ type: "host", value: hostAnterior }],
         destination: `https://${siteConfig.dominio}/:path*`,
-        permanent: true,
+        // 301 (y no 308): es el código que la herramienta "Cambio de dirección" de Search Console verifica.
+        statusCode: 301,
       },
     ];
   },
