@@ -147,7 +147,7 @@ export default function PaginaVerificarPrivacidad() {
                   <span className="flex size-7 shrink-0 items-center justify-center rounded-full bg-primary text-sm font-semibold text-primary-foreground">
                     {i + 1}
                   </span>
-                  <p className="pt-0.5 text-muted-foreground">{paso}</p>
+                  <p className="min-w-0 pt-0.5 text-muted-foreground [overflow-wrap:anywhere]">{paso}</p>
                 </li>
               ))}
             </ol>

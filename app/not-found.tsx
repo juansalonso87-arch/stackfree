@@ -1,6 +1,12 @@
+import type { Metadata } from "next";
 import Link from "next/link";
 import { SearchX } from "lucide-react";
 import { Button } from "@/components/ui/button";
+
+export const metadata: Metadata = {
+  title: "Página no encontrada",
+  robots: { index: false, follow: true },
+};
 
 export default function NotFound() {
   return (
@@ -12,9 +18,14 @@ export default function NotFound() {
       <p className="mt-2 max-w-md text-muted-foreground">
         La dirección que escribiste no existe o la herramienta cambió de lugar.
       </p>
-      <Button className="mt-6" nativeButton={false} render={<Link href="/" />}>
-        Volver al inicio
-      </Button>
+      <div className="mt-6 flex flex-wrap justify-center gap-2">
+        <Button nativeButton={false} render={<Link href="/" />}>
+          Volver al inicio
+        </Button>
+        <Button variant="outline" nativeButton={false} render={<Link href="/administracion" />}>
+          Ver herramientas de administración
+        </Button>
+      </div>
     </section>
   );
 }
