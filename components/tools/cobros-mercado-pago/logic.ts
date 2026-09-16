@@ -10,6 +10,9 @@ import {
   HORA_CORTE_DEFECTO,
   MEDIO_TRANSFERENCIA_RECIBIDA,
   analizarMercadoPago,
+  liberacionPorMedio,
+  pendienteDeLiberar,
+  porCanal,
   porDiaDeTurno,
   porLocal,
   porMedioDePago,
@@ -39,6 +42,9 @@ export async function analizar(archivos: File[], horaCorte: number, transferenci
   // Cobros que entraron "por alias" en vez de QR: en Argentina suelen ser la mayoría.
   const porTransferencia = a.cobros.filter((c) => c.medioPago === MEDIO_TRANSFERENCIA_RECIBIDA);
   const brutoTransferencia = porTransferencia.reduce((s, c) => s + c.bruto, 0);
+  const canales = porCanal(a.cobros);
+  const liberacion = liberacionPorMedio(a.cobros);
+  const pendiente = pendienteDeLiberar(a.cobros);
   const periodos = [...new Set(a.cobros.map((c) => c.periodo))].sort();
 
   return {
@@ -62,9 +68,20 @@ export async function analizar(archivos: File[], horaCorte: number, transferenci
         : []),
       ...(devuelto > 0 ? [{ etiqueta: "Devoluciones parciales", valor: formatearPesos(devuelto), tono: "negativo" as const }] : []),
       ...(mejor ? [{ etiqueta: "Mejor turno", valor: `${mejor.diaSemana} ${formatearFecha(mejor.dia)} · ${formatearPesos(mejor.bruto)}` }] : []),
+      ...(pendiente.neto > 0 ? [{ etiqueta: "Pendiente de liberar al cierre", valor: `${formatearPesos(pendiente.neto)} · ${formatearEntero(pendiente.cobros)} cobros` }] : []),
     ],
     avisos: a.avisos,
     tablas: [
+      ...(canales.length > 1
+        ? [
+            {
+              titulo: "Canales de cobro (cómo cobraste)",
+              columnas: ["Canal", "Cobros", "Bruto", "% del total", "Comisión MP", "Neto"],
+              numericas: [1, 2, 3, 4, 5],
+              filas: canales.map((c) => [c.canal, formatearEntero(c.cobros), formatearPesos(c.bruto), `${bruto ? ((c.bruto / bruto) * 100).toFixed(1) : "0"} %`, `${c.bruto ? ((c.comision / c.bruto) * 100).toFixed(2) : "0"} %`, formatearPesos(c.neto)]),
+            },
+          ]
+        : []),
       {
         titulo: "Promedio por día de la semana (por turno)",
         columnas: ["Día", "Turnos", "Promedio cobrado"],
@@ -82,11 +99,28 @@ export async function analizar(archivos: File[], horaCorte: number, transferenci
           ]
         : []),
       {
-        titulo: "Medios de pago",
-        columnas: ["Medio de pago", "Cobros", "Bruto", "% del total"],
-        numericas: [1, 2, 3],
-        filas: porMedioDePago(a.cobros).map((m) => [m.medio, formatearEntero(m.cobros), formatearPesos(m.bruto), `${bruto ? ((m.bruto / bruto) * 100).toFixed(1) : "0"} %`]),
+        titulo: "Medios de pago (con qué pagó el cliente)",
+        columnas: ["Medio de pago", "Cobros", "Bruto", "% del total", "Comisión MP", "Retenciones"],
+        numericas: [1, 2, 3, 4, 5],
+        filas: porMedioDePago(a.cobros).map((m) => [
+          m.medio,
+          formatearEntero(m.cobros),
+          formatearPesos(m.bruto),
+          `${bruto ? ((m.bruto / bruto) * 100).toFixed(1) : "0"} %`,
+          `${m.bruto ? ((m.comision / m.bruto) * 100).toFixed(2) : "0"} %`,
+          `${m.bruto ? ((m.retenciones / m.bruto) * 100).toFixed(2) : "0"} %`,
+        ]),
       },
+      ...(liberacion.length
+        ? [
+            {
+              titulo: "Cuándo se libera la plata",
+              columnas: ["Medio de pago", "Cobros", "Días hasta liberar (prom.)", "Pendiente al cierre"],
+              numericas: [1, 2, 3],
+              filas: liberacion.map((l) => [l.medio, formatearEntero(l.cobros), l.diasPromedio.toFixed(1), formatearPesos(l.pendiente)]),
+            },
+          ]
+        : []),
       ...(periodos.length > 1
         ? [
             {

@@ -1220,8 +1220,8 @@ export const herramientas: Herramienta[] = [
     pasos: [
       "Arrastrá el reporte de cobros al recuadro (podés sumar varios meses; si se solapan, cada operación se cuenta una sola vez).",
       "Elegí la hora de corte del turno (con 06:00, un cobro de las 02:30 del sábado cuenta para el viernes) y dejá marcada la opción de contar las transferencias recibidas como cobros si tus clientes te pagan por alias o CVU.",
-      "Tocá “Analizar cobros”: en segundos ves el bruto, lo que descuenta Mercado Pago (incluida la retención sobre las transferencias), el ticket promedio, el mejor turno, el promedio por día de la semana y los medios de pago.",
-      "Descargá el Excel completo: Cobros por Día, Cobros por Hora, Resumen Mensual, Medios de Pago, Por Local (si hay más de uno), Tarifas e Impuestos, No Concretadas y Detalle, con fórmulas que se recalculan si corregís algo.",
+      "Tocá “Analizar cobros”: en segundos ves el bruto, lo que descuenta Mercado Pago (incluida la retención sobre las transferencias), el ticket promedio, el mejor turno, el promedio por día de la semana, cómo cobraste (QR, Point, link, alias), con qué pagaron tus clientes y cuánta plata queda pendiente de liberar.",
+      "Descargá el Excel completo: Cobros por Día, Cobros por Hora, Resumen Mensual, Canales de Cobro, Medios de Pago, Por Local (si hay más de uno), Tarifas e Impuestos, No Concretadas y Detalle (con fecha de liberación), con fórmulas que se recalculan si corregís algo.",
     ],
     tituloPasos: "Cómo usar el análisis paso a paso",
     faq: [
@@ -1239,6 +1239,16 @@ export const herramientas: Herramienta[] = [
         pregunta: "Mis clientes me pagan por transferencia al alias en vez de QR. ¿Lo cuenta?",
         respuesta:
           "Sí, y es lo más común en Argentina. El detalle es que en el reporte esas ventas no aparecen como “pago” sino como ingreso de dinero a la cuenta (igual que cuando cargás saldo vos). Por eso la herramienta tiene la opción “Contar las transferencias recibidas como cobros”, activada por defecto: las suma como cobros con medio de pago “Transferencia recibida (alias / CVU)” y te muestra cuánto retiene Mercado Pago sobre ellas. Ojo con eso: no hay comisión, pero en los reportes reales vimos una retención de alrededor del 3 % (suele ser Ingresos Brutos), así que cobrar por transferencia tampoco es gratis. Si en tu caso esas transferencias son cargas de saldo tuyas, desmarcá la opción.",
+      },
+      {
+        pregunta: "¿Qué diferencia hay entre “canal de cobro” y “medio de pago”?",
+        respuesta:
+          "El canal es cómo le cobraste vos: QR, Point (posnet de Mercado Pago), link de pago, tienda online o transferencia directa al alias. El medio de pago es con qué pagó el cliente: dinero en cuenta, tarjeta de crédito o débito, o transferencia desde la app de su banco. Se cruzan: un cliente puede escanear tu QR y pagarlo desde su banco (canal QR, medio “transferencia desde app bancaria”, con la comisión del QR) o transferirte directo al alias (canal y medio “transferencia al alias”, sin comisión pero con retención). Las comisiones que muestra cada cuadro te dicen cuánto te cuesta cada combinación.",
+      },
+      {
+        pregunta: "¿Qué es “pendiente de liberar”?",
+        respuesta:
+          "Mercado Pago no libera toda la plata al instante: en los reportes reales, los cobros con tarjeta de crédito se liberan a los 10 días y los de débito a los 2; el dinero en cuenta y las transferencias, en el momento. La herramienta lee la fecha de liberación de cada cobro y te dice cuánto de lo cobrado en el período todavía no estaba disponible al último día del reporte, y cuántos días tarda cada medio de pago. Útil para saber con qué plata contás realmente.",
       },
       {
         pregunta: "¿Qué cuenta como venta?",

@@ -8,7 +8,7 @@
  */
 
 import { ErrorExtracto } from "./tipos";
-import { aFecha, aNumero, clavePeriodo, round2, soloDia } from "./texto";
+import { aFecha, aNumero, clavePeriodo, normalizarBasico, round2, soloDia } from "./texto";
 import { leerPlanilla, type Celda } from "./planilla";
 
 export const HORA_CORTE_DEFECTO = 6;
@@ -37,7 +37,9 @@ export interface OpcionesMercadoPago {
 
 const ETIQUETAS_MEDIO_PAGO: Record<string, string> = {
   account_money: "Dinero en cuenta (saldo MP)",
-  bank_transfer: "Transferencia / débito inmediato",
+  // Pago de un QR o link desde la app de un banco (Transferencias 3.0): tiene comisión, a diferencia
+  // de la transferencia directa al alias (MEDIO_TRANSFERENCIA_RECIBIDA).
+  bank_transfer: "Transferencia desde app bancaria (por QR o link)",
   credit_card: "Tarjeta de crédito",
   debit_card: "Tarjeta de débito",
   prepaid_card: "Tarjeta prepaga",
@@ -85,6 +87,32 @@ function etiquetaMotivo(detalle: string, estado: string): string {
   return detalle || estado;
 }
 
+/**
+ * CANAL de cobro: cómo le cobraste al cliente. Distinto del medio de pago
+ * (con qué pagó él). El reporte "ancho" lo trae en `sub_unit`; el compacto no,
+ * así que se deduce del tipo de operación y de la referencia (los QR en el
+ * local llevan external_reference "INSTORE-…").
+ */
+export const CANAL = {
+  qr: "QR / cobro online",
+  point: "Point (presencial)",
+  link: "Link de pago",
+  transferencia: "Transferencia al alias / CVU",
+  tienda: "Tienda online / checkout",
+  suscripcion: "Suscripciones",
+} as const;
+
+function canalDe(f: Record<string, Celda>, tipo: string, esTransferenciaRecibida: boolean): string {
+  if (esTransferenciaRecibida) return CANAL.transferencia;
+  const sub = normalizarBasico(f.sub_unit);
+  const motivo = normalizarBasico(f.reason);
+  if (tipo === "pos_payment" || /point/.test(sub) || /venta presencial/.test(motivo)) return CANAL.point;
+  if (/link/.test(sub) || /link de pago/.test(motivo)) return CANAL.link;
+  if (/checkout|tienda|shop|online/.test(sub)) return CANAL.tienda;
+  if (/suscri|subscri/.test(sub) || /subscription|recurring/.test(tipo)) return CANAL.suscripcion;
+  return CANAL.qr;
+}
+
 export const DIAS_SEMANA = ["Lunes", "Martes", "Miércoles", "Jueves", "Viernes", "Sábado", "Domingo"];
 const OTRAS_TARIFAS = ["marketplace_fee", "shipping_cost", "financing_fee"];
 
@@ -106,6 +134,12 @@ export interface Cobro {
   nroOperacion: string;
   /** Local / sucursal de Mercado Pago ("Nombre del local"), si el reporte lo trae. */
   local: string;
+  /** Cómo se cobró: QR, Point, link, transferencia al alias… (ver CANAL). */
+  canal: string;
+  /** Cuándo Mercado Pago libera la plata (date_released); null si el reporte no lo trae. */
+  liberacion: Date | null;
+  /** Días entre el cobro y la liberación (0 = inmediato). */
+  diasLiberacion: number | null;
 }
 
 export interface NoConcretada {
@@ -239,6 +273,7 @@ export async function analizarMercadoPago(
       const neto = aNumero(f.net_received_amount);
       const comisionMp = Math.abs(aNumero(f.mercadopago_fee));
       const otrasTarifas = OTRAS_TARIFAS.reduce((s, c) => s + Math.abs(aNumero(f[c])), 0);
+      const liberacion = aFecha(f.date_released) ?? aFecha(f.date_released_short);
       cobros.push({
         momento,
         diaTurno,
@@ -259,6 +294,9 @@ export async function analizarMercadoPago(
         devuelto: Math.abs(aNumero(f.amount_refunded)),
         nroOperacion: texto(f.operation_id),
         local: texto(f.description) || texto(f.store_name) || "",
+        canal: canalDe(f, tipo, esTransferenciaRecibida),
+        liberacion,
+        diasLiberacion: liberacion ? Math.round((soloDia(liberacion).getTime() - soloDia(momento).getTime()) / 86_400_000) : null,
       });
     } else if (estado === "rejected" || estado === "cancelled") {
       const detalle = texto(f.status_detail);
@@ -382,12 +420,61 @@ export function porLocal(cobros: Cobro[]) {
   return [...mapa.values()].sort((a, b) => b.bruto - a.bruto);
 }
 
-export function porMedioDePago(cobros: Cobro[]) {
-  const mapa = new Map<string, { medio: string; cobros: number; bruto: number }>();
+export function porCanal(cobros: Cobro[]) {
+  const mapa = new Map<string, { canal: string; cobros: number; bruto: number; comision: number; neto: number }>();
   for (const c of cobros) {
-    const f = mapa.get(c.medioPago) ?? { medio: c.medioPago, cobros: 0, bruto: 0 };
+    const f = mapa.get(c.canal) ?? { canal: c.canal, cobros: 0, bruto: 0, comision: 0, neto: 0 };
     f.cobros++;
     f.bruto += c.bruto;
+    f.comision += c.comisionMp;
+    f.neto += c.neto;
+    mapa.set(c.canal, f);
+  }
+  return [...mapa.values()].sort((a, b) => b.bruto - a.bruto);
+}
+
+/** Último día calendario con cobros: contra eso se mide qué quedó sin liberar. */
+function diaDeCierre(cobros: Cobro[]): number {
+  return cobros.reduce((max, c) => Math.max(max, soloDia(c.momento).getTime()), 0);
+}
+
+/** Plata cobrada que al último día del reporte Mercado Pago todavía no había liberado (tarjetas, sobre todo). */
+export function pendienteDeLiberar(cobros: Cobro[]): { cobros: number; neto: number } {
+  const cierre = diaDeCierre(cobros);
+  const pend = cobros.filter((c) => c.liberacion !== null && soloDia(c.liberacion).getTime() > cierre);
+  return { cobros: pend.length, neto: pend.reduce((s, c) => s + c.neto, 0) };
+}
+
+/**
+ * Cuándo se libera la plata, por medio de pago: las tarjetas de crédito
+ * tardan (10 días en los reportes reales), el débito un par, el resto es
+ * inmediato. "Pendiente" es lo que al último día del reporte todavía no se
+ * había liberado.
+ */
+export function liberacionPorMedio(cobros: Cobro[]) {
+  const cierre = diaDeCierre(cobros);
+  const mapa = new Map<string, { medio: string; cobros: number; diasPromedio: number; pendiente: number; sumaDias: number }>();
+  for (const c of cobros) {
+    if (c.liberacion === null || c.diasLiberacion === null) continue;
+    const f = mapa.get(c.medioPago) ?? { medio: c.medioPago, cobros: 0, diasPromedio: 0, pendiente: 0, sumaDias: 0 };
+    f.cobros++;
+    f.sumaDias += c.diasLiberacion;
+    if (soloDia(c.liberacion).getTime() > cierre) f.pendiente += c.neto;
+    mapa.set(c.medioPago, f);
+  }
+  return [...mapa.values()]
+    .map((f) => ({ ...f, diasPromedio: f.cobros ? f.sumaDias / f.cobros : 0 }))
+    .sort((a, b) => b.diasPromedio - a.diasPromedio || b.pendiente - a.pendiente);
+}
+
+export function porMedioDePago(cobros: Cobro[]) {
+  const mapa = new Map<string, { medio: string; cobros: number; bruto: number; comision: number; retenciones: number }>();
+  for (const c of cobros) {
+    const f = mapa.get(c.medioPago) ?? { medio: c.medioPago, cobros: 0, bruto: 0, comision: 0, retenciones: 0 };
+    f.cobros++;
+    f.bruto += c.bruto;
+    f.comision += c.comisionMp;
+    f.retenciones += c.retenciones;
     mapa.set(c.medioPago, f);
   }
   return [...mapa.values()].sort((a, b) => b.bruto - a.bruto);
