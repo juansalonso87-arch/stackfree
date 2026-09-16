@@ -27,7 +27,7 @@ const ADSENSE = {
     "https://*.adtrafficquality.google",
     "https://fundingchoicesmessages.google.com",
   ],
-  frame: ["https://*.googlesyndication.com", "https://*.doubleclick.net", "https://*.google.com", "https://fundingchoicesmessages.google.com"],
+  frame: ["https://*.googlesyndication.com", "https://*.doubleclick.net", "https://*.google.com", "https://*.adtrafficquality.google", "https://fundingchoicesmessages.google.com"],
   img: ["https://*.googlesyndication.com", "https://*.doubleclick.net", "https://*.google.com", "https://*.googleusercontent.com", "https://*.gstatic.com"],
   connect: ["https://*.googlesyndication.com", "https://*.doubleclick.net", "https://*.google.com", "https://*.adtrafficquality.google", "https://fundingchoicesmessages.google.com"],
 };
