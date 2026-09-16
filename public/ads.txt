@@ -1,2 +1,1 @@
-# Reemplazar este archivo con la línea que provee Google AdSense al aprobar la cuenta.
-# Formato: google.com, pub-XXXXXXXXXXXXXXXX, DIRECT, f08c47fec0942fa0
+google.com, pub-6536653816995996, DIRECT, f08c47fec0942fa0

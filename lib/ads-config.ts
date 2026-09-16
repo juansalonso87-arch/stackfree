@@ -1,15 +1,16 @@
 /**
  * Configuración de Google AdSense.
  *
- * Mientras la cuenta no esté aprobada, dejá las variables vacías en `.env`:
- * el componente <AdSlot /> mostrará un recuadro "placeholder" en lugar del
- * anuncio, así se puede deployar y ver el sitio completo antes de tiempo.
+ * El ID de editor (ca-pub-…) quedó fijo acá: es público (va en el HTML de
+ * cada página y en /ads.txt) y sirve para que AdSense verifique el sitio.
+ * Sin IDs de bloque, <AdSlot /> muestra un recuadro "placeholder" en lugar
+ * del anuncio: así el sitio se ve completo mientras Google revisa la cuenta.
  *
  * Cuando AdSense apruebe la cuenta:
- *   1. Copiar el ID de cliente (empieza con "ca-pub-") en NEXT_PUBLIC_ADSENSE_CLIENT.
- *   2. Crear un bloque de anuncio por posición en el panel de AdSense y pegar
- *      cada ID de slot (número) en su variable.
- *   3. Redeployar. Nada más que cambiar en el código.
+ *   1. Crear un bloque de anuncio "display" por posición en el panel de
+ *      AdSense y pegar cada ID de bloque (número) en la variable
+ *      NEXT_PUBLIC_ADSENSE_SLOT_* de Vercel, o como valor por defecto acá.
+ *   2. Redeployar. Nada más que cambiar en el código.
  *
  * Nota: las variables NEXT_PUBLIC_* se "hornean" en el build, por eso se
  * leen con `process.env.NEXT_PUBLIC_...` literal (no con una variable).
@@ -22,8 +23,8 @@ export type PosicionAnuncio =
   | "bottom-banner";
 
 export const adsConfig = {
-  /** ID de editor de AdSense. Ej: "ca-pub-1234567890123456". */
-  cliente: process.env.NEXT_PUBLIC_ADSENSE_CLIENT ?? "",
+  /** ID de editor de AdSense del dueño (cuenta creada el 2026-09-16). */
+  cliente: process.env.NEXT_PUBLIC_ADSENSE_CLIENT || "ca-pub-6536653816995996",
 
   /** ID numérico del bloque de anuncio para cada posición. */
   slots: {

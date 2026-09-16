@@ -1,6 +1,7 @@
 import type { NextConfig } from "next";
 import { cabecerasCsp } from "./lib/csp";
 import { siteConfig } from "./lib/site-config";
+import { adsenseHabilitado } from "./lib/ads-config";
 
 const nextConfig: NextConfig = {
   /**
@@ -28,7 +29,7 @@ const nextConfig: NextConfig = {
    */
   async headers() {
     return cabecerasCsp({
-      adsense: (process.env.NEXT_PUBLIC_ADSENSE_CLIENT ?? "").length > 0,
+      adsense: adsenseHabilitado(),
       desarrollo: process.env.NODE_ENV !== "production",
     });
   },
