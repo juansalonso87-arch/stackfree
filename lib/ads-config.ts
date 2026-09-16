@@ -37,12 +37,14 @@ export const adsConfig = {
   /**
    * Si no hay anuncios reales, ¿mostrar el recuadro placeholder? Solo en
    * desarrollo (sirve para ver el layout); en el sitio publicado quedan
-   * invisibles hasta que existan los bloques de AdSense. Se puede forzar con
+   * invisibles hasta que existan los bloques de AdSense. Se usa NODE_ENV y no
+   * VERCEL_ENV porque este código corre en el navegador y Next solo le pasa
+   * NODE_ENV y las variables NEXT_PUBLIC_*. Se puede forzar con
    * NEXT_PUBLIC_ADS_PLACEHOLDER=true|false.
    */
   mostrarPlaceholder:
     process.env.NEXT_PUBLIC_ADS_PLACEHOLDER === "true" ||
-    (process.env.NEXT_PUBLIC_ADS_PLACEHOLDER !== "false" && process.env.VERCEL_ENV !== "production"),
+    (process.env.NEXT_PUBLIC_ADS_PLACEHOLDER !== "false" && process.env.NODE_ENV !== "production"),
 };
 
 /** Hay AdSense configurado cuando existe el ID de cliente. */
