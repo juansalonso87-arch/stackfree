@@ -17,6 +17,21 @@ const ESTADOS_COBRO = ["approved"];
 const OPERACIONES_QUE_NO_SON_VENTA = ["account_fund", "money_transfer", "withdrawal", "payout", "money_exchange", "credit_payment"];
 const OPERACIONES_VENTA_CONOCIDAS = ["regular_payment", "point_payment", "pos_payment", "subscription_payment"];
 
+/**
+ * En Argentina es muy común cobrar "por transferencia al alias" en vez de QR
+ * para esquivar la comisión. En el reporte esas ventas NO vienen como pago:
+ * llegan como `account_fund` (ingreso de dinero a la cuenta) con medio
+ * `bank_transfer`, igual que una carga de saldo propia; o como `money_transfer`
+ * cuando el cliente transfiere desde otra cuenta de Mercado Pago. Con la opción
+ * `transferenciasComoCobro` (activa por defecto) se cuentan como cobros.
+ */
+export const MEDIO_TRANSFERENCIA_RECIBIDA = "Transferencia recibida (alias / CVU)";
+
+export interface OpcionesMercadoPago {
+  /** Contar las transferencias recibidas como cobros a clientes (por defecto, sí). */
+  transferenciasComoCobro?: boolean;
+}
+
 const ETIQUETAS_MEDIO_PAGO: Record<string, string> = {
   account_money: "Dinero en cuenta (saldo MP)",
   bank_transfer: "Transferencia / débito inmediato",
@@ -99,7 +114,10 @@ export interface NoConcretada {
 export interface AnalisisMercadoPago {
   cobros: Cobro[];
   noConcretadas: NoConcretada[];
+  /** Cargas de saldo y movimientos propios que no se contaron como venta. */
   fondeos: { cantidad: number; monto: number };
+  /** Transferencias recibidas: cuántas se contaron como cobro (o se dejaron afuera si la opción está apagada). */
+  transferencias: { cantidad: number; monto: number; retenido: number; contadas: boolean };
   tieneHora: boolean;
   horaCorte: number;
   desde: Date;
@@ -131,7 +149,12 @@ function diaSemanaDe(f: Date): string {
   return DIAS_SEMANA[(f.getDay() + 6) % 7];
 }
 
-export async function analizarMercadoPago(archivos: File[], horaCorte = HORA_CORTE_DEFECTO): Promise<AnalisisMercadoPago> {
+export async function analizarMercadoPago(
+  archivos: File[],
+  horaCorte = HORA_CORTE_DEFECTO,
+  opciones: OpcionesMercadoPago = {},
+): Promise<AnalisisMercadoPago> {
+  const transferenciasComoCobro = opciones.transferenciasComoCobro ?? true;
   if (archivos.length === 0) throw new ErrorExtracto("No hay archivos para analizar.");
   if (horaCorte < 0 || horaCorte > 23) throw new ErrorExtracto("La hora de corte tiene que estar entre 0 y 23.");
   const avisos: string[] = [];
@@ -188,29 +211,43 @@ export async function analizarMercadoPago(archivos: File[], horaCorte = HORA_COR
   const cobros: Cobro[] = [];
   const noConcretadas: NoConcretada[] = [];
   const fondeos = { cantidad: 0, monto: 0 };
+  const transferencias = { cantidad: 0, monto: 0, retenido: 0, contadas: transferenciasComoCobro };
   for (const { f, momento } of conFecha) {
     const estado = texto(f.status) || "approved";
     const tipo = texto(f.operation_type) || "regular_payment";
+    const tipoPago = texto(f.payment_type);
     const diaTurno = tieneHora ? diaDeTurno(momento, horaCorte) : soloDia(momento);
     const periodo = clavePeriodo(diaTurno);
     const bruto = aNumero(f.transaction_amount);
-    if (ESTADOS_COBRO.includes(estado) && !OPERACIONES_QUE_NO_SON_VENTA.includes(tipo)) {
+    // Plata que entró por transferencia (alias/CVU o desde otra cuenta de MP): puede ser un cobro.
+    const esTransferenciaRecibida =
+      ESTADOS_COBRO.includes(estado) && bruto > 0 && ((tipo === "account_fund" && tipoPago === "bank_transfer") || tipo === "money_transfer");
+    const esVenta = ESTADOS_COBRO.includes(estado) && !OPERACIONES_QUE_NO_SON_VENTA.includes(tipo);
+    if (esTransferenciaRecibida) {
+      transferencias.cantidad++;
+      transferencias.monto += bruto;
+      transferencias.retenido += round2(bruto - Math.abs(aNumero(f.mercadopago_fee)) - aNumero(f.net_received_amount));
+    }
+
+    if (esVenta || (esTransferenciaRecibida && transferenciasComoCobro)) {
       const neto = aNumero(f.net_received_amount);
       const comisionMp = Math.abs(aNumero(f.mercadopago_fee));
       const otrasTarifas = OTRAS_TARIFAS.reduce((s, c) => s + Math.abs(aNumero(f[c])), 0);
-      const tipoPago = texto(f.payment_type);
       cobros.push({
         momento,
         diaTurno,
         diaSemana: diaSemanaDe(diaTurno),
         hora: momento.getHours(),
         periodo,
-        medioPago: ETIQUETAS_MEDIO_PAGO[tipoPago] ?? (tipoPago ? tipoPago.replace(/_/g, " ").replace(/\b\w/g, (c) => c.toUpperCase()) : "Sin dato"),
+        medioPago: esTransferenciaRecibida
+          ? MEDIO_TRANSFERENCIA_RECIBIDA
+          : (ETIQUETAS_MEDIO_PAGO[tipoPago] ?? (tipoPago ? tipoPago.replace(/_/g, " ").replace(/\b\w/g, (c) => c.toUpperCase()) : "Sin dato")),
         tipoOperacion: tipo,
         bruto,
         comisionMp,
         otrasTarifas,
         // Lo no discriminado (suele ser IIBB que MP retiene como agente): bruto − tarifas − neto.
+        // En las transferencias recibidas no hay comisión, pero esta retención aparece igual.
         retenciones: round2(bruto - comisionMp - otrasTarifas - neto),
         neto,
         devuelto: Math.abs(aNumero(f.amount_refunded)),
@@ -222,13 +259,32 @@ export async function analizarMercadoPago(archivos: File[], horaCorte = HORA_COR
       noConcretadas.push({ periodo, motivo: etiquetaMotivo(detalle, estado), bruto });
     } else if (ESTADOS_ESPECIALES[estado] && !OPERACIONES_QUE_NO_SON_VENTA.includes(tipo)) {
       noConcretadas.push({ periodo, motivo: ESTADOS_ESPECIALES[estado], bruto });
-    } else if (OPERACIONES_QUE_NO_SON_VENTA.includes(tipo) && ESTADOS_COBRO.includes(estado)) {
+    } else if (OPERACIONES_QUE_NO_SON_VENTA.includes(tipo) && ESTADOS_COBRO.includes(estado) && !esTransferenciaRecibida) {
       fondeos.cantidad++;
       fondeos.monto += bruto;
     }
   }
-  if (cobros.length === 0) throw new ErrorExtracto("No se encontró ningún cobro aprobado en el archivo.");
+  if (cobros.length === 0) {
+    throw new ErrorExtracto(
+      transferencias.cantidad > 0
+        ? `El archivo solo trae ${transferencias.cantidad} transferencias recibidas y la opción "Contar transferencias recibidas como cobros" está desactivada: no queda ningún cobro para analizar.`
+        : "No se encontró ningún cobro aprobado en el archivo.",
+    );
+  }
   cobros.sort((a, b) => a.momento.getTime() - b.momento.getTime());
+
+  const pesos = (n: number) => n.toLocaleString("es-AR", { style: "currency", currency: "ARS" });
+  if (transferencias.cantidad > 0) {
+    const pct = transferencias.monto ? ((transferencias.retenido / transferencias.monto) * 100).toFixed(2) : "0";
+    avisos.push(
+      transferenciasComoCobro
+        ? `${transferencias.cantidad} transferencias recibidas por ${pesos(transferencias.monto)} se contaron como cobros (venta por alias/CVU). Mercado Pago no cobra comisión por recibirlas, pero retuvo ${pesos(transferencias.retenido)} (${pct} %; suele ser IIBB). Si en realidad son cargas de saldo tuyas, desactivá la opción "Contar transferencias recibidas como cobros".`
+        : `${transferencias.cantidad} transferencias recibidas por ${pesos(transferencias.monto)} quedaron afuera del análisis porque la opción "Contar transferencias recibidas como cobros" está desactivada. Si tus clientes te pagan por alias/CVU, activala.`,
+    );
+  }
+  if (fondeos.cantidad > 0) {
+    avisos.push(`${fondeos.cantidad} movimiento(s) de saldo propio por ${pesos(fondeos.monto)} (cargas de dinero, retiros) no se cuentan como venta.`);
+  }
 
   if (tieneHora) {
     const madrugada = cobros.filter((c) => c.hora < horaCorte);
@@ -254,6 +310,7 @@ export async function analizarMercadoPago(archivos: File[], horaCorte = HORA_COR
     cobros,
     noConcretadas,
     fondeos,
+    transferencias,
     tieneHora,
     horaCorte,
     desde: new Date(Math.min(...dias)),

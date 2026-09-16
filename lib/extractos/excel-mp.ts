@@ -297,7 +297,7 @@ export async function generarExcelMercadoPago(a: AnalisisMercadoPago): Promise<B
     encabezadoHoja(
       ws,
       "Tarifas, comisiones y retenciones",
-      `${subtitulo}  |  'Retenciones no discriminadas' es la diferencia entre bruto − tarifas explícitas − neto acreditado: conviene validarla con contaduría`,
+      `${subtitulo}  |  'Retenciones no discriminadas' es la diferencia entre bruto − tarifas explícitas − neto acreditado (suele ser IIBB): conviene validarla con contaduría. En las transferencias recibidas (cobro por alias/CVU) no hay comisión, pero esta retención se aplica igual`,
       cab.length,
       PALETA,
     );

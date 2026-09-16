@@ -1200,6 +1200,8 @@ export const herramientas: Herramienta[] = [
       "mercado pago reporte de cobros descargar",
       "conciliacion mercado pago",
       "retenciones mercado pago iibb",
+      "cobrar por transferencia mercado pago",
+      "transferencias recibidas mercado pago reporte",
     ],
     icono: HandCoins,
     categoria: "administracion",
@@ -1217,8 +1219,8 @@ export const herramientas: Herramienta[] = [
     },
     pasos: [
       "Arrastrá el reporte de cobros al recuadro (podés sumar varios meses; si se solapan, cada operación se cuenta una sola vez).",
-      "Elegí la hora de corte del turno: con 06:00, un cobro de las 02:30 del sábado cuenta para el viernes.",
-      "Tocá “Analizar cobros”: en segundos ves el bruto, lo que descuenta Mercado Pago, el ticket promedio, el mejor turno, el promedio por día de la semana y los medios de pago.",
+      "Elegí la hora de corte del turno (con 06:00, un cobro de las 02:30 del sábado cuenta para el viernes) y dejá marcada la opción de contar las transferencias recibidas como cobros si tus clientes te pagan por alias o CVU.",
+      "Tocá “Analizar cobros”: en segundos ves el bruto, lo que descuenta Mercado Pago (incluida la retención sobre las transferencias), el ticket promedio, el mejor turno, el promedio por día de la semana y los medios de pago.",
       "Descargá el Excel completo: Cobros por Día, Cobros por Hora, Resumen Mensual, Medios de Pago, Por Local (si hay más de uno), Tarifas e Impuestos, No Concretadas y Detalle, con fórmulas que se recalculan si corregís algo.",
     ],
     tituloPasos: "Cómo usar el análisis paso a paso",
@@ -1234,9 +1236,14 @@ export const herramientas: Herramienta[] = [
           "El reporte trae el bruto, la comisión de Mercado Pago y el neto acreditado. La diferencia que queda (bruto − comisión − otras tarifas − neto) suele corresponder a retenciones y percepciones (por ejemplo, IIBB) que Mercado Pago aplica como agente de recaudación pero no desglosa. Se muestran como estimación: conviene validarlas con tu contador.",
       },
       {
+        pregunta: "Mis clientes me pagan por transferencia al alias en vez de QR. ¿Lo cuenta?",
+        respuesta:
+          "Sí, y es lo más común en Argentina. El detalle es que en el reporte esas ventas no aparecen como “pago” sino como ingreso de dinero a la cuenta (igual que cuando cargás saldo vos). Por eso la herramienta tiene la opción “Contar las transferencias recibidas como cobros”, activada por defecto: las suma como cobros con medio de pago “Transferencia recibida (alias / CVU)” y te muestra cuánto retiene Mercado Pago sobre ellas. Ojo con eso: no hay comisión, pero en los reportes reales vimos una retención de alrededor del 3 % (suele ser Ingresos Brutos), así que cobrar por transferencia tampoco es gratis. Si en tu caso esas transferencias son cargas de saldo tuyas, desmarcá la opción.",
+      },
+      {
         pregunta: "¿Qué cuenta como venta?",
         respuesta:
-          "Los cobros aprobados por QR, link de pago, Point o suscripciones. Las cargas de saldo, transferencias enviadas y retiros no se cuentan como ventas. Los rechazados, cancelados, devueltos (reembolso total), con contracargo o pendientes se listan aparte, con el motivo, como alerta operativa. Si un cobro tuvo una devolución parcial, figura completo en el bruto y lo devuelto aparece en la columna “Devuelto”. Y si subís reportes de varios locales, aparece un cuadro “Por Local”.",
+          "Los cobros aprobados por QR, link de pago, Point o suscripciones, y las transferencias recibidas si dejás activada esa opción. Las cargas de saldo con tarjeta o efectivo, las transferencias enviadas y los retiros no se cuentan como ventas. Los rechazados, cancelados, devueltos (reembolso total), con contracargo o pendientes se listan aparte, con el motivo, como alerta operativa. Si un cobro tuvo una devolución parcial, figura completo en el bruto y lo devuelto aparece en la columna “Devuelto”. Y si subís reportes de varios locales, aparece un cuadro “Por Local”.",
       },
       {
         pregunta: "¿Mi reporte se sube a algún servidor?",
