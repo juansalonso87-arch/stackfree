@@ -5,6 +5,7 @@
  *              genera un único PDF con esas páginas, en ese orden.
  */
 
+import { siteConfig } from "@/lib/site-config";
 import { crearZip } from "@/lib/zip";
 import { bytesAPdf, cargarPdf, contarPaginasPdf, interpretarRango, nombreBasePdf } from "@/lib/pdf";
 export { formatearBytes } from "@/lib/imagen";
@@ -42,7 +43,7 @@ export async function dividirPdf(
     const destino = await PDFDocument.create();
     const paginas = await destino.copyPages(origen, indices);
     paginas.forEach((p) => destino.addPage(p));
-    destino.setProducer("StackFree");
+    destino.setProducer(siteConfig.nombre);
     const bytes = await destino.save();
     onProgreso?.(1, 1);
     return {
@@ -61,7 +62,7 @@ export async function dividirPdf(
     const destino = await PDFDocument.create();
     const [pagina] = await destino.copyPages(origen, [i]);
     destino.addPage(pagina);
-    destino.setProducer("StackFree");
+    destino.setProducer(siteConfig.nombre);
     const bytes = await destino.save();
     entradas.push({
       nombre: `${base}-pagina-${String(i + 1).padStart(digitos, "0")}.pdf`,

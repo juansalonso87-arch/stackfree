@@ -3,11 +3,12 @@ import { siteConfig } from "@/lib/site-config";
 
 export const tamanoOg = { width: 1200, height: 630 };
 
-/** Estrella de 4 puntas dibujada como SVG (no depende de fuentes del sistema). */
-export function Chispa({ size = 28, color = "white" }: { size?: number; color?: string }) {
+/** Planilla (grilla con fila de títulos) dibujada como SVG: el logo de Planillar. No depende de fuentes del sistema. */
+export function Planilla({ size = 28, color = "white" }: { size?: number; color?: string }) {
   return (
-    <svg width={size} height={size} viewBox="0 0 24 24" fill={color}>
-      <path d="M12 1.5c.6 5.6 4.9 9.9 10.5 10.5-5.6.6-9.9 4.9-10.5 10.5C11.4 16.9 7.1 12.6 1.5 12 7.1 11.4 11.4 7.1 12 1.5z" />
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth={2.2} strokeLinecap="round" strokeLinejoin="round">
+      <rect x="3" y="4" width="18" height="16" rx="2.5" />
+      <path d="M3 9.5h18M3 14.75h18M10 9.5V20" />
     </svg>
   );
 }
@@ -45,7 +46,7 @@ export function generarImagenOg({ titulo, subtitulo }: { titulo: string; subtitu
               justifyContent: "center",
             }}
           >
-            <Chispa size={26} />
+            <Planilla size={26} />
           </div>
           {siteConfig.nombre}
         </div>

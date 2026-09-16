@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { MessageSquareWarning, ShieldCheck, Sparkles } from "lucide-react";
+import { MessageSquareWarning, Sheet, ShieldCheck } from "lucide-react";
 import { siteConfig } from "@/lib/site-config";
 
 export function Header() {
@@ -11,7 +11,7 @@ export function Header() {
           className="flex items-center gap-2 rounded-md font-heading text-base font-semibold outline-none focus-visible:ring-3 focus-visible:ring-ring/50"
         >
           <span className="flex size-8 items-center justify-center rounded-lg bg-primary text-primary-foreground">
-            <Sparkles className="size-4" aria-hidden="true" />
+            <Sheet className="size-4" aria-hidden="true" />
           </span>
           {siteConfig.nombre}
         </Link>

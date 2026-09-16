@@ -6,6 +6,8 @@
  * envía a ningún lado.
  */
 
+import { siteConfig } from "@/lib/site-config";
+
 export const MAX_ARCHIVOS = 50;
 export const MAX_MB_POR_ARCHIVO = 100;
 
@@ -89,8 +91,8 @@ export async function unirPdfs(
   }
 
   onProgreso?.(archivos.length, archivos.length, "Guardando…");
-  destino.setProducer("StackFree");
-  destino.setCreator("StackFree — unir PDF");
+  destino.setProducer(siteConfig.nombre);
+  destino.setCreator(`${siteConfig.nombre} — unir PDF`);
   const bytes = await destino.save();
   return {
     blob: new Blob([bytes as BlobPart], { type: "application/pdf" }),

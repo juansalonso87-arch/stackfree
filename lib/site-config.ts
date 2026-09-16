@@ -6,22 +6,36 @@
  * `siteConfig` en vez de repetir textos.
  */
 
+/** Dominio propio del sitio (comprado el 2026-09-16 en Porkbun, conectado a Vercel). */
+const DOMINIO = "planillar.com";
+
+/** Dirección anterior (Vercel): sigue existiendo y redirige al dominio propio (ver next.config.ts). */
+const URL_ANTERIOR = "https://stackfree.vercel.app";
+
 function resolverUrlBase(): string {
-  // 1) Dominio propio configurado a mano (producción con dominio custom).
+  // 1) Sobrescritura manual, por si algún día hace falta.
   if (process.env.NEXT_PUBLIC_SITE_URL) {
     return process.env.NEXT_PUBLIC_SITE_URL.replace(/\/$/, "");
   }
-  // 2) Vercel expone automáticamente el dominio de producción del proyecto.
+  // 2) Producción en Vercel: siempre el dominio propio (canonical, sitemap, Open Graph).
+  if (process.env.VERCEL_ENV === "production") {
+    return `https://${DOMINIO}`;
+  }
+  // 3) Previews de Vercel: el dominio de producción que informa Vercel.
   if (process.env.VERCEL_PROJECT_PRODUCTION_URL) {
     return `https://${process.env.VERCEL_PROJECT_PRODUCTION_URL}`;
   }
-  // 3) Desarrollo local.
+  // 4) Desarrollo local.
   return "http://localhost:3000";
 }
 
 export const siteConfig = {
   /** Nombre visible del sitio (header, títulos, Open Graph). */
-  nombre: "StackFree",
+  nombre: "Planillar",
+  /** Dominio propio, sin protocolo. */
+  dominio: DOMINIO,
+  /** Dirección vieja que redirige acá (útil para Search Console y para documentar). */
+  urlAnterior: URL_ANTERIOR,
   /** Frase corta que acompaña al nombre en el <title> del homepage. */
   eslogan: "Análisis de movimientos bancarios y herramientas gratis, en tu navegador",
   /** Descripción por defecto para buscadores y redes sociales. */
@@ -45,9 +59,10 @@ export const siteConfig = {
   repoUrl: "https://github.com/juansalonso87-arch/stackfree",
   licencia: "AGPL-3.0",
   /**
-   * Código de verificación de Google Search Console (propiedad
-   * https://stackfree.vercel.app/). No es secreto: va en el HTML público.
-   * Si se cambia de dominio hay que verificar de nuevo y actualizar esto.
+   * Código de verificación de Google Search Console (propiedad vieja
+   * https://stackfree.vercel.app/; la nueva, planillar.com, se verifica por un
+   * registro TXT en el DNS y no necesita código acá). No es secreto: va en el
+   * HTML público.
    */
   googleSiteVerification: "8cTv7V2y4YWfd9xlqKkGXqI-ApQvjVUGYhJVtYMqI_k",
   /** Idioma principal del sitio (atributo lang del <html> y Open Graph). */

@@ -1,5 +1,5 @@
 import { ImageResponse } from "next/og";
-import { Chispa } from "@/lib/og-image";
+import { Planilla } from "@/lib/og-image";
 
 /** Favicon generado en el build (reemplaza al favicon.ico clásico). */
 export const size = { width: 64, height: 64 };
@@ -19,7 +19,7 @@ export default function Icon() {
           background: "#4f46e5",
         }}
       >
-        <Chispa size={40} />
+        <Planilla size={40} />
       </div>
     ),
     size,

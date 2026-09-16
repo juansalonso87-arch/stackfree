@@ -1,6 +1,6 @@
-# StackFree
+# Planillar (planillar.com)
 
-Plataforma de herramientas web gratuitas con **procesamiento 100% en el navegador**: los archivos del usuario nunca se suben a un servidor. Se monetiza con Google AdSense y se aloja gratis en Vercel.
+Antes "StackFree" (stackfree.vercel.app, que hoy redirige a planillar.com). Plataforma de herramientas web gratuitas con **procesamiento 100% en el navegador**: los archivos del usuario nunca se suben a un servidor. Se monetiza con Google AdSense y se aloja gratis en Vercel.
 
 La sección principal es **Administración**: el usuario sube el Excel de movimientos de su banco (Santander, BBVA, Comafi), el reporte de cobros de Mercado Pago o el reporte de pedidos de PedidosYa (varios locales) y recibe, en su propio navegador, el análisis por concepto, categoría, local, día, producto y medio de pago, con controles, en un Excel con fórmulas. Los scripts Python que dieron origen a esos analizadores están en `python/`. La privacidad es verificable: ver `/verificar-privacidad` y la Content-Security-Policy en `lib/csp.ts`.
 

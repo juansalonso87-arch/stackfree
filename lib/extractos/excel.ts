@@ -9,6 +9,7 @@
 import type ExcelJS from "exceljs";
 import { CATEGORIA_DEFECTO, type AnalisisExtracto, type Control, type DiagnosticoConcepto, type Movimiento } from "./tipos";
 import { claveDia, formatearFecha, soloDia } from "./texto";
+import { siteConfig } from "@/lib/site-config";
 
 /* ------------------------------------------------------------------ */
 /* Estilos                                                              */
@@ -86,7 +87,7 @@ export async function crearLibro(): Promise<ExcelJS.Workbook> {
   const mod = await import("exceljs");
   const Lib = (mod as unknown as { default?: typeof ExcelJS }).default ?? (mod as unknown as typeof ExcelJS);
   const wb = new Lib.Workbook();
-  wb.creator = "StackFree";
+  wb.creator = siteConfig.nombre;
   wb.created = new Date();
   // Las fórmulas no traen resultado guardado: que Excel las calcule al abrir.
   wb.calcProperties.fullCalcOnLoad = true;

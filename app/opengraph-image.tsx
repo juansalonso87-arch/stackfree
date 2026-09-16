@@ -8,6 +8,6 @@ export const contentType = "image/png";
 export default function Image() {
   return generarImagenOg({
     titulo: siteConfig.eslogan,
-    subtitulo: "Edita imágenes y archivos sin subir nada a ningún servidor.",
+    subtitulo: "Subí los movimientos de tu banco, Mercado Pago o PedidosYa y recibí el análisis en Excel. Nada se sube a ningún servidor.",
   });
 }

@@ -8,13 +8,13 @@ This block is written and re-added by `next dev` — verify at `node_modules/nex
 
 <!-- END:nextjs-agent-rules -->
 
-# StackFree — notas del proyecto para agentes
+# Planillar — notas del proyecto para agentes
 
 Contexto que no se deduce del código. Leer junto con `README.md`.
 
 ## Qué es
 
-Plataforma de herramientas online gratuitas (stackfree.vercel.app), monetizada con AdSense, con **procesamiento 100% en el navegador**: ningún archivo del usuario se sube a un servidor. **La carta de presentación es la sección Administración** (análisis de movimientos bancarios, cobros de Mercado Pago y ventas de PedidosYa → Excel con fórmulas); las herramientas de imágenes/PDF son el complemento. Dueño: Juan Alonso (alias "John Askew" en su PC y en línea; principiante en desarrollo web; explicarle las decisiones en lenguaje simple, en español rioplatense). Regla del dueño: **gasto $0 en desarrollo e infraestructura**; solo pagaría publicidad o dominio.
+Plataforma de herramientas online gratuitas (**planillar.com**; hasta el 2026-09-16 se llamó StackFree y vivía en stackfree.vercel.app, que redirige con 308 al dominio nuevo), monetizada con AdSense, con **procesamiento 100% en el navegador**: ningún archivo del usuario se sube a un servidor. **La carta de presentación es la sección Administración** (análisis de movimientos bancarios, cobros de Mercado Pago y ventas de PedidosYa → Excel con fórmulas); las herramientas de imágenes/PDF son el complemento. Dueño: Juan Alonso (alias "John Askew" en su PC y en línea; principiante en desarrollo web; explicarle las decisiones en lenguaje simple, en español rioplatense). Regla del dueño: **gasto $0 en desarrollo e infraestructura**; solo pagaría publicidad o dominio.
 
 ## Reglas de arquitectura (no romper)
 
@@ -36,9 +36,10 @@ El sitio es **AGPL-3.0** (repo público) porque `@imgly/background-removal` (qui
 
 ## Deploy y servicios
 
-- GitHub: `juansalonso87-arch/stackfree`, rama `main`. Vercel (plan Hobby) redeploya en cada push; no hay pasos manuales.
-- `siteConfig.url` se resuelve solo desde `VERCEL_PROJECT_PRODUCTION_URL`; con dominio propio, definir `NEXT_PUBLIC_SITE_URL` en Vercel.
-- Google Search Console: propiedad `https://stackfree.vercel.app/` verificada por meta tag (`siteConfig.googleSiteVerification`); sitemap enviado el 2026-09-11. Si cambia el dominio, verificar de nuevo.
+- GitHub: `juansalonso87-arch/stackfree`, rama `main` (el repo conserva el nombre viejo; no hace falta renombrarlo). Vercel (plan Hobby, proyecto `stackfree`) redeploya en cada push; no hay pasos manuales.
+- **Dominio**: `planillar.com` comprado el 2026-09-16 en Porkbun (USD 11,08/año, renovación automática con la tarjeta del dueño; WHOIS privado). DNS en Porkbun: A `@` → `216.198.79.1` y CNAME `www` → el valor propio del proyecto que muestra Vercel; quedan los MX/SPF de Porkbun para el reenvío de mail. En Vercel: `planillar.com` = Production y `www.planillar.com` → 308 → `planillar.com`. Registrado a nombre del dueño con su Gmail.
+- `siteConfig.url`: en producción de Vercel es siempre `https://planillar.com` (`siteConfig.dominio`); `NEXT_PUBLIC_SITE_URL` solo sirve para sobrescribirlo. La redirección `stackfree.vercel.app → planillar.com` vive en `next.config.ts` (`redirects()` con `has: host`).
+- Google Search Console: propiedad vieja `https://stackfree.vercel.app/` verificada por meta tag (`siteConfig.googleSiteVerification`, sitemap enviado el 2026-09-11). Pendiente (lo hace el dueño): propiedad nueva de tipo Dominio `planillar.com` verificada por TXT en el DNS de Porkbun, luego "Cambio de dirección" desde la vieja y enviar `sitemap.xml`.
 - Modelo de IA de quitar fondo: se descarga del CDN de IMG.LY (no consume ancho de banda de Vercel).
 
 ## Cosas conocidas
@@ -54,8 +55,8 @@ El sitio es **AGPL-3.0** (repo público) porque `@imgly/background-removal` (qui
 
 ## Pendientes (fuera del código)
 
-- Dominio propio antes de postular a AdSense (Google rechaza `*.vercel.app`).
+- Postular a AdSense (ya hay dominio propio; Google rechaza `*.vercel.app`).
 - Ideas siguientes: más bancos (Galicia, Nación, Macro, Provincia, Brubank/Ualá), Rappi, conciliación banco↔MP↔PedidosYa, comprimir PDF (difícil 100 % en navegador), firmar PDF, marca de agua, QR.
 - Las guías de exportación (`guiaDescarga`) las confirmó el dueño el 2026-09-14 con los menús reales de cada home banking. Validado el 2026-09-15 con 3 archivos reales: el "Descargar movimientos" de Santander entrega el mismo TSV "Cash Management" (la línea de totales viene con tabulaciones vacías al final y los códigos sin ceros a la izquierda; el lector tolera ambas cosas).
 - Contacto activo con Web3Forms (plan Free, 250 mensajes/mes) desde el 2026-09-14; la clave pública está en `siteConfig.claveFormularioContacto` (se puede pisar con `NEXT_PUBLIC_WEB3FORMS_KEY`). Panel: app.web3forms.com con juan.s.alonso87@gmail.com.
-- Nuevo nombre + dominio propio (el actual "StackFree" es provisorio; cambiarlo es `siteConfig.nombre` + README/AGENTS).
+- Mail `hola@planillar.com` con el reenvío gratuito de Porkbun (cuando el dueño lo active, cambiar `siteConfig.emailContacto`). Opcional: `planillar.com.ar` en nic.ar ($8.500/año) delegado a los nameservers de Vercel y redirigido al .com.

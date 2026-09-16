@@ -5,6 +5,7 @@
  * archivo casi no cambia de tamaño.
  */
 
+import { siteConfig } from "@/lib/site-config";
 import { bytesAPdf, cargarPdf, contarPaginasPdf, interpretarRango, nombreBasePdf } from "@/lib/pdf";
 export { formatearBytes } from "@/lib/imagen";
 export { interpretarRango, textoPaginas } from "@/lib/pdf";
@@ -53,7 +54,7 @@ export async function rotarPdf(
     pagina.setRotation(degrees((((actual + angulo) % 360) + 360) % 360));
   }
 
-  doc.setProducer("StackFree");
+  doc.setProducer(siteConfig.nombre);
   const bytes = await doc.save();
   return {
     blob: bytesAPdf(bytes),

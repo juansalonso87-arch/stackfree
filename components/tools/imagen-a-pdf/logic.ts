@@ -7,6 +7,7 @@
  * en el navegador.
  */
 
+import { siteConfig } from "@/lib/site-config";
 import { ErrorImagen, decodificarImagen, exportarCanvas } from "@/lib/imagen";
 export { formatearBytes } from "@/lib/imagen";
 
@@ -142,8 +143,8 @@ export async function imagenesAPdf(
   }
 
   onProgreso?.(archivos.length, archivos.length, "Guardando…");
-  pdf.setProducer("StackFree");
-  pdf.setCreator("StackFree — imagen a PDF");
+  pdf.setProducer(siteConfig.nombre);
+  pdf.setCreator(`${siteConfig.nombre} — imagen a PDF`);
   const bytes = await pdf.save();
   return {
     blob: new Blob([bytes as BlobPart], { type: "application/pdf" }),
