@@ -43,8 +43,8 @@ export const siteConfig = {
     "Subí los movimientos de tu banco o Mercado Pago y recibí el análisis por concepto, categoría y día en un Excel con fórmulas. Además, herramientas gratis para imágenes y PDF. Todo se procesa en tu navegador: nada se sube a ningún servidor.",
   /** URL pública del sitio, sin barra final. */
   url: resolverUrlBase(),
-  /** Email de contacto que aparece en las páginas legales. */
-  emailContacto: "juan.s.alonso87@gmail.com",
+  /** Email de contacto (páginas legales, Acerca de, formulario). Es un reenvío gratis de Porkbun al Gmail del dueño. */
+  emailContacto: "hola@planillar.com",
   /**
    * Clave de acceso de Web3Forms para el formulario de contacto. Es una clave
    * PÚBLICA (el servicio la diseñó para usarse desde el navegador): solo permite
