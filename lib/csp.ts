@@ -24,6 +24,7 @@ const ADSENSE = {
     "https://www.googletagservices.com",
     "https://adservice.google.com",
     "https://*.google.com",
+    "https://*.adtrafficquality.google",
     "https://fundingchoicesmessages.google.com",
   ],
   frame: ["https://*.googlesyndication.com", "https://*.doubleclick.net", "https://*.google.com", "https://fundingchoicesmessages.google.com"],
@@ -40,6 +41,13 @@ export interface OpcionesCsp {
   conexiones?: string[];
   /** Hosts extra desde los que se pueden descargar scripts. */
   scripts?: string[];
+  /**
+   * Permitir `eval` en esa ruta. Lo necesita el motor de IA de "quitar fondo"
+   * (onnxruntime-web arma parte de su cargador de WebAssembly como texto). No
+   * afecta la garantía de privacidad: connect-src sigue limitando a quién se
+   * puede enviar datos.
+   */
+  eval?: boolean;
   adsense?: boolean;
   desarrollo?: boolean;
 }
@@ -58,6 +66,7 @@ export function construirCsp(o: OpcionesCsp = {}): string {
       "blob:",
       // En desarrollo, Vercel Analytics carga su script de depuración desde su CDN.
       ...(o.desarrollo ? ["'unsafe-eval'", "https://va.vercel-scripts.com"] : []),
+      ...(o.eval && !o.desarrollo ? ["'unsafe-eval'"] : []),
       ...(o.scripts ?? []),
       ...(ads ? ADSENSE.script : []),
     ]),
@@ -95,9 +104,9 @@ export function cabecerasCsp(o: { adsense: boolean; desarrollo: boolean }) {
   const csp = (extra: OpcionesCsp) => ({ key: "Content-Security-Policy", value: construirCsp({ ...o, ...extra }) });
   return [
     {
-      // Quitar fondo: descarga el modelo de IA desde el CDN de IMG.LY.
+      // Quitar fondo: descarga el modelo de IA desde el CDN de IMG.LY y su motor necesita eval.
       source: "/herramientas/quitar-fondo-imagen",
-      headers: [...comunes, csp({ conexiones: [CDN_MODELO_IA] })],
+      headers: [...comunes, csp({ conexiones: [CDN_MODELO_IA], eval: true })],
     },
     {
       // Contacto: envía el formulario al servicio de correo.
