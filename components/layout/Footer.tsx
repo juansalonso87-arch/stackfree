@@ -3,6 +3,7 @@ import { siteConfig } from "@/lib/site-config";
 import { herramientas, rutaHerramienta } from "@/lib/tools-registry";
 
 const enlacesLegales = [
+  { href: "/acerca", label: "Acerca de" },
   { href: "/verificar-privacidad", label: "Cómo comprobar la privacidad" },
   { href: "/contacto", label: "Contacto" },
   { href: "/legal/privacidad", label: "Política de privacidad" },
