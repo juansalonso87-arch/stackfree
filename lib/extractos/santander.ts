@@ -81,8 +81,10 @@ const CATEGORIAS_POR_CODIGO: Record<string, string> = {
   "4713": CAT.proveedores, // Pago interbanking b2b
   "2571": CAT.comisionesTarjeta, // Debito comercio fiserv
   "2574": CAT.comisionesTarjeta, // Debito comercio payway
-  "2960": CAT.comisiones, // Comision por servicio de cuenta
-  "3489": CAT.comisiones, // Comision servicio cuenta dolares
+  // El "servicio de cuenta" es el costo fijo mensual de la cuenta: va a Mantenimiento (como en BBVA y Comafi), no a Comisiones
+  // por operaciones. Pedido del dueño el 2026-09-17 con archivo real.
+  "2960": CAT.mantenimiento, // Comision por servicio de cuenta
+  "3489": CAT.mantenimiento, // Comision servicio cuenta dolares
   "434": CAT.comisiones, // Comision transf otros bcos canales
   "4757": CAT.comisiones, // Comision mensual de movs clearing
   "3629": CAT.comisiones, // Comision gestion de cobertura
@@ -106,7 +108,8 @@ const CATEGORIAS_POR_TEXTO: ReglasCategoria = [
   [CAT.iva, ["IVA", "PERCEPCION", "RETENCION"]],
   [CAT.impuestos, ["AFIP", "ARCA", "VEP"]],
   [CAT.comisionesTarjeta, ["DEBITO COMERCIO"]],
-  [CAT.comisiones, ["COMISION", "MANTENIMIENTO", "SERVICIO DE CUENTA"]],
+  [CAT.mantenimiento, ["MANTENIMIENTO", "SERVICIO DE CUENTA", "SERVICIO CUENTA"]],
+  [CAT.comisiones, ["COMISION"]],
   [CAT.intereses, ["INTERES", "PRESTAMO", "CUOTA", "DESCUBIERTO"]],
   [CAT.cobrosTarjeta, ["ACREDITACION A COMERCIO", "FISERV", "PAYWAY", "POSNET", "TARJETA"]],
   ["cheque", ["CHEQUE", "ECHEQ"]],
