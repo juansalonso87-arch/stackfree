@@ -14,6 +14,14 @@
 const CDN_MODELO_IA = "https://staticimgly.com";
 /** Servicio del formulario de contacto (solo en /contacto). */
 const FORMULARIO_CONTACTO = "https://api.web3forms.com";
+/**
+ * Reproductor de los videos tutoriales (dominio "sin cookies" de YouTube). Va en
+ * `frame-src`, que solo dice qué sitios pueden abrirse dentro de un recuadro de
+ * la página; no toca `connect-src`, así que la página sigue sin poder enviar
+ * datos a nadie. El iframe se crea únicamente cuando el usuario toca reproducir
+ * (components/core/VideoYouTube.tsx).
+ */
+const VIDEOS_YOUTUBE = "https://www.youtube-nocookie.com";
 
 /** Dominios de Google AdSense (solo se agregan cuando AdSense está configurado). */
 const ADSENSE = {
@@ -28,7 +36,7 @@ const ADSENSE = {
     "https://fundingchoicesmessages.google.com",
   ],
   frame: ["https://*.googlesyndication.com", "https://*.doubleclick.net", "https://*.google.com", "https://*.adtrafficquality.google", "https://fundingchoicesmessages.google.com"],
-  img: ["https://*.googlesyndication.com", "https://*.doubleclick.net", "https://*.google.com", "https://*.googleusercontent.com", "https://*.gstatic.com"],
+  img: ["https://*.googlesyndication.com", "https://*.doubleclick.net", "https://*.google.com", "https://*.googleusercontent.com", "https://*.gstatic.com", "https://*.adtrafficquality.google"],
   connect: ["https://*.googlesyndication.com", "https://*.doubleclick.net", "https://*.google.com", "https://*.adtrafficquality.google", "https://fundingchoicesmessages.google.com"],
 };
 
@@ -79,7 +87,7 @@ export function construirCsp(o: OpcionesCsp = {}): string {
     // LA CLAVE: a quién puede enviar datos la página. `blob:` y `data:` son objetos en la
     // memoria de la propia pestaña (los usa el motor de IA para leer su WebAssembly), no servidores.
     directiva("connect-src", ["'self'", "blob:", "data:", ...(o.conexiones ?? []), ...(ads ? ADSENSE.connect : [])]),
-    directiva("frame-src", ads ? ADSENSE.frame : ["'none'"]),
+    directiva("frame-src", [VIDEOS_YOUTUBE, ...(ads ? ADSENSE.frame : [])]),
     "form-action 'self'",
     "base-uri 'self'",
     "object-src 'none'",
@@ -121,4 +129,4 @@ export function cabecerasCsp(o: { adsense: boolean; desarrollo: boolean }) {
   ];
 }
 
-export const HOSTS_EXTERNOS = { CDN_MODELO_IA, FORMULARIO_CONTACTO };
+export const HOSTS_EXTERNOS = { CDN_MODELO_IA, FORMULARIO_CONTACTO, VIDEOS_YOUTUBE };

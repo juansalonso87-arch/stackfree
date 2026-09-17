@@ -74,7 +74,7 @@ const faq = [
   {
     pregunta: "¿Y qué sí registran?",
     respuesta:
-      "Estadísticas de visitas sin cookies (qué páginas se visitan, desde qué país, qué navegador), a través de Vercel Analytics, y los anuncios de Google AdSense. Nada de eso incluye el contenido, el nombre ni el tamaño de tus archivos. Los detalles están en la política de privacidad.",
+      "Estadísticas de visitas sin cookies (qué páginas se visitan, desde qué país, qué navegador), a través de Vercel Analytics, y los anuncios de Google AdSense. Los videos tutoriales están alojados en YouTube, pero el reproductor se carga únicamente cuando tocás reproducir: hasta ese momento solo ves una imagen servida por nosotros. Nada de eso incluye el contenido, el nombre ni el tamaño de tus archivos. Los detalles están en la política de privacidad.",
   },
   {
     pregunta: "¿Por qué no hacen como los demás y suben el archivo a un servidor?",

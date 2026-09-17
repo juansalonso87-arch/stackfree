@@ -74,6 +74,25 @@ export interface VarianteHerramienta {
   opciones: OpcionesVariante;
 }
 
+/**
+ * Video tutorial en YouTube. La página muestra una imagen propia (en /public)
+ * con un botón de reproducir y el reproductor de YouTube se carga solo cuando
+ * el usuario lo toca: mientras no lo hace, la página no le pide nada a Google.
+ */
+export interface VideoHerramienta {
+  /** ID del video (lo que sigue a `watch?v=` en la URL de YouTube). */
+  youtubeId: string;
+  titulo: string;
+  /** Un párrafo: qué muestra el video. Se ve en la página y va a Google como VideoObject. */
+  descripcion: string;
+  /** Duración en formato ISO 8601 (por ejemplo "PT5M44S"). */
+  duracion: string;
+  /** Fecha de publicación (aaaa-mm-dd). */
+  publicado: string;
+  /** Ruta de la imagen de vista previa dentro de /public (1280×720). */
+  miniatura: string;
+}
+
 export interface Herramienta {
   /** Parte final de la URL: /herramientas/<slug>. Solo minúsculas y guiones. */
   slug: string;
@@ -114,6 +133,8 @@ export interface Herramienta {
    * correrlo en su PC. Se muestra como enlace en la página de la herramienta.
    */
   scriptPython?: string;
+  /** Video tutorial (se muestra debajo de la herramienta y en la portada de su categoría). */
+  video?: VideoHerramienta;
   /**
    * Carga "a pedido" del componente de la herramienta.
    * Se usa `import()` dinámico para que el JS de cada herramienta viaje en
@@ -1262,6 +1283,15 @@ export const herramientas: Herramienta[] = [
       },
     ],
     scriptPython: "python/MP_analizador_cobros.py",
+    video: {
+      youtubeId: "GHO2HI3ERg0",
+      titulo: "¿Cuánto te cobra Mercado Pago de verdad? Comisión, retenciones y cuándo te liberan la plata",
+      descripcion:
+        "En 5 minutos analizamos el reporte de cobros de un restaurante (datos de ejemplo): cómo descargarlo, cuánto se lleva Mercado Pago entre comisión y retenciones, qué pasa con las transferencias al alias, cuánto entra por QR, Point y link, cuándo se libera la plata y qué trae el Excel.",
+      duracion: "PT5M44S",
+      publicado: "2026-09-16",
+      miniatura: "/videos/cobros-mercado-pago.jpg",
+    },
     cargar: () => import("@/components/tools/cobros-mercado-pago/CobrosMercadoPagoTool"),
   },
   {

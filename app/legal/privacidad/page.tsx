@@ -98,6 +98,14 @@ export default function PaginaPrivacidad() {
             política de privacidad
           </a>
         </li>
+        <li>
+          <strong>YouTube</strong> (videos tutoriales, en su modo sin cookies de seguimiento). El reproductor se
+          carga solo cuando tocas reproducir; hasta entonces la página muestra una imagen propia y no se conecta
+          con YouTube —{" "}
+          <a href="https://policies.google.com/privacy?hl=es" target="_blank" rel="noopener noreferrer">
+            política de privacidad
+          </a>
+        </li>
       </ul>
 
       <h2>5. Tus derechos</h2>

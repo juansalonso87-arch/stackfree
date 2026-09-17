@@ -1,9 +1,10 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { ChevronRight, Code2, FileSpreadsheet, Lock, ShieldCheck, WifiOff } from "lucide-react";
+import { ChevronRight, Code2, FileSpreadsheet, Lock, PlayCircle, ShieldCheck, WifiOff } from "lucide-react";
 import { siteConfig } from "@/lib/site-config";
 import { urlContacto } from "@/lib/contacto";
-import { herramientasPorCategoria } from "@/lib/tools-registry";
+import { herramientasPorCategoria, rutaHerramienta } from "@/lib/tools-registry";
+import { duracionLegible, jsonLdVideo } from "@/lib/video";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
@@ -15,6 +16,7 @@ import {
 import { AdSlot } from "@/components/core/AdSlot";
 import { JsonLd } from "@/components/core/JsonLd";
 import { ToolCard } from "@/components/core/ToolCard";
+import { VideoYouTube } from "@/components/core/VideoYouTube";
 
 const TITULO = "Herramientas de administración para PyMEs: extractos bancarios a Excel";
 const DESCRIPCION =
@@ -71,7 +73,10 @@ const faq = [
 
 export default function PaginaAdministracion() {
   const lista = herramientasPorCategoria("administracion");
+  // Herramientas con video tutorial (hoy Mercado Pago; se suman solas al declarar `video` en el registry).
+  const conVideo = lista.flatMap((h) => (h.video ? [{ herramienta: h, video: h.video }] : []));
   const jsonLd = [
+    ...conVideo.map((v) => jsonLdVideo(v.video)),
     {
       "@context": "https://schema.org",
       "@type": "CollectionPage",
@@ -161,6 +166,37 @@ export default function PaginaAdministracion() {
           y lo sumamos.
         </p>
       </section>
+
+      {conVideo.length > 0 && (
+        <section className="mt-12" aria-labelledby="videos-admin">
+          <h2 id="videos-admin" className="flex items-center gap-2 font-heading text-xl font-semibold tracking-tight">
+            <PlayCircle className="size-5 text-primary" aria-hidden="true" />
+            Mirá cómo funciona
+          </h2>
+          <p className="mt-2 max-w-3xl text-muted-foreground">
+            Videos cortos con un caso real de ejemplo: qué reporte descargar, cómo subirlo y qué mirar en el resultado.
+          </p>
+          <div className={conVideo.length > 1 ? "mt-4 grid gap-8 md:grid-cols-2" : "mt-4 max-w-3xl"}>
+            {conVideo.map(({ herramienta: h, video }) => (
+              <div key={h.slug}>
+                <VideoYouTube video={video} />
+                <h3 className="mt-3 font-medium">
+                  <Link href={`${rutaHerramienta(h.slug)}#video`} className="hover:underline">
+                    {video.titulo}
+                  </Link>
+                  <span className="ml-2 text-sm font-normal text-muted-foreground">{duracionLegible(video.duracion)}</span>
+                </h3>
+                <p className="mt-1 text-sm text-muted-foreground">
+                  Herramienta:{" "}
+                  <Link href={rutaHerramienta(h.slug)} className="underline underline-offset-2 hover:text-foreground">
+                    {h.nombre}
+                  </Link>
+                </p>
+              </div>
+            ))}
+          </div>
+        </section>
+      )}
 
       <section className="mt-12 grid gap-6 md:grid-cols-3">
         {[

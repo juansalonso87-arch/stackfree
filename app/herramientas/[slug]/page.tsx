@@ -1,8 +1,9 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { ChevronRight, Code2, Construction, Download, Lock, Sparkles } from "lucide-react";
+import { ChevronRight, Code2, Construction, Download, Lock, PlayCircle, Sparkles } from "lucide-react";
 import { siteConfig } from "@/lib/site-config";
+import { duracionLegible, jsonLdVideo } from "@/lib/video";
 import {
   herramientas,
   nombresCategoria,
@@ -23,6 +24,7 @@ import { JsonLd } from "@/components/core/JsonLd";
 import { PedidoDevolucion } from "@/components/core/PedidoDevolucion";
 import { ToolCard } from "@/components/core/ToolCard";
 import { ToolLoader } from "@/components/core/ToolLoader";
+import { VideoYouTube } from "@/components/core/VideoYouTube";
 
 type Props = { params: Promise<{ slug: string }> };
 
@@ -133,6 +135,7 @@ export default async function PaginaHerramienta({ params }: Props) {
       <JsonLd data={jsonLdFaq} />
       <JsonLd data={jsonLdMigas} />
       <JsonLd data={jsonLdApp} />
+      {h.video && <JsonLd data={jsonLdVideo(h.video)} />}
 
       {/* Migas de pan */}
       <nav aria-label="Migas de pan" className="mb-4 flex flex-wrap items-center gap-1 text-sm text-muted-foreground">
@@ -211,6 +214,19 @@ export default async function PaginaHerramienta({ params }: Props) {
               />
             )}
           </section>
+
+          {/* Video tutorial: el reproductor de YouTube se carga solo al tocar reproducir (ver VideoYouTube). */}
+          {h.video && (
+            <section id="video" className="scroll-mt-20" aria-labelledby="video-titulo">
+              <h2 id="video-titulo" className="flex items-center gap-2 font-heading text-xl font-semibold tracking-tight">
+                <PlayCircle className="size-5 text-primary" aria-hidden="true" />
+                Mirá cómo funciona
+                <span className="text-base font-normal text-muted-foreground">· {duracionLegible(h.video.duracion)}</span>
+              </h2>
+              <p className="mt-2 text-muted-foreground">{h.video.descripcion}</p>
+              <VideoYouTube video={h.video} className="mt-4" />
+            </section>
+          )}
 
           {hermanas.length > 0 && (
             <nav aria-label="Otras conversiones" className="flex flex-wrap items-center gap-2 text-sm">
