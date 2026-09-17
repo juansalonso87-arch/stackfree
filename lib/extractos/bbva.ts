@@ -60,6 +60,21 @@ const COLUMNAS_IDX = { fecha: 0, concepto: 2, codigo: 3, nroDoc: 4, oficina: 5, 
 /* Categorías (vocabulario compartido en tipos.ts)                      */
 /* ------------------------------------------------------------------ */
 
+/** Marcador interno para el código 761 (débito directo): la categoría la decide `clasificarDebitoDirecto`. */
+const DEBITO_DIRECTO = "debitoDirecto";
+
+/**
+ * Empresas que cobran por débito directo. En BBVA el concepto viene como
+ * "OG-DEBITO DI <código de empresa><leyenda>" ("22134DEBZURICH", "10295CUOTAS P"):
+ * la leyenda se recorta, pero el código de empresa es estable, así que se usa
+ * para nombrarla en el concepto y clasificar bien. Confirmado por el dueño con
+ * archivos reales (2026-09-17: los dos códigos son pólizas de Zurich).
+ */
+const EMPRESAS_DEBITO_DIRECTO: Record<string, string> = {
+  "22134": "ZURICH", // leyenda DEBZURICH
+  "10295": "ZURICH", // leyenda CUOTAS P… (cuotas de póliza)
+};
+
 /**
  * Códigos de operación de BBVA → categoría. Relevados de archivos reales
  * (2026-09). Un código ausente cae a la clasificación por texto.
@@ -101,7 +116,7 @@ const CODIGOS_BBVA: Record<string, string> = {
   "589": CAT.impCheque, // IMPUESTO LEY (25.413)
   "609": CAT.impCheque, // LEY NRO 25.4(13)
   "758": CAT.iva, // IVA TASA RED (10,5 %)
-  // 761 OG-DEBITO DI: débito directo genérico → decide el texto (Zurich, plan AFIP, cuotas, servicios)
+  "761": DEBITO_DIRECTO, // OG-DEBITO DI: una empresa debita en la cuenta → decide el texto (ver clasificarDebitoDirecto)
   "879": CAT.sueldos, // OG-DEBITO HABERES OL
   "933": "transferencia", // TRANSFERENCI -CU (con NRO.TRANSF.)
   // 983 DNET CREDITO: crédito por Datanet/Interbanking. En los archivos del dueño es siempre PedidosYa (Delivery Hero en el
@@ -125,6 +140,9 @@ const CATEGORIAS: [string, string[]][] = [
   [CAT.iva, ["IVA", "PERCEPCION", "RETENCION GANANCIAS", "REGIMEN AFIP", "RETENCION"]],
   [CAT.otrosImp, ["IMPUESTO", "TASA", "SELLOS", "SELLADO"]],
   [CAT.mantenimiento, ["MANTENIMIENTO", "MANT"]],
+  // Seguros antes que comisiones e intereses: "CUOTAS" de una póliza o "CARGO SEGURO" son seguro, no préstamo ni comisión.
+  // Y antes que "Servicios", porque el débito directo genérico (OG DEBITO DI) también matchea servicios.
+  [CAT.seguros, ["SEGURO", "ZURICH", "SANCOR", "GALENO", "OSDE", "SWISS MEDICAL", "PREPAGA", "LA CAJA", "FEDERACION PATRONAL", "ALLIANZ", "MAPFRE", "PROVINCIA SEGUROS", "ART"]],
   [CAT.comisiones, ["COMISION", "ARANCEL", "CARGO", "GASTO", "CHEQUERA", "ALQUILER DE"]],
   [CAT.intereses, ["PLAN DE PAGO", "PRESTAMO", "CUOTA", "AMORTIZACION", "INTERES", "DESCUBIERTO", "ADELANTO"]],
   // "PAGO VISA" (débito) es el pago del resumen de la tarjeta: va ANTES de "Cobros con tarjeta", que también contiene VISA.
@@ -135,8 +153,6 @@ const CATEGORIAS: [string, string[]][] = [
     CAT.cobrosTarjeta,
     ["CUPON", "CUPONES", "CUPON ARGEN", "ARGENCARD", "CABAL", "CUPONES CABA", "MAESTRO", "MAE ACREDITA", "TARJETA", "VISA", "MASTERCARD", "MASTER CARD", "AMEX", "NARANJA", "COMERCIOS", "POSNET", "PRISMA", "FISERV", "PAYWAY", "GETNET", "LIQUIDACION TARJETA"],
   ],
-  // Seguros antes que "Servicios", porque el débito directo genérico (OG DEBITO DI) también matchea servicios.
-  [CAT.seguros, ["SEGURO", "ZURICH", "SANCOR", "GALENO", "OSDE", "SWISS MEDICAL", "PREPAGA", "LA CAJA", "FEDERACION PATRONAL", "ALLIANZ", "MAPFRE", "PROVINCIA SEGUROS", "ART"]],
   ["efectivo", ["DEPOSITO", "EFECTIVO", "EXTRACCION", "CAJERO", "ATM"]],
   ["cheque", ["CHEQUE", "ECHEQ", "CLEARING"]],
   [CAT.embargos, ["EMBARGO", "EMBG", "JUDICIAL", "OFICIO"]],
@@ -215,6 +231,11 @@ export function normalizarConcepto(texto: unknown): string {
   if (texto === null || texto === undefined) return "";
   let t = sinAcentos(texto).toUpperCase().trim();
   if (!t || t === "NAN") return "";
+  // Débito directo: el código de empresa que sigue a "OG-DEBITO DI" nombra a quien cobra, aunque la leyenda venga recortada.
+  t = t.replace(/\bOG-?\s*DEBITO\s+DI\s+(\d{5})(?=\D|$)/, (todo, codigo: string) => {
+    const empresa = EMPRESAS_DEBITO_DIRECTO[codigo];
+    return empresa ? `${todo} ${empresa} ` : todo;
+  });
   for (const [patron, reemplazo] of REESCRITURAS) t = t.replace(patron, reemplazo);
   for (const [patron, reemplazo] of CODIGOS_CON_SIGNIFICADO) {
     const nuevo = t.replace(patron, reemplazo);
@@ -307,6 +328,19 @@ function clasificarTexto(texto: string): string {
   return CATEGORIA_DEFECTO;
 }
 
+/**
+ * Código 761 (OG-DEBITO DI): una empresa debita en la cuenta por débito
+ * directo. El texto decide (Zurich → seguros, PLANRG → plan de pagos AFIP…).
+ * Si el texto no dice nada, o solo habla de "cuotas", es un débito automático:
+ * las cuotas que cobra una empresa no son un préstamo del banco (los préstamos
+ * del propio banco vienen con otro código). Detectado con un archivo real el
+ * 2026-09-17: "OG-DEBITO DI 10295CUOTAS P" (Zurich) caía en "Intereses y préstamos".
+ */
+function clasificarDebitoDirecto(concepto: string): string {
+  const c = clasificarTexto(concepto);
+  return c === CATEGORIA_DEFECTO || c === CAT.intereses ? CAT.servicios : c;
+}
+
 interface Crudo {
   concepto: string;
   codigo: string;
@@ -336,6 +370,7 @@ function clasificarConceptos(movimientos: Crudo[]): Map<string, string> {
       if (cat) porCodigo.set(cat, (porCodigo.get(cat) ?? 0) + 1);
     }
     let categoria = ganadora(porCodigo) ?? clasificarTexto(concepto);
+    if (categoria === DEBITO_DIRECTO) categoria = clasificarDebitoDirecto(concepto);
     if (categoria === CATEGORIA_DEFECTO) {
       const votos = new Map<string, number>();
       for (const m of grupo) {
