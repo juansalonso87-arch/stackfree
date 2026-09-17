@@ -13,7 +13,7 @@
  */
 
 import {
-  ASEGURADORAS,
+  seguroOPrepaga,
   CATEGORIA as CAT,
   CATEGORIA_DEFECTO,
   ErrorExtracto,
@@ -72,7 +72,7 @@ const CATEGORIAS_POR_CODIGO: Record<string, string> = {
   "1153": CAT.sueldos, // Pago de haberes por cci
   "4712": CAT.impuestos, // Pago afip servicio interbanking
   "4719": POR_BENEFICIARIO, // Pago de servicios (Edenor → servicios; Arba web → impuestos)
-  "4085": POR_BENEFICIARIO, // Debito automatico (Zurich → seguros)
+  "4085": POR_BENEFICIARIO, // Debito automatico (Zurich → seguros; OSDE → prepagas)
   "824": CAT.transfEnviadas, // Transferencia realizada
   "2822": CAT.transfEnviadas, // Transferencia inmediata
   "1252": CAT.transfEnviadas, // Debito transf. online banking emp
@@ -140,11 +140,10 @@ function porPagador(detalle: string, concepto: string): string {
   return CAT.transfRecibidas;
 }
 
-/** Débitos por servicios: ¿a quién se paga? Organismo impositivo, aseguradora u otro (servicio). */
+/** Débitos por servicios: ¿a quién se paga? Organismo impositivo, aseguradora, prepaga u otro (servicio). */
 function porBeneficiario(detalle: string): string {
   if (menciona(detalle, ORGANISMOS_IMPOSITIVOS)) return CAT.impuestos;
-  if (menciona(detalle, ASEGURADORAS)) return CAT.seguros;
-  return CAT.servicios;
+  return seguroOPrepaga(detalle) ?? CAT.servicios;
 }
 
 function clasificar(codigo: string, concepto: string, detalle: string, importe: number): string {

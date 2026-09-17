@@ -102,7 +102,8 @@ export const CATEGORIA = {
   comprasDebito: "Compras con tarjeta de débito",
   cobrosTarjeta: "Cobros con tarjeta",
   plataformas: "Cobros de plataformas",
-  seguros: "Seguros y prepagas",
+  seguros: "Seguros",
+  prepagas: "Prepagas y salud",
   servicios: "Servicios y débitos automáticos",
   proveedores: "Pagos a proveedores",
   embargos: "Embargos y judiciales",
@@ -135,7 +136,35 @@ export function resolverSentido(base: string, esCredito: boolean): string {
 /** Quién paga o cobra, según el detalle: plataforma de ventas, procesadora de tarjetas, o nadie reconocible. */
 export const PLATAFORMAS = ["DELIVERY HERO", "PEDIDOSYA", "PEDIDOS YA", "RAPPI", "MERCADO PAGO", "MERCADOPAGO", "MERCADO LIBRE", "MERCADOLIBRE", "MODO", "UALA", "GLOVO"];
 export const PROCESADORAS_TARJETA = ["FIRST DATA", "FISERV", "PRISMA", "PAYWAY", "POSNET", "CABAL", "AMERICAN EXPRESS", "AMEX", "NARANJA", "ARGENCARD", "MASTERCARD", "VISA", "GETNET", "LAPOS", "CLOVER"];
-export const ASEGURADORAS = ["ZURICH", "SANCOR", "GALENO", "OSDE", "SWISS MEDICAL", "PREPAGA", "SEGURO", "LA CAJA", "ALLIANZ", "MAPFRE", "FEDERACION PATRONAL", "PROVINCIA SEG", "SAN CRISTOBAL", "ORBIS", "RIVADAVIA", "MEDIFE", "OMINT"];
+/**
+ * Seguros y prepagas son categorías distintas (pedido del dueño, 2026-09-17):
+ * el seguro es un costo del negocio; la prepaga, un gasto de salud del dueño o
+ * un beneficio al personal. Varias marcas están en los dos mundos (Sancor tiene
+ * seguros y Sancor Salud; Galeno y Swiss Medical tienen prepaga y ART), por eso
+ * `seguroOPrepaga` mira primero las palabras explícitas ("ART", "seguro"),
+ * después las prepagas y por último las aseguradoras.
+ */
+export const PREPAGAS = ["OSDE", "SWISS MEDICAL", "GALENO", "MEDIFE", "OMINT", "MEDICUS", "PREPAGA", "SALUD", "HOSPITAL ITALIANO", "HOSPITAL ALEMAN", "HOSPITAL BRITANICO", "ACCORD"];
+export const ASEGURADORAS = ["ZURICH", "SANCOR", "SEGURO", "LA CAJA", "ALLIANZ", "MAPFRE", "FEDERACION PATRONAL", "PROVINCIA SEG", "SAN CRISTOBAL", "ORBIS", "RIVADAVIA", "MERIDIONAL", "EXPERTA", "PREVENCION"];
+/** Palabras que identifican un seguro sin duda, aunque la marca también venda prepaga ("GALENO ART", "SWISS MEDICAL ART"). */
+const SEGURO_EXPLICITO = /\bART\b|\bSEGUR|ASEGURADOR/;
+
+/**
+ * ¿El texto (concepto + detalle) nombra una aseguradora o una prepaga?
+ * Devuelve la categoría o `null` si no reconoce a nadie. Compara sin acentos
+ * y en mayúsculas; las marcas se buscan como texto contenido, "ART" como
+ * palabra entera (para no confundir "PARTE" o "MARTINEZ").
+ */
+export function seguroOPrepaga(texto: string): string | null {
+  const t = texto
+    .normalize("NFD")
+    .replace(/[̀-ͯ]/g, "")
+    .toUpperCase();
+  if (SEGURO_EXPLICITO.test(t)) return CATEGORIA.seguros;
+  if (PREPAGAS.some((p) => t.includes(p))) return CATEGORIA.prepagas;
+  if (ASEGURADORAS.some((a) => t.includes(a))) return CATEGORIA.seguros;
+  return null;
+}
 export const ORGANISMOS_IMPOSITIVOS = ["AFIP", "ARCA", "ARBA", "AGIP", "RENTAS", "ATM ", "DGR", "API SANTA FE", "MUNICIPALIDAD", "TASA MUNICIPAL"];
 
 /** Error con mensaje pensado para el usuario (no técnico). */

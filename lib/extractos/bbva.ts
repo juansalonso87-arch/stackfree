@@ -140,9 +140,13 @@ const CATEGORIAS: [string, string[]][] = [
   [CAT.iva, ["IVA", "PERCEPCION", "RETENCION GANANCIAS", "REGIMEN AFIP", "RETENCION"]],
   [CAT.otrosImp, ["IMPUESTO", "TASA", "SELLOS", "SELLADO"]],
   [CAT.mantenimiento, ["MANTENIMIENTO", "MANT"]],
-  // Seguros antes que comisiones e intereses: "CUOTAS" de una póliza o "CARGO SEGURO" son seguro, no préstamo ni comisión.
-  // Y antes que "Servicios", porque el débito directo genérico (OG DEBITO DI) también matchea servicios.
-  [CAT.seguros, ["SEGURO", "ZURICH", "SANCOR", "GALENO", "OSDE", "SWISS MEDICAL", "PREPAGA", "LA CAJA", "FEDERACION PATRONAL", "ALLIANZ", "MAPFRE", "PROVINCIA SEGUROS", "ART"]],
+  // Seguros y prepagas antes que comisiones e intereses: "CUOTAS" de una póliza o "CARGO SEGURO" son seguro, no préstamo
+  // ni comisión. Y antes que "Servicios", porque el débito directo genérico (OG DEBITO DI) también matchea servicios.
+  // Tres pasos, como `seguroOPrepaga` (tipos.ts): palabra explícita de seguro → prepagas → aseguradoras (Sancor Salud es
+  // prepaga; Galeno ART es seguro).
+  [CAT.seguros, ["SEGURO", "ART"]],
+  [CAT.prepagas, ["OSDE", "SWISS MEDICAL", "GALENO", "MEDIFE", "OMINT", "MEDICUS", "PREPAGA", "SALUD", "ACCORD"]],
+  [CAT.seguros, ["ZURICH", "SANCOR", "LA CAJA", "FEDERACION PATRONAL", "ALLIANZ", "MAPFRE", "PROVINCIA SEGUROS", "SAN CRISTOBAL", "MERIDIONAL", "EXPERTA", "PREVENCION"]],
   [CAT.comisiones, ["COMISION", "ARANCEL", "CARGO", "GASTO", "CHEQUERA", "ALQUILER DE"]],
   [CAT.intereses, ["PLAN DE PAGO", "PRESTAMO", "CUOTA", "AMORTIZACION", "INTERES", "DESCUBIERTO", "ADELANTO"]],
   // "PAGO VISA" (débito) es el pago del resumen de la tarjeta: va ANTES de "Cobros con tarjeta", que también contiene VISA.

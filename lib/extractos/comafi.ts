@@ -8,7 +8,7 @@
  */
 
 import {
-  ASEGURADORAS,
+  seguroOPrepaga,
   CATEGORIA as CAT,
   CATEGORIA_DEFECTO,
   ErrorExtracto,
@@ -60,7 +60,9 @@ const CATEGORIAS: ReglasCategoria = [
   [CAT.impuestos, ["afip", "arca", "vep"]],
   [CAT.otrosImp, ["impuesto", "imp.", "sellos", "sellado"]],
   [CAT.mantenimiento, ["mantenimiento"]],
-  [CAT.seguros, ["seguro", "prepaga", "zurich", "sancor", "galeno", "osde", "swiss medical"]],
+  // Prepagas antes que seguros: "sancor salud" es prepaga aunque diga sancor.
+  [CAT.prepagas, ["prepaga", "osde", "swiss medical", "galeno", "medife", "omint", "salud"]],
+  [CAT.seguros, ["seguro", "zurich", "sancor", "la caja", "allianz", "mapfre", "federacion patronal"]],
   [CAT.comisiones, ["comision", "gastos", "chequera", "arancel", "cargo"]],
   [CAT.intereses, ["interes", "prestamo", "cuota", "descubierto"]],
   [CAT.pagoTarjeta, ["pago tarjeta", "pago visa", "pago master", "pago amex"]],
@@ -91,7 +93,8 @@ function clasificar(concepto: string, detalle: string, importe: number): string 
   }
   if (base === CAT.servicios || base === CAT.transfEnviadas) {
     if (menciona(detalle, ORGANISMOS_IMPOSITIVOS)) return CAT.impuestos;
-    if (menciona(detalle, ASEGURADORAS)) return CAT.seguros;
+    const salud = seguroOPrepaga(detalle);
+    if (salud) return salud;
   }
   return base;
 }
