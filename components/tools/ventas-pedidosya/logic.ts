@@ -9,6 +9,7 @@ import { generarExcelPedidosYa } from "@/lib/extractos/excel-peya";
 import {
   HORA_CORTE_DEFECTO,
   analizarPedidosYa,
+  cajaPorDia,
   descontadoPorPeYa,
   medianaEntrega,
   medianaPreparacion,
@@ -51,6 +52,19 @@ export async function analizar(archivos: File[], horaCorte: number): Promise<Res
   const locales = porLocal(a);
   const variosLocales = a.locales.length > 1;
   const topProductos = [...a.items].sort((x, y) => y.unidades - x.unidades).slice(0, 15);
+  // Caja por día para la pantalla: sumada entre locales (el Excel la trae por local); solo si hubo cobros en efectivo.
+  const caja = new Map<number, { dia: Date; diaSemana: string; online: number; ventaOnline: number; efectivoN: number; efectivo: number; adeudado: number }>();
+  for (const c of cajaPorDia(a.ventas)) {
+    const k = c.dia.getTime();
+    const f = caja.get(k) ?? { dia: c.dia, diaSemana: c.diaSemana, online: 0, ventaOnline: 0, efectivoN: 0, efectivo: 0, adeudado: 0 };
+    f.online += c.pedidosOnline;
+    f.ventaOnline += c.ventaOnline;
+    f.efectivoN += c.pedidosEfectivo;
+    f.efectivo += c.efectivoCobrado;
+    f.adeudado += c.adeudado;
+    caja.set(k, f);
+  }
+  const cajaPorDiaUI = [...caja.values()].sort((x, y) => x.dia.getTime() - y.dia.getTime());
 
   return {
     titulo: "Ventas de PedidosYa",
@@ -102,6 +116,23 @@ export async function analizar(archivos: File[], horaCorte: number): Promise<Res
         numericas: [1, 2, 3],
         filas: promedioPorDiaSemana(a.ventas).map((d) => [d.dia, formatearEntero(d.turnos), d.pedidosPromedio.toFixed(1), formatearPesos(d.promedio)]),
       },
+      ...(efectivo > 0
+        ? [
+            {
+              titulo: `Caja por día: cobros online vs. en efectivo${variosLocales ? " (todos los locales; el Excel lo trae por local)" : ""}`,
+              columnas: ["Día de turno", "Pedidos online", "Venta online", "Pedidos en efectivo", "Efectivo cobrado en el local", "Adeudado a PedidosYa"],
+              numericas: [1, 2, 3, 4, 5],
+              filas: cajaPorDiaUI.map((c) => [
+                `${c.diaSemana.slice(0, 3)} ${formatearFecha(c.dia)}`,
+                formatearEntero(c.online),
+                formatearPesos(c.ventaOnline),
+                formatearEntero(c.efectivoN),
+                formatearPesos(c.efectivo),
+                formatearPesos(c.adeudado),
+              ]),
+            },
+          ]
+        : []),
       {
         titulo: "Cómo pagan y cómo reciben",
         columnas: ["Forma de pago", "Entrega", "Pedidos", "Venta", "% del total"],

@@ -149,6 +149,23 @@ export interface AnalisisPedidosYa {
 
 const texto = (v: Celda) => String(v ?? "").trim();
 
+/**
+ * Formas de pago normalizadas. El reporte trae "Pago online" y "Efectivo";
+ * se unifican variantes ("Cash", "Online", "Tarjeta") para que las fórmulas
+ * del Excel ("Caja por Día") puedan filtrar por texto exacto.
+ */
+export const FORMA_PAGO = { online: "Pago online", efectivo: "Efectivo", sinDato: "Sin dato" } as const;
+
+function normalizarFormaPago(crudo: string, entregado: boolean, efectivoCobrado: number): string {
+  const t = normalizarBasico(crudo);
+  if (/efectivo|cash|contado/.test(t)) return FORMA_PAGO.efectivo;
+  if (/online|en linea|tarjeta|card|credito|debito|mercado|vale|voucher|billetera|wallet/.test(t)) return FORMA_PAGO.online;
+  if (t) return crudo;
+  // Sin dato: si el local ya cobró efectivo, fue en efectivo.
+  if (efectivoCobrado > 0) return FORMA_PAGO.efectivo;
+  return entregado ? FORMA_PAGO.sinDato : "—";
+}
+
 function diaSemanaDe(f: Date): string {
   return DIAS_SEMANA[(f.getDay() + 6) % 7];
 }
@@ -254,7 +271,7 @@ export async function analizarPedidosYa(archivos: File[], horaCorte = HORA_CORTE
     const adeudado = aNumero(f.adeudado);
     const pago = aNumero(f.pago);
     const sinLiquidar = entregado && pago === 0 && adeudado === 0 && efectivo === 0;
-    const formaPago = texto(f.formaPago);
+    const formaPago = normalizarFormaPago(texto(f.formaPago), entregado, efectivo);
 
     pedidos.push({
       nro: texto(f.nro),
@@ -267,7 +284,7 @@ export async function analizarPedidosYa(archivos: File[], horaCorte = HORA_CORTE
       periodo: clavePeriodo(diaTurno),
       entregado,
       metodoEntrega: texto(f.metodoEntrega) || "Sin dato",
-      formaPago: formaPago || (entregado ? "Sin dato" : "—"),
+      formaPago,
       venta,
       otrosIngresos,
       descuentoPropio,
@@ -493,6 +510,68 @@ export function porDiaDeTurno(ventas: PedidoPeYa[]) {
     mapa.set(k, f);
   }
   return [...mapa.values()].sort((a, b) => a.dia.getTime() - b.dia.getTime());
+}
+
+export interface CajaDia {
+  local: string;
+  dia: Date;
+  diaSemana: string;
+  pedidosOnline: number;
+  ventaOnline: number;
+  pedidosEfectivo: number;
+  ventaEfectivo: number;
+  /** Lo que el cliente pagó en mano en el local (la plata que tiene que estar en la caja). */
+  efectivoCobrado: number;
+  /** Comisión y tarifas que el local le debe a PedidosYa por esos pedidos en efectivo. */
+  adeudado: number;
+  /** Pedidos entregados sin forma de pago informada (no entran ni en online ni en efectivo). */
+  pedidosSinDato: number;
+  pedidos: number;
+  venta: number;
+}
+
+/**
+ * Cobros online vs. en efectivo por local y día de turno, para auditar la caja
+ * del local: los pedidos online los cobra PedidosYa y los liquida después; los
+ * pedidos en efectivo los cobra el local en mano y le debe la comisión a
+ * PedidosYa. Ordenado por local y fecha.
+ */
+export function cajaPorDia(ventas: PedidoPeYa[]): CajaDia[] {
+  const mapa = new Map<string, CajaDia>();
+  for (const p of ventas) {
+    const k = `${p.local}|${p.diaTurno.getTime()}`;
+    const f =
+      mapa.get(k) ??
+      ({
+        local: p.local,
+        dia: p.diaTurno,
+        diaSemana: p.diaSemana,
+        pedidosOnline: 0,
+        ventaOnline: 0,
+        pedidosEfectivo: 0,
+        ventaEfectivo: 0,
+        efectivoCobrado: 0,
+        adeudado: 0,
+        pedidosSinDato: 0,
+        pedidos: 0,
+        venta: 0,
+      } satisfies CajaDia);
+    if (p.formaPago === FORMA_PAGO.efectivo) {
+      f.pedidosEfectivo++;
+      f.ventaEfectivo += p.venta;
+      f.adeudado += p.adeudado;
+    } else if (p.formaPago === FORMA_PAGO.online) {
+      f.pedidosOnline++;
+      f.ventaOnline += p.venta;
+    } else {
+      f.pedidosSinDato++;
+    }
+    f.efectivoCobrado += p.efectivo;
+    f.pedidos++;
+    f.venta += p.venta;
+    mapa.set(k, f);
+  }
+  return [...mapa.values()].sort((a, b) => a.local.localeCompare(b.local) || a.dia.getTime() - b.dia.getTime());
 }
 
 export function promedioPorDiaSemana(ventas: PedidoPeYa[]): { dia: string; turnos: number; promedio: number; pedidosPromedio: number }[] {

@@ -30,7 +30,7 @@ import {
   type Paleta,
 } from "./excel";
 import { ordenHorasDelTurno } from "./mercadopago";
-import { porDiaDeTurno, porLocal, porMotivo, promedioPorDiaSemana, type AnalisisPedidosYa, type PedidoPeYa } from "./pedidosya";
+import { FORMA_PAGO, cajaPorDia, porDiaDeTurno, porLocal, porMotivo, promedioPorDiaSemana, type AnalisisPedidosYa, type PedidoPeYa } from "./pedidosya";
 
 const PALETA: Paleta = { principal: "C62828", total: "F8D7DA" };
 const AMARILLO = "FFF2CC";
@@ -268,6 +268,81 @@ export async function generarExcelPedidosYa(a: AnalisisPedidosYa): Promise<Blob>
     formatos(ws, primera, total, fmts);
     anchos(ws, [14, 12, ...nombres.map(() => 16), 17]);
     congelar(ws, fc, 2);
+  }
+
+  /* ---------------- Caja por Día (online vs. efectivo) ---------------- */
+  {
+    const ws = wb.addWorksheet("Caja por Día");
+    const multi = a.locales.length > 1;
+    const cab = [
+      ...(multi ? ["Local"] : []),
+      "Día de turno",
+      "Día",
+      "Pedidos online",
+      "Venta online",
+      "Pedidos en efectivo",
+      "Venta en efectivo",
+      "Efectivo cobrado en el local",
+      "Adeudado a PedidosYa",
+      "Pedidos",
+      "Venta total",
+    ];
+    encabezadoHoja(
+      ws,
+      "Caja por día: cobros online vs. en efectivo",
+      `${subtitulo}  |  Los pedidos online los cobra PedidosYa y los liquida después; los pedidos en efectivo los cobra el local en mano y le debe la comisión a PedidosYa. "Efectivo cobrado en el local" es lo que tiene que estar en la caja de ese turno. Si online + efectivo no suma el total, hay pedidos sin forma de pago informada (ver Detalle).`,
+      cab.length,
+      PALETA,
+    );
+    const fc = 4;
+    filaCabecera(ws, fc, cab, PALETA);
+    ws.getRow(fc).height = 32;
+    const d0 = multi ? 1 : 0; // corrimiento de columnas cuando hay columna Local
+    const cDia = 1 + d0;
+    const rFormaPago = rango(COL.formaPago, fin);
+    const rEfectivo = rango(COL.efectivo, fin);
+    const rAdeudado = rango(COL.adeudado, fin);
+    let f = fc + 1;
+    const primera = f;
+    for (const c of cajaPorDia(a.ventas)) {
+      // Criterios comunes: día de turno (+ local si hay varios) y solo entregados.
+      const filtro = `${rDia},${letra(cDia)}${f}${multi ? `,${rLocal},$A${f}` : ""},${soloEntregados}`;
+      const online = `${filtro},${rFormaPago},"${FORMA_PAGO.online}"`;
+      const efectivo = `${filtro},${rFormaPago},"${FORMA_PAGO.efectivo}"`;
+      if (multi) ws.getCell(f, 1).value = c.local;
+      ws.getCell(f, cDia).value = fechaExcel(c.dia);
+      ws.getCell(f, cDia + 1).value = c.diaSemana;
+      ws.getCell(f, cDia + 2).value = formula(`COUNTIFS(${online})`);
+      ws.getCell(f, cDia + 3).value = formula(`SUMIFS(${rVenta},${online})`);
+      ws.getCell(f, cDia + 4).value = formula(`COUNTIFS(${efectivo})`);
+      ws.getCell(f, cDia + 5).value = formula(`SUMIFS(${rVenta},${efectivo})`);
+      ws.getCell(f, cDia + 6).value = formula(`SUMIFS(${rEfectivo},${filtro})`);
+      ws.getCell(f, cDia + 7).value = formula(`SUMIFS(${rAdeudado},${efectivo})`);
+      ws.getCell(f, cDia + 8).value = formula(`COUNTIFS(${filtro})`);
+      ws.getCell(f, cDia + 9).value = formula(`SUMIFS(${rVenta},${filtro})`);
+      f++;
+    }
+    const ultima = f - 1;
+    const total = f;
+    filaTotal(ws, total, primera, ultima, cab.length, Array.from({ length: 8 }, (_, j) => cDia + 2 + j));
+    for (let r = primera; r <= ultima; r++) {
+      const finde = ["Sábado", "Domingo"].includes(String(ws.getCell(r, cDia + 1).value));
+      filaNormal(ws, r, cab.length, finde ? AMARILLO : undefined);
+    }
+    formatos(ws, primera, total, {
+      [cDia]: FMT_FECHA,
+      [cDia + 2]: FMT_ENT,
+      [cDia + 3]: FMT_PESOS,
+      [cDia + 4]: FMT_ENT,
+      [cDia + 5]: FMT_PESOS,
+      [cDia + 6]: FMT_PESOS,
+      [cDia + 7]: FMT_PESOS,
+      [cDia + 8]: FMT_ENT,
+      [cDia + 9]: FMT_PESOS,
+    });
+    anchos(ws, [...(multi ? [26] : []), 14, 12, 12, 16, 12, 16, 20, 18, 10, 17]);
+    congelar(ws, fc, multi ? 2 : 1);
+    autofiltro(ws, fc, 1, ultima, cab.length);
   }
 
   /* ---------------- Ventas por Hora ---------------- */

@@ -1332,7 +1332,7 @@ export const herramientas: Herramienta[] = [
       "Arrastrá el reporte de pedidos al recuadro (podés sumar varios períodos o varios locales).",
       "Elegí la hora de corte del turno: con 06:00, un pedido de las 00:30 del sábado cuenta para el viernes.",
       "Tocá “Analizar ventas”: en segundos ves la venta, lo que se lleva PedidosYa, el neto para el local, lo que tenés a cobrar, el ticket promedio, los productos más vendidos y los reclamos.",
-      "Descargá el Excel completo: Resumen por Local, Ventas por Día, Local × Día, Ventas por Hora, Día de la Semana, Deducciones, Productos, Cancelados y Reclamos, Revisar, Control y Detalle, con fórmulas que se recalculan si corregís algo.",
+      "Descargá el Excel completo: Resumen por Local, Ventas por Día, Local × Día, Caja por Día (cobros online vs. en efectivo, para controlar la caja), Ventas por Hora, Día de la Semana, Deducciones, Productos, Cancelados y Reclamos, Revisar, Control y Detalle, con fórmulas que se recalculan si corregís algo.",
     ],
     tituloPasos: "Cómo usar el análisis paso a paso",
     faq: [
@@ -1340,6 +1340,11 @@ export const herramientas: Herramienta[] = [
         pregunta: "¿Qué diferencia hay entre venta, neto y a cobrar?",
         respuesta:
           "La venta es lo que compró el cliente a precio de carta (columna “Total parcial”). El neto para el local es el “Ingreso estimado” que informa PedidosYa: la venta menos los descuentos que financiás vos, la comisión, la tarifa de pago online, los impuestos sobre esas comisiones, los cargos por reclamos y el marketing. Y lo que tenés a cobrar es el neto menos lo que ya cobraste en efectivo: en los pedidos en efectivo el cliente te pagó a vos, así que le adeudás a PedidosYa las comisiones y eso se compensa con los pagos.",
+      },
+      {
+        pregunta: "¿Cómo controlo la caja del local con los pedidos en efectivo?",
+        respuesta:
+          "Con la hoja “Caja por Día” del Excel (y el cuadro del mismo nombre en pantalla). Por cada local y día de turno separa los pedidos pagados online (los cobra PedidosYa y te los liquida después) de los pagados en efectivo (los cobrás vos en mano), y te dice cuánto efectivo entró al local ese turno según PedidosYa (columna “Monto en efectivo ya cobrado por el local”): ese es el número que tiene que coincidir con la caja. Al lado ves lo que le adeudás a PedidosYa por esos pedidos (comisiones y tarifas), que después se compensa con los pagos. Como usa fórmulas sobre el Detalle, si corregís o filtrás un pedido se recalcula.",
       },
       {
         pregunta: "¿Qué son los “Cargos”?",
