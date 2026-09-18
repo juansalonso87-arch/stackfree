@@ -40,19 +40,41 @@ export interface ResultadoAnalisis {
   generarExcel: () => Promise<Blob>;
 }
 
-interface Props {
+/**
+ * Una "entrada" cuando la herramienta necesita archivos de distinto origen a la
+ * vez (por ejemplo, el extracto del banco Y el reporte de Fiserv). Cada entrada
+ * tiene su propio recuadro para arrastrar.
+ */
+export interface EntradaArchivo {
+  id: string;
+  titulo: string;
+  descripcion?: string;
   accept: string[];
+  multiple?: boolean;
+  maxArchivos?: number;
+  /** Ayuda breve debajo del recuadro (de dónde sale ese archivo). */
+  ayuda?: ReactNode;
+}
+
+interface Props {
+  accept?: string[];
   maxSizeMB?: number;
   multiple?: boolean;
   maxArchivos?: number;
-  tituloDropzone: string;
+  tituloDropzone?: string;
   descripcionDropzone?: string;
+  /**
+   * Varias entradas separadas (banco + Fiserv). Si se define, reemplaza a
+   * accept / multiple / tituloDropzone y el análisis recibe los archivos
+   * agrupados por entrada en el segundo parámetro.
+   */
+  entradas?: EntradaArchivo[];
   /** Aviso sobre qué archivo exacto hay que descargar del banco. */
   instrucciones?: ReactNode;
   /** Panel de opciones (ej. hora de corte del turno). */
   opciones?: ReactNode;
   etiquetaAccion: string;
-  analizar: (archivos: File[]) => Promise<ResultadoAnalisis>;
+  analizar: (archivos: File[], porEntrada: Record<string, File[]>) => Promise<ResultadoAnalisis>;
 }
 
 function claveDe(f: File) {
@@ -65,18 +87,33 @@ function claveDe(f: File) {
  * en pantalla (indicadores, controles, tabla) y descargar el Excel completo.
  */
 export function AnalizadorExtracto({
-  accept,
+  accept = [],
   maxSizeMB = 25,
   multiple = false,
   maxArchivos = 12,
-  tituloDropzone,
+  tituloDropzone = "Arrastrá acá el archivo",
   descripcionDropzone,
+  entradas,
   instrucciones,
   opciones,
   etiquetaAccion,
   analizar,
 }: Props) {
   const [archivos, setArchivos] = useState<File[]>([]);
+  // Con varias entradas, los archivos se guardan por id; `archivos` queda como la unión (para el flujo común).
+  const [porEntrada, setPorEntrada] = useState<Record<string, File[]>>({});
+  const conEntradas = !!entradas?.length;
+  const listo = conEntradas ? entradas!.every((e) => (porEntrada[e.id]?.length ?? 0) > 0) : archivos.length > 0;
+  const hayAlgo = conEntradas ? Object.values(porEntrada).some((xs) => xs.length > 0) : archivos.length > 0;
+
+  const agregarEn = (entrada: EntradaArchivo, nuevos: File[]) =>
+    setPorEntrada((previos) => {
+      const actuales = previos[entrada.id] ?? [];
+      if (!entrada.multiple) return { ...previos, [entrada.id]: nuevos.slice(0, 1) };
+      const claves = new Set(actuales.map(claveDe));
+      return { ...previos, [entrada.id]: [...actuales, ...nuevos.filter((n) => !claves.has(claveDe(n)))].slice(0, entrada.maxArchivos ?? maxArchivos) };
+    });
+  const quitarDe = (id: string, k: number) => setPorEntrada((previos) => ({ ...previos, [id]: (previos[id] ?? []).filter((_, i) => i !== k) }));
   const [estado, setEstado] = useState<EstadoProceso>("idle");
   const [error, setError] = useState<string>();
   const [resultado, setResultado] = useState<ResultadoAnalisis | null>(null);
@@ -92,6 +129,7 @@ export function AnalizadorExtracto({
 
   const reiniciar = () => {
     setArchivos([]);
+    setPorEntrada({});
     setResultado(null);
     setError(undefined);
     setErrorExcel(undefined);
@@ -99,11 +137,12 @@ export function AnalizadorExtracto({
   };
 
   const ejecutar = async () => {
-    if (archivos.length === 0) return;
+    if (!listo) return;
     setEstado("procesando");
     setError(undefined);
     try {
-      setResultado(await analizar(archivos));
+      const todos = conEntradas ? entradas!.flatMap((e) => porEntrada[e.id] ?? []) : archivos;
+      setResultado(await analizar(todos, porEntrada));
       setEstado("listo");
     } catch (e) {
       setError(e instanceof Error ? e.message : undefined);
@@ -143,7 +182,89 @@ export function AnalizadorExtracto({
       onReintentar={ejecutar}
       onReiniciar={reiniciar}
     >
-      {estado === "idle" && (
+      {estado === "idle" && conEntradas && (
+        <div className="space-y-4">
+          {instrucciones && !hayAlgo && <div className="text-sm">{instrucciones}</div>}
+
+          <div className="grid gap-4 md:grid-cols-2">
+            {entradas!.map((e) => {
+              const lista = porEntrada[e.id] ?? [];
+              const puedeSumar = lista.length === 0 || (e.multiple && lista.length < (e.maxArchivos ?? maxArchivos));
+              return (
+                <section key={e.id} aria-label={e.titulo} className="space-y-2 rounded-xl border p-3">
+                  <h3 className="flex items-center gap-2 text-sm font-semibold">
+                    <span
+                      className={cn(
+                        "flex size-5 items-center justify-center rounded-full text-xs",
+                        lista.length ? "bg-emerald-600 text-white" : "bg-muted text-muted-foreground",
+                      )}
+                      aria-hidden="true"
+                    >
+                      {lista.length ? "✓" : entradas!.indexOf(e) + 1}
+                    </span>
+                    {e.titulo}
+                  </h3>
+                  {lista.length > 0 && (
+                    <ul className="divide-y rounded-lg border" aria-label={`Archivos: ${e.titulo}`}>
+                      {lista.map((a, k) => (
+                        <li key={claveDe(a)} className="flex items-center gap-3 p-2 text-sm">
+                          <FileSpreadsheet className="size-5 shrink-0 text-muted-foreground" aria-hidden="true" />
+                          <div className="min-w-0 flex-1">
+                            <p className="truncate font-medium">{a.name}</p>
+                            <p className="text-xs text-muted-foreground">{formatearBytes(a.size)}</p>
+                          </div>
+                          <Button type="button" variant="ghost" size="icon-sm" onClick={() => quitarDe(e.id, k)} aria-label={`Quitar ${a.name}`}>
+                            <X />
+                          </Button>
+                        </li>
+                      ))}
+                    </ul>
+                  )}
+                  {puedeSumar && (
+                    <FileDropzone
+                      accept={e.accept}
+                      maxSizeMB={maxSizeMB}
+                      multiple={!!e.multiple}
+                      onFiles={(nuevos) => agregarEn(e, nuevos)}
+                      titulo={lista.length ? "Agregar otro archivo" : e.descripcion ?? "Arrastrá el archivo acá"}
+                      descripcion={lista.length ? "Arrastra o toca para sumar otro período" : e.multiple ? "o toca para seleccionarlo (podés sumar varios períodos)" : "o toca para seleccionarlo"}
+                      className={cn(lista.length && "[&>div]:min-h-20 [&>div]:py-2")}
+                    />
+                  )}
+                  {e.ayuda && <div className="text-xs text-muted-foreground">{e.ayuda}</div>}
+                </section>
+              );
+            })}
+          </div>
+
+          {hayAlgo && opciones}
+
+          {hayAlgo && (
+            <div className="flex flex-wrap gap-2">
+              <Button size="lg" onClick={ejecutar} disabled={!listo}>
+                <FileSpreadsheet data-icon="inline-start" />
+                {etiquetaAccion}
+              </Button>
+              <Button size="lg" variant="outline" onClick={reiniciar}>
+                Cambiar archivos
+              </Button>
+              {!listo && <p className="self-center text-xs text-muted-foreground">Faltan archivos: cargá los dos para poder cruzarlos.</p>}
+            </div>
+          )}
+
+          <p className="flex items-center gap-1.5 text-xs text-muted-foreground">
+            <ShieldCheck className="size-3.5 shrink-0 text-primary" aria-hidden="true" />
+            <span>
+              Los archivos se analizan en tu navegador y no se envían a ningún servidor.{" "}
+              <Link href="/verificar-privacidad" className="underline underline-offset-2 hover:text-foreground">
+                Cómo comprobarlo
+              </Link>
+            </span>
+          </p>
+        </div>
+      )}
+
+      {estado === "idle" && !conEntradas && (
         <div className="space-y-4">
           {instrucciones && archivos.length === 0 && <div className="text-sm">{instrucciones}</div>}
 

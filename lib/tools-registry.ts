@@ -4,6 +4,7 @@ import {
   Crop,
   FileImage,
   FileStack,
+  GitCompareArrows,
   HandCoins,
   ImageOff,
   Images,
@@ -1368,6 +1369,82 @@ export const herramientas: Herramienta[] = [
       },
     ],
     cargar: () => import("@/components/tools/ventas-pedidosya/VentasPedidosYaTool"),
+  },
+  {
+    slug: "conciliacion-fiserv-banco",
+    nombre: "Conciliación Fiserv ↔ banco",
+    h1: "Conciliación de liquidaciones Fiserv con el banco: comprobá que te acreditaron cada liquidación y cuánto te queda de cada venta con tarjeta",
+    subtitulo:
+      "Subís el reporte de liquidaciones diarias de Fiserv (ex Posnet / First Data) y el extracto de tu banco del mismo período, y en segundos ves qué liquidación llegó como crédito, cuál falta, cuál se demoró, y la cadena completa de una venta con tarjeta: arancel, IVA, retenciones de Fiserv y lo que después te retiene el banco. Funciona con Santander, BBVA y Comafi. Sin subir tus datos a ningún servidor.",
+    tituloSeo: "Conciliar liquidaciones Fiserv con el extracto del banco (Excel)",
+    descripcionSeo:
+      "Cruzá las liquidaciones diarias de Fiserv (Posnet) con los movimientos de Santander, BBVA o Comafi: qué se acreditó, qué falta, plazos y cuánto se lleva Fiserv y el banco de cada venta con tarjeta. Gratis, en tu navegador.",
+    descripcionCorta: "Cruzá las liquidaciones de Fiserv con los créditos del banco: qué se acreditó, qué falta y cuánto te queda de cada venta con tarjeta.",
+    keywords: [
+      "conciliar liquidaciones fiserv",
+      "liquidaciones diarias fiserv excel",
+      "posnet liquidaciones banco",
+      "first data liquidaciones conciliacion",
+      "acreditacion a comercio fiserv",
+      "cuanto cobra fiserv de arancel",
+      "retenciones fiserv sirtac",
+      "conciliacion tarjetas de credito banco",
+      "cobros con tarjeta extracto bancario",
+    ],
+    icono: GitCompareArrows,
+    categoria: "administracion",
+    estado: "activa",
+    formatosEntrada: ["application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", "application/vnd.ms-excel", "text/csv"],
+    guiaDescarga: {
+      titulo: "Cómo obtener los dos archivos",
+      pasos: [
+        "En el portal de comercios de Fiserv: entrá a Liquidaciones → “Liquidaciones Diarias”.",
+        "Filtrá el rango de fechas que querés conciliar (por ejemplo, el mes completo) y, si tenés varios comercios, el CUIT.",
+        "Descargá el Excel completo. Ese archivo (Trx_… .xlsx, con una fila por liquidación y tarjeta) es el que subís acá, tal cual.",
+        "Del banco, bajá los movimientos del mismo período con la guía de la herramienta de tu banco (Santander, BBVA o Comafi): es exactamente el mismo archivo que usás para el análisis de movimientos.",
+      ],
+      nota: "Conviene que el extracto del banco cubra unos días más que el reporte de Fiserv: así las liquidaciones de los últimos días de pago encuentran su crédito.",
+    },
+    pasos: [
+      "Arrastrá el extracto del banco al primer recuadro y el reporte de liquidaciones de Fiserv al segundo (del mismo período; podés sumar varios meses de cada uno).",
+      "El banco se reconoce solo por el formato del archivo; si no lo detecta, elegilo en la lista.",
+      "Tocá “Conciliar liquidaciones”: cada liquidación de Fiserv se busca en el banco por fecha de pago e importe neto. Ves cuántas se acreditaron, cuáles faltan, cuáles llegaron con demora, los créditos del banco que no están en la liquidación (cobros QR por CVU, otras procesadoras) y cuánto te queda de cada venta.",
+      "Descargá el Excel: Resumen, Conciliación (una fila por liquidación con el crédito del banco al lado), Por Tarjeta, Por Día de Pago, Sin Conciliar, Control, Detalle Fiserv y Créditos del banco.",
+    ],
+    tituloPasos: "Cómo usar la conciliación paso a paso",
+    faq: [
+      {
+        pregunta: "¿Cómo sabe qué crédito del banco corresponde a cada liquidación?",
+        respuesta:
+          "Por fecha de pago e importe neto, al centavo. Fiserv deposita cada liquidación (una por día y por tarjeta) como un crédito separado, y el banco lo registra el mismo día con ese importe exacto. Si el banco lo acredita uno o dos días después, también lo encuentra (hasta 3 días) y te lo marca como “fecha cercana”; si agrupa varias liquidaciones en un solo crédito, busca la combinación que suma. En los reportes reales con los que se validó (Santander, BBVA y Comafi), el 100 % cruzó el mismo día.",
+      },
+      {
+        pregunta: "¿Por qué el banco dice “Master Card” si la venta fue con Visa?",
+        respuesta:
+          "Porque el banco solo sabe que la plata viene de Fiserv, no con qué tarjeta se vendió: en Comafi todos los créditos dicen “Creditos a comercios Master Card”, en Santander “Acreditacion a comercio fiserv” y en BBVA “CUPON. ARGEN” o “MAE-ACREDITA”. Al cruzarlos con el reporte de Fiserv, la conciliación te dice de qué tarjeta fue cada crédito, y el Excel te lo deja en la hoja “Créditos del banco”.",
+      },
+      {
+        pregunta: "¿Qué son las liquidaciones con importe negativo o cero?",
+        respuesta:
+          "Son ajustes de Fiserv sin ventas: casi siempre las retenciones de IIBB o percepciones sobre los cobros QR (“COB FISERV QRPCT…”), que Fiserv acredita aparte por transferencia y por eso no aparecen en la liquidación diaria más que por sus retenciones. También pueden ser reintentos o cargos por operaciones internacionales. No generan crédito en el banco y se listan aparte con su detalle.",
+      },
+      {
+        pregunta: "Hay créditos del banco que no están en Fiserv. ¿Está mal?",
+        respuesta:
+          "No necesariamente. La herramienta los separa por motivo: los cobros QR de Fiserv llegan como transferencias por CVU (“first data sur”) y no pasan por la liquidación diaria; los créditos de otras procesadoras o marcas que liquidan directo (Cabal, Naranja, American Express, Prisma) no son de Fiserv; y los que caen fuera de las fechas del reporte simplemente necesitan que bajes el reporte cubriendo esos días. Lo que queda como “sin liquidación en Fiserv” dentro del período sí merece que lo revises con Fiserv.",
+      },
+      {
+        pregunta: "¿Cuánto me queda realmente de una venta con tarjeta?",
+        respuesta:
+          "El cuadro “Cuánto queda de cada venta” arma la cadena completa: ventas aceptadas (bruto), menos el arancel de Fiserv, el IVA sobre el arancel, la retención de IIBB (SIRTAC) y las percepciones, da el neto que deposita Fiserv. Después el banco descuenta el impuesto a los créditos (0,6 %) y, según la provincia, una retención de IIBB sobre las acreditaciones. Si tu banco debita esas retenciones por cada acreditación (Comafi), la herramienta las empareja y te muestra el importe final que queda en la cuenta; si las cobra agregadas por día (Santander, BBVA), te avisa que ese costo se suma al de Fiserv. En los casos reales, Fiserv se lleva alrededor del 3,2 % y el banco otro 3 %.",
+      },
+      {
+        pregunta: "¿Mis archivos se suben a algún servidor?",
+        respuesta:
+          "No. Los dos archivos se leen y se cruzan dentro de tu navegador, y el Excel se genera ahí mismo. Podés comprobarlo desconectando internet después de cargar la página: la herramienta sigue funcionando.",
+      },
+    ],
+    cargar: () => import("@/components/tools/conciliacion-fiserv/ConciliacionFiservTool"),
   },
 ];
 
