@@ -13,7 +13,7 @@ export default function ExtractoBbvaTool() {
       maxSizeMB={MAX_MB}
       multiple
       maxArchivos={MAX_ARCHIVOS}
-      tituloDropzone="Arrastrá acá el Excel de movimientos de BBVA"
+      tituloDropzone="Arrastrá acá el Excel de movimientos o el resumen en PDF de BBVA"
       instrucciones={
         <Alert>
           <Info />

@@ -26,9 +26,12 @@
 import {
   CATEGORIA as CAT,
   CATEGORIA_DEFECTO,
+  CATEGORIAS_NEUTRAS,
   ErrorExtracto,
+  ORGANISMOS_IMPOSITIVOS,
   PLATAFORMAS,
   resolverSentido,
+  seguroOPrepaga,
   type AnalisisExtracto,
   type Control,
   type DiagnosticoConcepto,
@@ -36,6 +39,7 @@ import {
 } from "./tipos";
 import { aFecha, aNumero, formatearFecha, rangoFechas, sinAcentos } from "./texto";
 import { detectarFilaCabecera, leerPlanilla, type Celda, type Hoja } from "./planilla";
+import { esPdf } from "./pdf-texto";
 import {
   control,
   crearLibro,
@@ -111,7 +115,7 @@ const CODIGOS_BBVA: Record<string, string> = {
   "457": CAT.proveedores, // PAGO BTOB (Interbanking)
   "515": CAT.pagoTarjeta, // PAGO VISA-IN: débito automático de las tarjetas de crédito de la empresa (confirmado por el dueño)
   "522": CAT.comprasDebito, // PAGO CON VIS (compra con Visa Débito)
-  "543": CAT.iva, // PERCEPCION I
+  "543": CAT.iibb, // PERCEPCION I(NGRESOS BRUTOS): el resumen en PDF muestra el texto completo "PERCEP.INGRESOS BRUTOS" (5 % sobre la comisión de mantenimiento)
   "544": CAT.iva, // PERCEPCION R (RG sobre compras en moneda extranjera)
   "589": CAT.impCheque, // IMPUESTO LEY (25.413)
   "609": CAT.impCheque, // LEY NRO 25.4(13)
@@ -149,6 +153,9 @@ const CATEGORIAS: [string, string[]][] = [
   [CAT.seguros, ["ZURICH", "SANCOR", "LA CAJA", "FEDERACION PATRONAL", "ALLIANZ", "MAPFRE", "PROVINCIA SEGUROS", "SAN CRISTOBAL", "MERIDIONAL", "EXPERTA", "PREVENCION"]],
   [CAT.comisiones, ["COMISION", "ARANCEL", "CARGO", "GASTO", "CHEQUERA", "ALQUILER DE"]],
   [CAT.intereses, ["PLAN DE PAGO", "PRESTAMO", "CUOTA", "AMORTIZACION", "INTERES", "DESCUBIERTO", "ADELANTO"]],
+  // "PAGO DE SERVICIOS TARJETA <cliente> OP<nro>" (código 137 en el Excel, donde queda recortado a "PAGO SERVICI") es el pago de
+  // servicios por banca online, no un cobro: va antes de la regla de tarjetas porque también dice TARJETA.
+  [CAT.servicios, ["PAGO DE SERVICIOS TARJETA"]],
   // "PAGO VISA" (débito) es el pago del resumen de la tarjeta: va ANTES de "Cobros con tarjeta", que también contiene VISA.
   [CAT.pagoTarjeta, ["PAGO VISA", "PAGO MASTERCARD", "PAGO MASTER", "PAGO AMEX", "PAGO TARJETA", "PAGO NARANJA", "PAGO CABAL", "PAGO RESUMEN"]],
   [CAT.comprasDebito, ["PAGO CON VIS", "PAGO CON VISA", "COMPRA VISA DEBITO", "VISA DEBITO", "COMPRA DEBITO", "COMPRA CON TARJETA", "COMPRA MAESTRO", "CONSUMO TARJETA"]],
@@ -345,6 +352,18 @@ function clasificarDebitoDirecto(concepto: string): string {
   return c === CATEGORIA_DEFECTO || c === CAT.intereses ? CAT.servicios : c;
 }
 
+/**
+ * Un débito automático genérico ("DEBITO DIRECTO", como lo imprime el resumen
+ * en PDF) toma la categoría de quien cobra cuando el detalle lo nombra (la
+ * tabla "Débitos automáticos" del resumen dice "ZURICH ARG DEBZURICH").
+ */
+function refinarPorDetalle(categoria: string, detalle: string): string {
+  if (categoria !== CAT.servicios || !detalle) return categoria;
+  const d = sinAcentos(detalle).toUpperCase();
+  if (ORGANISMOS_IMPOSITIVOS.some((o) => d.includes(o))) return CAT.impuestos;
+  return seguroOPrepaga(detalle) ?? categoria;
+}
+
 interface Crudo {
   concepto: string;
   codigo: string;
@@ -414,23 +433,71 @@ export interface AnalisisBbva extends AnalisisExtracto {
   textosBanco: number;
 }
 
-export async function analizarBbva(archivos: File[]): Promise<AnalisisBbva> {
-  if (archivos.length === 0) throw new ErrorExtracto("No hay archivos para analizar.");
-  const crudos: {
-    fecha: Date | null;
-    nroDoc: string;
-    original: string;
-    codigo: string;
-    oficina: string;
-    detalle: string;
-    credito: number;
-    debito: number;
-  }[] = [];
+/** Fila tal como la entrega el banco (Excel o PDF), antes de normalizar y clasificar. */
+interface CrudoBbva {
+  fecha: Date | null;
+  nroDoc: string;
+  original: string;
+  codigo: string;
+  oficina: string;
+  detalle: string;
+  credito: number;
+  debito: number;
+  /** Saldo después del movimiento (solo el resumen en PDF lo trae). */
+  saldo?: number;
+}
+
+interface LecturaBbva {
+  crudos: CrudoBbva[];
+  ilegibles: number;
+  conCodigo: number;
+  avisos: string[];
+  /** Controles propios del formato (el resumen en PDF verifica saldos y totales impresos). */
+  controles: Control[];
+  saldoInicial?: number;
+  saldoFinal?: number;
+}
+
+/**
+ * Resumen de cuenta en PDF: concepto más largo que el del Excel pero sin el
+ * código de operación (clasifica el texto), saldo en cada fila y contraparte
+ * tomada de las tablas del resumen. Ver `bbva-pdf.ts`.
+ */
+async function leerDesdePdf(archivo: File): Promise<LecturaBbva> {
+  const { leerPdfBbva } = await import("./bbva-pdf");
+  const l = await leerPdfBbva(archivo);
+  const crudos: CrudoBbva[] = l.filas.map((f) => ({
+    fecha: f.fecha,
+    nroDoc: "",
+    original: f.original,
+    codigo: "",
+    oficina: f.origen,
+    detalle: f.detalle,
+    credito: f.credito,
+    debito: f.debito,
+    saldo: f.saldo,
+  }));
+  const debitos = crudos.reduce((s, c) => s + c.debito, 0);
+  const creditos = crudos.reduce((s, c) => s + c.credito, 0);
+  const controles: Control[] = [];
+  if (l.eslabones > 0) controles.push(control("Resumen en PDF", "Filas cuyo saldo impreso cierra con el movimiento", l.eslabonesOk, l.eslabones, l.eslabonesOk === l.eslabones, "ent"));
+  if (l.saldoAnterior !== null && l.saldoFinal !== null) {
+    const calculado = l.saldoAnterior + creditos - debitos;
+    controles.push(control("Resumen en PDF", "Saldo anterior + movimientos = saldo final", calculado, l.saldoFinal, Math.abs(calculado - l.saldoFinal) <= 0.02));
+  }
+  if (l.totalDebitos !== null) controles.push(control("Resumen en PDF", "Total de débitos declarado", debitos, l.totalDebitos, Math.abs(debitos - l.totalDebitos) <= 0.02));
+  if (l.totalCreditos !== null) controles.push(control("Resumen en PDF", "Total de créditos declarado", creditos, l.totalCreditos, Math.abs(creditos - l.totalCreditos) <= 0.02));
+  if (l.enriquecidos > 0) controles.push(control("Resumen en PDF", "Movimientos con contraparte tomada de las tablas del resumen", l.enriquecidos, l.enriquecidos, true, "ent"));
+  const avisos = [...l.avisos, "El resumen en PDF no trae el código de operación del banco: clasifiqué por el texto del concepto (que en el PDF viene más completo que en el Excel)."];
+  return { crudos, ilegibles: 0, conCodigo: 0, avisos, controles, saldoInicial: l.saldoAnterior ?? undefined, saldoFinal: l.saldoFinal ?? undefined };
+}
+
+async function leerDesdePlanilla(archivo: File): Promise<LecturaBbva> {
+  const crudos: CrudoBbva[] = [];
   const avisos: string[] = [];
   let ilegibles = 0;
   let conCodigo = 0;
-
-  for (const archivo of archivos) {
+  {
     const hoja = elegirHoja(await leerPlanilla(archivo));
     const filaCab = detectarFilaCabecera(
       hoja.filas,
@@ -486,6 +553,17 @@ export async function analizarBbva(archivos: File[]): Promise<AnalisisBbva> {
       });
     }
   }
+  return { crudos, ilegibles, conCodigo, avisos, controles: [] };
+}
+
+export async function analizarBbva(archivos: File[]): Promise<AnalisisBbva> {
+  if (archivos.length === 0) throw new ErrorExtracto("No hay archivos para analizar.");
+  const lecturas: LecturaBbva[] = [];
+  for (const archivo of archivos) lecturas.push((await esPdf(archivo)) ? await leerDesdePdf(archivo) : await leerDesdePlanilla(archivo));
+  const crudos = lecturas.flatMap((l) => l.crudos);
+  const avisos = lecturas.flatMap((l) => l.avisos);
+  const ilegibles = lecturas.reduce((s, l) => s + l.ilegibles, 0);
+  const conCodigo = lecturas.reduce((s, l) => s + l.conCodigo, 0);
   if (crudos.length === 0) throw new ErrorExtracto("No se encontraron movimientos en el archivo.");
 
   // Normalización + unificación de equivalentes.
@@ -500,6 +578,15 @@ export async function analizarBbva(archivos: File[]): Promise<AnalisisBbva> {
   const unificados = new Set([...mapa.entries()].filter(([o, d]) => o !== d).map(([, d]) => d)).size;
 
   const categoriaBase = clasificarConceptos(crudos.map((c, i) => ({ concepto: conceptos[i], codigo: c.codigo, detalle: c.detalle, credito: c.credito })));
+  // Un código de operación con categoría concreta manda movimiento por movimiento: dos textos recortados iguales
+  // ("PERCEPCION I") pueden ser percepción de IVA (286) o de Ingresos Brutos (543). Los códigos neutros (transferencia,
+  // efectivo, cheque) y el débito directo dejan la decisión al concepto, que ya miró el detalle de todo el grupo.
+  const categoriaDe = (c: CrudoBbva, i: number) => {
+    const delConcepto = categoriaBase.get(conceptos[i]) ?? CATEGORIA_DEFECTO;
+    const porCodigo = CODIGOS_BBVA[c.codigo];
+    const concreta = porCodigo !== undefined && porCodigo !== DEBITO_DIRECTO && !(porCodigo in CATEGORIAS_NEUTRAS);
+    return refinarPorDetalle(concreta ? porCodigo : delConcepto, c.detalle);
+  };
   const movimientos: Movimiento[] = crudos
     .map((c, i) => ({
       fecha: c.fecha,
@@ -509,10 +596,11 @@ export async function analizarBbva(archivos: File[]): Promise<AnalisisBbva> {
       detalle: c.detalle,
       codigo: c.codigo,
       sucursal: c.oficina,
-      categoria: resolverSentido(categoriaBase.get(conceptos[i]) ?? CATEGORIA_DEFECTO, c.credito > 0),
+      categoria: resolverSentido(categoriaDe(c, i), c.credito > 0),
       credito: c.credito,
       debito: c.debito,
       importe: c.credito - c.debito,
+      saldo: c.saldo,
     }))
     .sort((a, b) => (a.fecha?.getTime() ?? 0) - (b.fecha?.getTime() ?? 0) || (a.comprobante ?? "").localeCompare(b.comprobante ?? ""));
 
@@ -545,6 +633,7 @@ export async function analizarBbva(archivos: File[]): Promise<AnalisisBbva> {
   const textosBanco = new Set(crudos.map((c) => c.original)).size;
   const sinCategoria = movimientos.filter((m) => m.categoria === CATEGORIA_DEFECTO).length;
   const controles: Control[] = [
+    ...lecturas.flatMap((l) => l.controles),
     control("Lectura del archivo", "Movimientos leídos", movimientos.length, movimientos.length, true, "ent"),
     control("Lectura del archivo", "Fechas ilegibles", ilegibles, 0, ilegibles === 0, "ent"),
     control("Lectura del archivo", "Movimientos con código de operación", conCodigo, movimientos.length, conCodigo === movimientos.length || conCodigo === 0, "ent"),
@@ -555,10 +644,25 @@ export async function analizarBbva(archivos: File[]): Promise<AnalisisBbva> {
   if (unificados) avisos.push(`Se unificaron redacciones distintas del banco en ${unificados} concepto(s) (ver hoja Diagnóstico Conceptos).`);
   if (sinCategoria) avisos.push(`${sinCategoria} movimiento(s) quedaron en "Otros": revisalos en el resumen (fila amarilla).`);
   if (ilegibles) avisos.push(`${ilegibles} movimiento(s) con fecha ilegible.`);
-  if (conCodigo === 0) avisos.push("El archivo no trae la columna Código del banco: clasifiqué solo por el texto del concepto.");
+  if (conCodigo === 0 && !lecturas.some((l) => l.saldoInicial !== undefined)) {
+    avisos.push("El archivo no trae la columna Código del banco: clasifiqué solo por el texto del concepto.");
+  }
 
   const { desde, hasta } = rangoFechas(movimientos);
-  return { banco: "bbva", movimientos, desde, hasta, controles, avisos, archivos: archivos.map((a) => a.name), diagnostico, textosBanco };
+  const conSaldo = lecturas.filter((l) => l.saldoInicial !== undefined);
+  return {
+    banco: "bbva",
+    movimientos,
+    desde,
+    hasta,
+    saldoInicial: conSaldo[0]?.saldoInicial,
+    saldoFinal: conSaldo[conSaldo.length - 1]?.saldoFinal,
+    controles,
+    avisos,
+    archivos: archivos.map((a) => a.name),
+    diagnostico,
+    textosBanco,
+  };
 }
 
 /* ------------------------------------------------------------------ */

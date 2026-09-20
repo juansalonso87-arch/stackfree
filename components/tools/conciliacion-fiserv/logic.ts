@@ -25,7 +25,7 @@ export const MAX_MB = 25;
 export const MAX_ARCHIVOS = 12;
 export const ENTRADA_BANCO = "banco";
 export const ENTRADA_FISERV = "fiserv";
-export const FORMATOS_BANCO = ["application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", "application/vnd.ms-excel", "text/csv", "text/plain", "text/tab-separated-values"];
+export const FORMATOS_BANCO = ["application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", "application/vnd.ms-excel", "text/csv", "text/plain", "text/tab-separated-values", "application/pdf"];
 export const FORMATOS_FISERV = ["application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", "application/vnd.ms-excel", "text/csv"];
 
 const pct = (parte: number, total: number) => (total ? `${((parte / total) * 100).toFixed(2).replace(".", ",")} %` : "0 %");

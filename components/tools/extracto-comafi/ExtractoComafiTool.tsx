@@ -13,7 +13,7 @@ export default function ExtractoComafiTool() {
       maxSizeMB={MAX_MB}
       multiple
       maxArchivos={MAX_ARCHIVOS}
-      tituloDropzone="Arrastrá acá el Excel de movimientos de Comafi"
+      tituloDropzone="Arrastrá acá el Excel de movimientos o el resumen en PDF de Comafi"
       instrucciones={
         <Alert>
           <Info />

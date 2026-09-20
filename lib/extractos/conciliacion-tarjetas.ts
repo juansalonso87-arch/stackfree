@@ -21,6 +21,7 @@
 
 import { control } from "./excel";
 import { analizarFiserv, type AnalisisFiserv, type LiquidacionFiserv } from "./fiserv";
+import { esPdf, leerTextoPdf } from "./pdf-texto";
 import { arranqueDe, detectarFilaCabecera, esExcelReal, leerPlanilla, leerTexto } from "./planilla";
 import { formatearPesos, normalizarBasico, round2, sinAcentos } from "./texto";
 import { CATEGORIA, ErrorExtracto, type AnalisisExtracto, type Banco, type Control, type Movimiento } from "./tipos";
@@ -48,6 +49,15 @@ const FISERV = ["FISERV", "FIRST DATA", "POSNET"];
  */
 export async function detectarBanco(archivo: File): Promise<Banco | null> {
   const arranque = await arranqueDe(archivo);
+  if (await esPdf(archivo)) {
+    // Resumen de cuenta en PDF: el banco se nombra en el encabezado o en el pie de cada página.
+    const { lineas, titulo } = await leerTextoPdf(archivo);
+    const texto = `${titulo} ${lineas.slice(0, 400).map((l) => l.texto).join(" ")}`;
+    if (/\bcomafi\b/i.test(texto)) return "comafi";
+    if (/\bBBVA\b/.test(texto)) return "bbva";
+    if (/\bsantander\b/i.test(texto)) return "santander";
+    return null;
+  }
   if (!esExcelReal(arranque)) {
     // Santander entrega un archivo de texto separado por tabulaciones cuya primera línea es "CUIT \t cuenta \t Extracto…".
     const texto = await leerTexto(archivo);

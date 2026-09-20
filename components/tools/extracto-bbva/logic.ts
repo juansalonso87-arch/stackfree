@@ -15,6 +15,7 @@ export const FORMATOS_ENTRADA = [
   "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
   "text/csv",
   "text/html",
+  "application/pdf",
 ];
 
 export async function analizar(archivos: File[]): Promise<ResultadoAnalisis> {

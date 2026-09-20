@@ -22,6 +22,7 @@ import {
 } from "./tipos";
 import { aFecha, aNumero, clasificarPorTexto, formatearFecha, normalizarBasico, rangoFechas, sinAcentos, type ReglasCategoria } from "./texto";
 import { detectarFilaCabecera, leerPlanilla, type Celda } from "./planilla";
+import { esPdf } from "./pdf-texto";
 import {
   control,
   crearLibro,
@@ -136,9 +137,73 @@ export interface AnalisisComafi extends AnalisisExtracto {
 interface LecturaComafi {
   movimientos: Movimiento[];
   conSaldo: boolean;
+  ilegibles: number;
+  /** Controles y avisos propios del formato (el resumen en PDF verifica sus saldos impresos). */
+  controles?: Control[];
+  avisos?: string[];
 }
 
-async function leerArchivo(archivo: File): Promise<LecturaComafi & { ilegibles: number }> {
+/**
+ * Conceptos completos tal como vienen en el Excel de movimientos. El resumen
+ * en PDF los recorta a 30 caracteres ("Creditos a comercios Master Ca"): si el
+ * recorte es el comienzo de exactamente uno de estos, se completa para que el
+ * informe diga lo mismo venga de donde venga.
+ */
+const CONCEPTOS_CONOCIDOS = [
+  "Creditos a comercios Master Card",
+  "Imp. IB s/Acred. Bcarias.Prov. Bs.As.",
+  "Impuesto a los creditos-tasa general",
+  "Impuesto a los debitos - tasa general",
+  "Transferencia recibida - Datanet",
+  "Transferencia terceros recibida - Coelsa",
+  "Transferencia Terceros eBanking - Comafi",
+  "Transf Inmed Terceros eBanking",
+  "Transf inmed sueldos e-Banking",
+  "Transf Inmed Propias eBanking",
+  "Comision transferencias e-Banking",
+  "Comisión Mantenimiento Servicio Cuenta",
+  "Pago electrónico de servicios",
+  "Pago de servicios por Pago Directo",
+  "Percepcion IVA RG 2408",
+  "Percepcion IIBB Buenos Aires",
+  "IVA - Alicuota General",
+];
+const LARGO_RECORTE_PDF = 29;
+
+function completarConcepto(recortado: string): string {
+  if (recortado.length < LARGO_RECORTE_PDF) return recortado;
+  const clave = sinAcentos(recortado).toLowerCase();
+  const candidatos = CONCEPTOS_CONOCIDOS.filter((c) => sinAcentos(c).toLowerCase().startsWith(clave));
+  return candidatos.length === 1 ? candidatos[0] : recortado;
+}
+
+/** Resumen de cuenta en PDF: mismos movimientos que el Excel, más el saldo corrido y la contraparte de las tablas auxiliares. */
+async function leerDesdePdf(archivo: File): Promise<LecturaComafi> {
+  const { leerPdfComafi } = await import("./comafi-pdf");
+  const lectura = await leerPdfComafi(archivo);
+  const movimientos: Movimiento[] = lectura.movimientos.map((m) => {
+    const concepto = completarConcepto(m.concepto);
+    return {
+      fecha: m.fecha,
+      comprobante: m.comprobante,
+      concepto,
+      detalle: m.detalle,
+      categoria: clasificar(concepto, m.detalle, m.importe),
+      moneda: m.moneda,
+      cuenta: m.cuenta,
+      importe: m.importe,
+      debito: m.debito,
+      credito: m.credito,
+      saldo: m.saldo,
+    };
+  });
+  const controles = [control("Resumen en PDF", "Saldos impresos que coinciden con el saldo corrido", lectura.puntosOk, lectura.puntosSaldo, lectura.puntosOk === lectura.puntosSaldo, "ent")];
+  if (lectura.enriquecidos > 0) controles.push(control("Resumen en PDF", "Movimientos con contraparte tomada de las tablas del resumen", lectura.enriquecidos, lectura.enriquecidos, true, "ent"));
+  return { movimientos, conSaldo: true, ilegibles: 0, controles, avisos: lectura.avisos };
+}
+
+async function leerArchivo(archivo: File): Promise<LecturaComafi> {
+  if (await esPdf(archivo)) return leerDesdePdf(archivo);
   const hojas = await leerPlanilla(archivo);
   const hoja = hojas.find((h) => h.filas.length > 1) ?? hojas[0];
   const filaCab = detectarFilaCabecera(
@@ -188,14 +253,14 @@ async function leerArchivo(archivo: File): Promise<LecturaComafi & { ilegibles: 
 
 export async function analizarComafi(archivos: File[]): Promise<AnalisisComafi> {
   if (archivos.length === 0) throw new ErrorExtracto("No hay archivos para analizar.");
-  const lecturas: (LecturaComafi & { ilegibles: number })[] = [];
+  const lecturas: LecturaComafi[] = [];
   for (const a of archivos) lecturas.push(await leerArchivo(a));
   // Archivos en orden cronológico (varios meses juntos), cada uno con el orden interno del banco.
   lecturas.sort((a, b) => (a.movimientos[0]?.fecha?.getTime() ?? 0) - (b.movimientos[0]?.fecha?.getTime() ?? 0));
 
   let movimientos = lecturas.flatMap((l) => l.movimientos);
   if (movimientos.length === 0) throw new ErrorExtracto("No se encontraron movimientos en el archivo.");
-  const avisos: string[] = [];
+  const avisos: string[] = lecturas.flatMap((l) => l.avisos ?? []);
   const ilegibles = lecturas.reduce((s, l) => s + l.ilegibles, 0);
   const saldoDisponible = lecturas.every((l) => l.conSaldo);
 
@@ -211,7 +276,7 @@ export async function analizarComafi(archivos: File[]): Promise<AnalisisComafi> 
     if (antes - movimientos.length > 0) avisos.push(`Se descartaron ${antes - movimientos.length} movimientos duplicados entre archivos.`);
   }
 
-  const controles: Control[] = [];
+  const controles: Control[] = lecturas.flatMap((l) => l.controles ?? []);
   const sinCategoria = movimientos.filter((m) => m.categoria === CATEGORIA_DEFECTO).length;
   controles.push(control("Lectura del archivo", "Movimientos leídos", movimientos.length, movimientos.length, true, "ent"));
   controles.push(control("Lectura del archivo", "Fechas ilegibles", ilegibles, 0, ilegibles === 0, "ent"));
