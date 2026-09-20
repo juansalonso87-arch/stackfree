@@ -21,7 +21,8 @@ export default function ExtractoComafiTool() {
           <AlertDescription>
             En Comafi: <strong>Cuentas → pestaña “Movimientos” → filtrás las fechas y tocás “Buscar” → botón de
             descarga</strong> (la flecha hacia abajo a la derecha de la tabla “Últimos Movimientos”). Subí ese archivo tal
-            cual lo bajaste.{" "}
+            cual lo bajaste. <strong>También sirve el resumen de cuenta mensual en PDF</strong> (el que el banco te manda
+            por mail): dice a qué empresa fue cada pago de servicios y el CUIT de cada transferencia.{" "}
             <a href="#guia-descarga" className="underline underline-offset-2">
               Ver la guía paso a paso
             </a>

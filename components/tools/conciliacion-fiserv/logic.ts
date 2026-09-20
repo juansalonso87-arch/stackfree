@@ -172,6 +172,6 @@ export function resultadoDesdeConciliacion(c: Conciliacion): ResultadoAnalisis {
 /** Texto de ayuda por banco: dónde se descarga el extracto (mismo que en su herramienta). */
 export const AYUDA_BANCO: Record<Banco, string> = {
   santander: "Santander Office Banking → Cuentas → “Ver saldos y movimientos” → elegís las fechas → “Descargar movimientos” (el mismo archivo que usa el análisis de Santander).",
-  bbva: "BBVA → Cuentas → “Saldos y Movimientos” → filtrás las fechas → descargar Excel (el mismo archivo que usa el análisis de BBVA).",
-  comafi: "Comafi → Cuentas → pestaña “Movimientos” → filtrás las fechas y tocás “Buscar” → botón de descarga (el mismo archivo que usa el análisis de Comafi).",
+  bbva: "BBVA → Cuentas → “Saldos y Movimientos” → filtrás las fechas → descargar Excel (el mismo archivo que usa el análisis de BBVA). También sirve el resumen de cuenta en PDF.",
+  comafi: "Comafi → Cuentas → pestaña “Movimientos” → filtrás las fechas y tocás “Buscar” → botón de descarga (el mismo archivo que usa el análisis de Comafi). También sirve el resumen de cuenta en PDF.",
 };

@@ -36,6 +36,7 @@ const nombresLegibles: Record<string, string> = {
   "text/plain": "TXT",
   "text/tab-separated-values": "TSV",
   "text/xml": "XML",
+  "text/html": "tabla web (.html)",
 };
 
 /** Por si el sistema no informa el tipo MIME (pasa en algunos Windows). */

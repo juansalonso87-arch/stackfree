@@ -21,7 +21,8 @@ export default function ExtractoBbvaTool() {
           <AlertDescription>
             En BBVA: <strong>Cuentas → “Saldos y Movimientos” → elegís la empresa/cuenta → filtrás las fechas →
             “Descargar”</strong>. Subí ese archivo tal cual lo bajaste; se reconoce aunque venga como .xls, .xlsx o tabla
-            web.{" "}
+            web. <strong>También sirve el resumen de cuenta mensual en PDF</strong> (el que el banco te manda por mail):
+            trae el saldo después de cada movimiento y quién cobró cada débito automático.{" "}
             <a href="#guia-descarga" className="underline underline-offset-2">
               Ver la guía paso a paso
             </a>

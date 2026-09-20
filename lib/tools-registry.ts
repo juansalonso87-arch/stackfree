@@ -1071,13 +1071,13 @@ export const herramientas: Herramienta[] = [
   {
     slug: "extracto-bbva",
     nombre: "Análisis de movimientos BBVA",
-    h1: "Análisis de movimientos bancarios de BBVA: subí tu Excel y recibí el informe completo",
+    h1: "Análisis de movimientos bancarios de BBVA: subí el Excel o el resumen en PDF y recibí el informe completo",
     subtitulo:
-      "Subís el Excel de movimientos que te da BBVA y te devolvemos, en segundos, el análisis que un administrador arma a mano cada mes: cuánto entró y cuánto salió por concepto y por categoría (cobros, sueldos, impuestos, comisiones, proveedores) y la evolución día por día. Además unifica las distintas redacciones del banco para que “MANT. CTA.” y “MANTENIMIENTO DE CUENTA” cuenten como lo mismo. Sin subir tus datos a ningún servidor.",
-    tituloSeo: "Análisis de movimientos BBVA: del Excel del banco al informe completo",
+      "Subís el Excel de movimientos que te da BBVA (o el resumen de cuenta mensual en PDF) y te devolvemos, en segundos, el análisis que un administrador arma a mano cada mes: cuánto entró y cuánto salió por concepto y por categoría (cobros, sueldos, impuestos, comisiones, proveedores) y la evolución día por día. Además unifica las distintas redacciones del banco para que “MANT. CTA.” y “MANTENIMIENTO DE CUENTA” cuenten como lo mismo. Sin subir tus datos a ningún servidor.",
+    tituloSeo: "Análisis de movimientos BBVA: del Excel o el PDF del banco al informe completo",
     descripcionSeo:
-      "Subí los movimientos de BBVA en Excel y recibí un análisis completo: ingresos y egresos por concepto y categoría, evolución diaria y conceptos unificados. Gratis y sin subir tus datos.",
-    descripcionCorta: "Subí el Excel de movimientos de BBVA y recibí el análisis por concepto, categoría y día.",
+      "Subí los movimientos de BBVA en Excel o el resumen de cuenta en PDF y recibí un análisis completo: ingresos y egresos por concepto y categoría, evolución diaria y conceptos unificados. Gratis y sin subir tus datos.",
+    descripcionCorta: "Subí el Excel de movimientos o el resumen en PDF de BBVA y recibí el análisis por concepto, categoría y día.",
     keywords: [
       "movimientos bbva excel",
       "analizar movimientos bbva",
@@ -1086,13 +1086,15 @@ export const herramientas: Herramienta[] = [
       "agrupar movimientos bancarios por concepto",
       "bbva net cash movimientos historicos",
       "extracto bbva a excel",
+      "resumen de cuenta bbva pdf",
+      "resumen bbva pdf a excel",
     ],
     icono: Landmark,
     categoria: "administracion",
     estado: "activa",
-    formatosEntrada: ["application/vnd.ms-excel", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"],
+    formatosEntrada: ["application/vnd.ms-excel", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", "application/pdf"],
     guiaDescarga: {
-      titulo: "Cómo obtener el archivo de movimientos en BBVA",
+      titulo: "Cómo obtener el archivo de movimientos en BBVA (Excel o PDF)",
       pasos: [
         "Ingresá al home banking de BBVA con tu usuario.",
         "Entrá a Cuentas (en el menú vertical de la derecha) → “Saldos y Movimientos”.",
@@ -1100,11 +1102,11 @@ export const herramientas: Herramienta[] = [
         "Filtrá las fechas que querés ver (el filtro está en el medio de la pantalla, a la derecha).",
         "Tocá “Descargar”. Ese archivo es el que subís acá, tal cual se descarga, sin modificarlo.",
       ],
-      nota: "Si el archivo se descarga como .xls pero al abrirlo parece una tabla web, no pasa nada: la herramienta lo reconoce igual.",
+      nota: "Si el archivo se descarga como .xls pero al abrirlo parece una tabla web, no pasa nada: la herramienta lo reconoce igual. También podés subir el resumen de cuenta mensual en PDF (el que BBVA te envía por mail o descargás desde “Resúmenes” del home banking): se lee igual y además trae el saldo después de cada movimiento y quién cobró cada débito automático.",
     },
     pasos: [
-      "Arrastrá el Excel de movimientos al recuadro (podés sumar varios períodos a la vez).",
-      "Tocá “Analizar movimientos”: en segundos ves entradas, salidas, el resumen por categoría y qué redacciones del banco se unificaron.",
+      "Arrastrá el Excel de movimientos o el resumen en PDF al recuadro (podés sumar varios períodos a la vez).",
+      "Tocá “Analizar movimientos”: en segundos ves entradas, salidas, el resumen por categoría, qué redacciones del banco se unificaron y, si subiste el PDF, el control de la cadena de saldos.",
       "Revisá en pantalla lo importante: qué categoría concentra los egresos, cuánto se fue en impuestos y comisiones, si algo quedó sin clasificar.",
       "Descargá el Excel completo: Resumen por Concepto, Resumen por Categoría, Concepto x Día, Diagnóstico de Conceptos y Detalle, con fórmulas que se recalculan si corregís algo.",
     ],
@@ -1118,12 +1120,17 @@ export const herramientas: Herramienta[] = [
       {
         pregunta: "¿Cómo se clasifican los movimientos en categorías?",
         respuesta:
-          "Primero por el código de operación que BBVA pone en cada movimiento (la columna “Codigo”, que es la misma para todas las cuentas: 213 y 215 son cobros con tarjeta, 362 pagos a proveedores, 388 retenciones de IIBB, 589 y 609 el impuesto al cheque…) y, si el código no está en la tabla, por palabras clave sobre el concepto. Las categorías son las que mira un administrador: cobros con tarjeta, cobros de plataformas (PedidosYa, Rappi, Mercado Pago), transferencias recibidas y enviadas, pagos a proveedores, sueldos, impuesto al cheque, retenciones y percepciones de IIBB, IVA y percepciones, pagos a AFIP/ARCA (incluidos los planes de pago), comisiones, mantenimiento, intereses y préstamos, seguros, prepagas y salud, servicios y débitos automáticos, pago de tarjeta de crédito, compras con tarjeta de débito, depósitos y extracciones de efectivo, cheques, embargos. Lo que no reconoce queda en “Otros”, resaltado, para que lo revises.",
+          "Primero por el código de operación que BBVA pone en cada movimiento del Excel (la columna “Codigo”, que es la misma para todas las cuentas: 213 y 215 son cobros con tarjeta, 362 pagos a proveedores, 388 retenciones de IIBB, 589 y 609 el impuesto al cheque…) y, si el código no está en la tabla, por palabras clave sobre el concepto. El resumen en PDF no trae ese código, pero escribe el concepto más completo (“CUPONES ARGEN./MASTERCARD” en vez de “CUPON. ARGEN”) y las palabras clave alcanzan: con un mes real dio exactamente las mismas categorías que el Excel. Las categorías son las que mira un administrador: cobros con tarjeta, cobros de plataformas (PedidosYa, Rappi, Mercado Pago), transferencias recibidas y enviadas, pagos a proveedores, sueldos, impuesto al cheque, retenciones y percepciones de IIBB, IVA y percepciones, pagos a AFIP/ARCA (incluidos los planes de pago), comisiones, mantenimiento, intereses y préstamos, seguros, prepagas y salud, servicios y débitos automáticos, pago de tarjeta de crédito, compras con tarjeta de débito, depósitos y extracciones de efectivo, cheques, embargos. Lo que no reconoce queda en “Otros”, resaltado, para que lo revises.",
       },
       {
         pregunta: "¿Una transferencia recibida y una enviada pueden tener el mismo concepto?",
         respuesta:
           "Sí, BBVA usa el mismo texto (“TRF IN COEL”, “TRANSFERENCI”) para los dos sentidos. La herramienta mira si el movimiento es crédito o débito y lo manda a “Transferencias recibidas” o “Transferencias enviadas”; lo mismo con el efectivo (depósito o extracción) y los cheques (depositado o pagado). En el Resumen por Concepto esos casos aparecen en dos renglones, uno por sentido, así los totales cierran con el Resumen por Categoría.",
+      },
+      {
+        pregunta: "¿Conviene subir el Excel o el resumen en PDF?",
+        respuesta:
+          "Los dos dan el mismo resultado: se validó con un mes real y coincidieron movimiento por movimiento, al centavo. El Excel te deja elegir el rango de fechas que quieras. El resumen en PDF es un mes cerrado, pero trae el saldo después de cada movimiento (el Excel de BBVA no lo trae), así la herramienta controla toda la cadena de saldos, y sus tablas finales dicen quién cobró cada débito automático y a quién fue cada transferencia, que pasan al detalle. Tiene que ser el PDF que genera el banco: un resumen escaneado o fotografiado no se puede leer. Una diferencia para tener en cuenta: el PDF fecha cada movimiento por su fecha valor y el Excel por la fecha de asiento, así que el impuesto al cheque semanal puede figurar el viernes en uno y el lunes en el otro.",
       },
       {
         pregunta: "¿Sirve para otros bancos con columnas de Crédito y Débito?",
@@ -1142,13 +1149,13 @@ export const herramientas: Herramienta[] = [
   {
     slug: "extracto-comafi",
     nombre: "Análisis de movimientos Comafi",
-    h1: "Análisis de movimientos bancarios de Comafi: subí tu Excel y recibí el informe completo",
+    h1: "Análisis de movimientos bancarios de Comafi: subí el Excel o el resumen en PDF y recibí el informe completo",
     subtitulo:
-      "Subís el Excel de movimientos de cuenta que te da Comafi y te devolvemos, en segundos, el análisis que un administrador arma a mano cada mes: cuánto entró y cuánto salió por concepto y por categoría (cobros, sueldos, impuestos, comisiones, proveedores), separado por moneda, y la evolución día por día. Sin subir tus datos a ningún servidor.",
-    tituloSeo: "Análisis de movimientos Comafi: del Excel del banco al informe completo",
+      "Subís el Excel de movimientos de cuenta que te da Comafi (o el resumen de cuenta mensual en PDF) y te devolvemos, en segundos, el análisis que un administrador arma a mano cada mes: cuánto entró y cuánto salió por concepto y por categoría (cobros, sueldos, impuestos, comisiones, proveedores), separado por moneda, y la evolución día por día. Sin subir tus datos a ningún servidor.",
+    tituloSeo: "Análisis de movimientos Comafi: del Excel o el PDF del banco al informe completo",
     descripcionSeo:
-      "Subí los movimientos de cuenta de Comafi en Excel y recibí un análisis completo: ingresos y egresos por concepto y categoría, por moneda y por día. Gratis y sin subir tus datos.",
-    descripcionCorta: "Subí el Excel de movimientos de Comafi y recibí el análisis por concepto, categoría, moneda y día.",
+      "Subí los movimientos de cuenta de Comafi en Excel o el resumen de cuenta en PDF y recibí un análisis completo: ingresos y egresos por concepto y categoría, por moneda y por día. Gratis y sin subir tus datos.",
+    descripcionCorta: "Subí el Excel de movimientos o el resumen en PDF de Comafi y recibí el análisis por concepto, categoría, moneda y día.",
     keywords: [
       "movimientos comafi excel",
       "analizar movimientos comafi",
@@ -1156,13 +1163,15 @@ export const herramientas: Herramienta[] = [
       "resumen de cuenta comafi por concepto",
       "comafi empresas movimientos de cuenta",
       "extracto comafi a excel",
+      "resumen de cuenta comafi pdf",
+      "resumen comafi pdf a excel",
     ],
     icono: Landmark,
     categoria: "administracion",
     estado: "activa",
-    formatosEntrada: ["application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", "application/vnd.ms-excel"],
+    formatosEntrada: ["application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", "application/vnd.ms-excel", "application/pdf"],
     guiaDescarga: {
-      titulo: "Cómo obtener el archivo de movimientos en Comafi",
+      titulo: "Cómo obtener el archivo de movimientos en Comafi (Excel o PDF)",
       pasos: [
         "Ingresá al home banking de Comafi con tu usuario.",
         "Entrá a Cuentas y, en la cuenta que querés analizar, abrí la pestaña “Movimientos”.",
@@ -1170,11 +1179,11 @@ export const herramientas: Herramienta[] = [
         "Debajo aparece la tabla “Últimos Movimientos” (ID Operación, Fecha, Fecha de carga, Descripción, Importe). A la derecha del encabezado de esa tabla hay un botón redondo con una flecha hacia abajo apuntando a una bandeja: es el de descarga.",
         "Tocá ese botón y guardá el archivo. Si no se descarga al instante, buscalo en la pestaña “Archivos Descargados” de la misma pantalla. Ese archivo es el que subís acá.",
       ],
-      nota: "La herramienta reconoce las columnas por su nombre (Fecha, ID Operación, Descripción, Importe y, si vienen, Moneda y Saldo), así que no importa el orden ni si hay filas de título arriba.",
+      nota: "La herramienta reconoce las columnas por su nombre (Fecha, ID Operación, Descripción, Importe y, si vienen, Moneda y Saldo), así que no importa el orden ni si hay filas de título arriba. También podés subir el resumen de cuenta mensual en PDF (el que Comafi te envía por mail o descargás desde “Resúmenes”): se lee igual y además dice a qué empresa fue cada pago de servicios y el CUIT de cada transferencia.",
     },
     pasos: [
-      "Arrastrá el Excel de movimientos al recuadro (podés sumar varios períodos a la vez).",
-      "Tocá “Analizar movimientos”: en segundos ves entradas, salidas, el resumen por categoría y, si el archivo trae saldo, el control de la cadena de saldos.",
+      "Arrastrá el Excel de movimientos o el resumen en PDF al recuadro (podés sumar varios períodos a la vez).",
+      "Tocá “Analizar movimientos”: en segundos ves entradas, salidas, el resumen por categoría y, si el archivo trae saldo, el control de la cadena de saldos (con el PDF, además, se verifica cada saldo impreso por el banco).",
       "Revisá en pantalla lo importante: qué categoría concentra los egresos, cuánto se fue en impuestos y comisiones, si algo quedó sin clasificar.",
       "Descargá el Excel completo: Resumen por Concepto, Resumen por Categoría, Concepto x Día y Detalle, con fórmulas que se recalculan si corregís algo.",
     ],
@@ -1189,6 +1198,11 @@ export const herramientas: Herramienta[] = [
         pregunta: "¿Cómo se clasifican los movimientos?",
         respuesta:
           "Por palabras clave sobre la descripción del banco (“Impuesto a los débitos”, “Imp. IB s/Acred. Bcarias.”, “Créditos a comercios Master Card”, “Transf inmed sueldos”…) y, cuando la descripción no alcanza, por lo que dicen las columnas “Descripción Ampliada”: una “Transferencia recibida - Datanet” que viene de Delivery Hero es un cobro de PedidosYa, una “Transferencia terceros recibida - Coelsa” de Cabal es un cobro con tarjeta. Las categorías son las mismas que para los otros bancos (cobros con tarjeta, cobros de plataformas, transferencias recibidas, enviadas y entre cuentas propias, sueldos, impuesto al cheque, retenciones de IIBB, IVA, comisiones, mantenimiento, servicios…). Lo que no reconoce queda en “Otros”, resaltado, para que lo revises.",
+      },
+      {
+        pregunta: "¿Conviene subir el Excel o el resumen en PDF?",
+        respuesta:
+          "Los dos dan el mismo resultado: se validó con un mes real y coincidieron los 930 movimientos, al centavo. El Excel te deja elegir el rango de fechas. El resumen en PDF es un mes cerrado, pero trae tablas que el Excel no tiene: “Pago de servicios efectuados” (qué empresa cobró cada pago electrónico: en un caso real, dos “Pago electrónico de servicios” resultaron ser pagos a AFIP y pasaron a la categoría correcta) y “Transferencias enviadas y recibidas” con el CUIT y el nombre de la contraparte, que pasan al detalle de cada movimiento. Tiene que ser el PDF que genera el banco: un resumen escaneado o fotografiado no se puede leer.",
       },
       {
         pregunta: "¿Puedo analizar varios meses juntos?",
@@ -1376,7 +1390,7 @@ export const herramientas: Herramienta[] = [
     h1: "Conciliación de liquidaciones Fiserv con el banco: comprobá que te acreditaron cada liquidación y cuánto te queda de cada venta con tarjeta",
     subtitulo:
       "Subís el reporte de liquidaciones diarias de Fiserv (ex Posnet / First Data) y el extracto de tu banco del mismo período, y en segundos ves qué liquidación llegó como crédito, cuál falta, cuál se demoró, y la cadena completa de una venta con tarjeta: arancel, IVA, retenciones de Fiserv y lo que después te retiene el banco. Funciona con Santander, BBVA y Comafi. Sin subir tus datos a ningún servidor.",
-    tituloSeo: "Conciliar liquidaciones Fiserv con el extracto del banco (Excel)",
+    tituloSeo: "Conciliar liquidaciones Fiserv con el extracto del banco (Excel o PDF)",
     descripcionSeo:
       "Cruzá las liquidaciones diarias de Fiserv (Posnet) con los movimientos de Santander, BBVA o Comafi: qué se acreditó, qué falta, plazos y cuánto se lleva Fiserv y el banco de cada venta con tarjeta. Gratis, en tu navegador.",
     descripcionCorta: "Cruzá las liquidaciones de Fiserv con los créditos del banco: qué se acreditó, qué falta y cuánto te queda de cada venta con tarjeta.",
@@ -1394,14 +1408,14 @@ export const herramientas: Herramienta[] = [
     icono: GitCompareArrows,
     categoria: "administracion",
     estado: "activa",
-    formatosEntrada: ["application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", "application/vnd.ms-excel", "text/csv"],
+    formatosEntrada: ["application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", "application/vnd.ms-excel", "text/csv", "application/pdf"],
     guiaDescarga: {
       titulo: "Cómo obtener los dos archivos",
       pasos: [
         "En el portal de comercios de Fiserv: entrá a Liquidaciones → “Liquidaciones Diarias”.",
         "Filtrá el rango de fechas que querés conciliar (por ejemplo, el mes completo) y, si tenés varios comercios, el CUIT.",
         "Descargá el Excel completo. Ese archivo (Trx_… .xlsx, con una fila por liquidación y tarjeta) es el que subís acá, tal cual.",
-        "Del banco, bajá los movimientos del mismo período con la guía de la herramienta de tu banco (Santander, BBVA o Comafi): es exactamente el mismo archivo que usás para el análisis de movimientos.",
+        "Del banco, bajá los movimientos del mismo período con la guía de la herramienta de tu banco (Santander, BBVA o Comafi): es exactamente el mismo archivo que usás para el análisis de movimientos. En BBVA y Comafi también sirve el resumen de cuenta en PDF.",
       ],
       nota: "Conviene que el extracto del banco cubra unos días más que el reporte de Fiserv: así las liquidaciones de los últimos días de pago encuentran su crédito.",
     },

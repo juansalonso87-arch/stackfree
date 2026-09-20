@@ -23,7 +23,7 @@ export default function ConciliacionFiservTool() {
         {
           id: ENTRADA_BANCO,
           titulo: "Movimientos del banco",
-          descripcion: "Arrastrá acá el extracto de Santander, BBVA o Comafi",
+          descripcion: "Arrastrá acá el extracto de Santander, BBVA o Comafi (Excel; en BBVA y Comafi también el resumen en PDF)",
           accept: FORMATOS_BANCO,
           multiple: true,
           ayuda: (

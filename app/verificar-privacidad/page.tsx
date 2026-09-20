@@ -64,7 +64,7 @@ const metodos = [
     pasos: [
       "Todo el código del sitio es público, con licencia de software libre.",
       "La lógica de cada herramienta está en components/tools/<herramienta>/logic.ts; los analizadores de bancos, en lib/extractos/.",
-      "Buscá “fetch(” o “XMLHttpRequest” en ese código: no hay ninguna llamada de red propia. Lo único que se descarga son las librerías (leer Excel, generar Excel, decodificar imágenes) y el modelo de IA.",
+      "Buscá “fetch(” o “XMLHttpRequest” en ese código: no hay ninguna llamada de red propia. Lo único que se descarga son las librerías (leer Excel y PDF, generar Excel, decodificar imágenes) y el modelo de IA.",
     ],
     cierre: "Lo que se publica en el sitio es exactamente lo que está en el repositorio: cada cambio queda registrado con fecha.",
   },
