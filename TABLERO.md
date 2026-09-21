@@ -4,6 +4,7 @@ Pendientes y rutinas del proyecto. Lo mantiene Claude al cierre de cada sesión;
 
 ## En curso
 
+- **Shorts / TikTok**: los 3 primeros shorts de Mercado Pago están generados (`Planillar - videos - Shorts Mercado Pago`, con `TEXTOS para publicar.md`); siguen los shorts 4-6, que hay que grabar (guiones a preparar): "¿Es seguro subir mi extracto?", "Tu banco te cobra esto por mes", "Santander a Excel en 10 segundos".
 - **Santander en PDF**: cuando llegue el par (resumen en PDF + Excel del mismo mes) se arma `lib/extractos/santander-pdf.ts` y se valida movimiento por movimiento, como se hizo con BBVA (23 meses, 6 empresas) y Comafi (1 mes).
 
 ## Próximo (en orden)
@@ -14,7 +15,7 @@ Pendientes y rutinas del proyecto. Lo mantiene Claude al cierre de cada sesión;
 4. **Guías con capturas** en cada herramienta de banco: pestañas "Excel" y "PDF" con las pantallas del home banking marcadas, para gente sin experiencia. Después de terminar las herramientas.
 5. **Reorganización del sitio**: portada de Administración por tipo de archivo, un recuadro único que detecta el banco y el formato, buscador, una página por banco.
 6. **Páginas de video** (`/videos/...`) con el video como contenido principal y la transcripción completa: hoy Google no indexa el video porque está dentro de la página de la herramienta.
-7. **Video 2 (PedidosYa)** y dos shorts verticales del video 1.
+7. **Video 2 (PedidosYa)**.
 8. **Hoja "Control" en el Excel de BBVA** (Comafi la tiene; BBVA muestra los controles solo en pantalla).
 9. **AdSense**: cuando Google apruebe la cuenta → cargar datos de pago, crear los 4 bloques display, pasar los IDs, activar el mensaje de consentimiento UE.
 10. Opcional: `planillar.com.ar` (nic.ar, ~$8.500/año) redirigido al .com.
@@ -27,12 +28,15 @@ Pendientes y rutinas del proyecto. Lo mantiene Claude al cierre de cada sesión;
 - [ ] Decidir cómo agrupar **plazos fijos** (propuesta: categoría "Inversiones" con colocaciones y vencimientos separados) cuando retomemos Galicia.
 - [ ] Reporte de **Payway** + extracto del banco del mismo período.
 - [ ] **Capturas** de cada home banking para las guías (Win+Shift+S; nombre `banco-formato-N.png`, ej. `bbva-pdf-1.png`). Recién cuando cerremos las herramientas.
+- [ ] **Mirar y aprobar los 3 shorts** (con sonido) y subirlos: uno por día, YouTube + TikTok (+ Instagram si querés), con los textos del archivo.
+- [ ] **Crear la cuenta de TikTok** `@planillar` con hola@planillar.com, pasarla a "Cuenta de empresa" y poner el link planillar.com en la bio (texto en el archivo de textos). Foto: `_canalcanal-perfil-800.png`.
 - [ ] YouTube: **fijar el comentario** de Planillar en el video 1.
 - [ ] Search Console: seguir con las **tandas de indexación** (lista de URLs de los días 2 a 4).
 - [ ] AdSense: avisar cuando llegue el mail de **aprobación** (2 a 4 semanas desde el 16/09).
 
 ## Hecho (últimas dos semanas)
 
+- **21/09** Tres **shorts verticales** del video de Mercado Pago generados sin editor (Whisper para la transcripción + ffmpeg + textos dibujados con el motor del sitio): el 4,04 %, transferencias al alias, canal más caro. Textos de publicación listos.
 - **21/09** Galicia: se revisó el único par disponible (PDF + Excel, 19 movimientos, coinciden) y se decidió esperar archivos de una PyME. Tablero del proyecto creado.
 - **21/09** BBVA en PDF validado con 20 pares PDF/Excel de 6 empresas (18 idénticos al centavo; en 2 el Excel del banco omite movimientos). Resúmenes con varias cuentas. Ajustes: "GESTION PAGO" (Cabal), Experta, créditos de aseguradoras, cheques por canje/depósito/ventanilla, código 543 y 880.
 - **20/09** BBVA y Comafi aceptan el **resumen de cuenta en PDF** (mismos controles, saldo corrido verificado, contraparte desde las tablas del resumen). Textos del sitio actualizados. pdf.js pasa a la build compatible con navegadores viejos.
