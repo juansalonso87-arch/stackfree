@@ -10,7 +10,7 @@ This block is written and re-added by `next dev` — verify at `node_modules/nex
 
 # Planillar — notas del proyecto para agentes
 
-Contexto que no se deduce del código. Leer junto con `README.md`.
+Contexto que no se deduce del código. Leer junto con `README.md`. Los **pendientes y las rutinas del dueño** están en `TABLERO.md` (creado el 2026-09-21): al cerrar cada sesión hay que actualizarlo (En curso / Próximo / Esperando de Juan / Hecho) y subirlo con el resto de los cambios.
 
 ## Qué es
 
