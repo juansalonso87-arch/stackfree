@@ -187,14 +187,16 @@ function leerTablaAuxiliar(lineas: LineaPdf[], desde: number, ancla: Date, descr
     const l = lineas[i];
     if (/^(RECIBIDAS|ENVIADAS|REALIZADOS|RECHAZADOS|NOVEDADES|Legales|Débitos automáticos|Transferencias)\b/.test(l.texto) && i > desde) break;
     const fr = l.fragmentos;
-    const fecha = armarFecha(fr[0]?.texto ?? "", ancla);
-    if (!fecha) continue;
+    // La fecha va primera; antes puede colarse un glifo del código de barras del margen (misma altura que la fila).
+    const iFecha = fr.findIndex((f, k) => k <= 1 && armarFecha(f.texto, ancla) !== null);
+    if (iFecha < 0) continue;
+    const fecha = armarFecha(fr[iFecha].texto, ancla)!;
     // El importe es el último fragmento numérico antes de la cuenta ("CC $ 337-772910/7").
     const iImporte = fr.findLastIndex((f) => esImporte(f.texto));
-    if (iImporte < 2) continue;
+    if (iImporte < iFecha + 2) continue;
     const importe = importePdf(fr[iImporte].texto)!;
     const medio = fr
-      .slice(1, iImporte)
+      .slice(iFecha + 1, iImporte)
       .map((f) => f.texto)
       .filter((t) => t !== "$");
     const d = describir(medio);

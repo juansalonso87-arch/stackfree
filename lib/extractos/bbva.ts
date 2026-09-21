@@ -78,6 +78,7 @@ const DEBITO_DIRECTO = "debitoDirecto";
 const EMPRESAS_DEBITO_DIRECTO: Record<string, string> = {
   "22134": "ZURICH", // leyenda DEBZURICH
   "10295": "ZURICH", // leyenda CUOTAS P… (cuotas de póliza)
+  "77958": "EXPERTA", // leyenda SEG D VIDA (Experta Seguros, seguro de vida; lote de resúmenes reales 2026-09-21)
 };
 
 /**
@@ -89,6 +90,8 @@ const CODIGOS_BBVA: Record<string, string> = {
   "005": "cheque", // CH/CLEAR.48: cheque debitado por clearing
   "013": CAT.comisiones, // COM.TRANSFER
   "015": CAT.comisiones, // COM.TRANSF
+  "016": "cheque", // CJE. INTERNO: cheque propio pagado por canje interno (el PDF dice "PAGO CHEQUE 24HS")
+  "082": "cheque", // DEPOS.CHQ.48: depósito de cheque a 48 hs (el PDF dice "DEPOSITO CHEQUE 48HS.")
   "024": CAT.embargos, // SUCES/EMBG ALTA EMBARGO
   "026": CAT.intereses, // INTERES COBR: intereses que cobra el banco (el dueño confirma el concepto, no sobre qué se calculan)
   "030": CAT.otrosImp, // SELLADO (impuesto de sellos)
@@ -174,8 +177,8 @@ const CATEGORIAS: [string, string[]][] = [
     CAT.cobrosTarjeta,
     ["CUPON", "CUPONES", "CUPON ARGEN", "ARGENCARD", "CABAL", "CUPONES CABA", "MAESTRO", "MAE ACREDITA", "TARJETA", "VISA", "MASTERCARD", "MASTER CARD", "AMEX", "NARANJA", "COMERCIOS", "POSNET", "PRISMA", "FISERV", "PAYWAY", "GETNET", "LIQUIDACION TARJETA"],
   ],
+  ["cheque", ["CHEQUE", "ECHEQ", "CLEARING", "CANJE INTERNO"]],
   ["efectivo", ["DEPOSITO", "EFECTIVO", "EXTRACCION", "CAJERO", "ATM"]],
-  ["cheque", ["CHEQUE", "ECHEQ", "CLEARING"]],
   [CAT.embargos, ["EMBARGO", "EMBG", "JUDICIAL", "OFICIO"]],
   [CAT.dolares, ["DOLAR", "MEP", "CCL", "CANJE", "ARBITRAJE", "COMPRA VENTA MONEDA", "BURSATIL"]],
   [CAT.transfRecibidas, ["TRANSFERENCIA RECIBIDA", "ACREDITACION", "RECIBIDA", "CREDITO INMEDIATO", "TRANSFERENCIA A FAVOR", "DEBIN CREDITO", "TRANSFERENCIA CLIE"]],
@@ -211,6 +214,7 @@ const REESCRITURAS: [RegExp, string][] = [
   // En los débitos directos el texto viene pegado a la referencia numérica ("0000PLANRG5321"), por eso no hay \b adelante.
   [/(?<![A-Z])PLAN\s*RG\s*\d*/, " PLAN DE PAGOS AFIP"], // OG-DEBITO DI PLANRG5321 (plan de facilidades de pago de AFIP)
   [/(?<![A-Z])DEB(ZURICH|SANCOR|GALENO|OSDE|SEGURO)\b/, " DEBITO $1"], // DEBZURICH
+  [/(?<![A-Z])SEG\.?\s*D\.?E?\.?\s*VIDA\b/, " SEGURO DE VIDA"], // 77958SEG D VIDA (Experta)
 ];
 
 const ABREVIATURAS: Record<string, string> = {
@@ -231,7 +235,7 @@ const ABREVIATURAS: Record<string, string> = {
   TARJ: "TARJETA", TJ: "TARJETA", TJTA: "TARJETA",
   LIQ: "LIQUIDACION", LIQUID: "LIQUIDACION",
   PGO: "PAGO", PG: "PAGO",
-  CHQ: "CHEQUE", CHQS: "CHEQUES",
+  CHQ: "CHEQUE", CHQS: "CHEQUES", CJE: "CANJE",
   DESC: "DESCUENTO", DCTO: "DESCUENTO",
   VTO: "VENCIMIENTO", SDO: "SALDO", GS: "GASTOS",
   ELECT: "ELECTRONICO", ELECTR: "ELECTRONICO",
@@ -330,12 +334,15 @@ function reglas(): [string, string[]][] {
  * ("PAGO CHEQUE 48HS" no es "CHEQUERA"; detectado con un resumen real el
  * 2026-09-21). Una clave corta sí vale en cualquier posición.
  */
+/** Claves que son palabras completas distintas de su prefijo: "CHEQUE" no es un recorte de "CHEQUERA". */
+const SIN_RECORTE = new Set(["CHEQUERA"]);
+
 export function coincide(concepto: string, clave: string): boolean {
   const c = concepto.split(" ").filter(Boolean);
   const k = clave.split(" ").filter(Boolean);
   if (k.length === 0 || c.length < k.length) return false;
   const igual = (ct: string, kt: string, ultima: boolean) =>
-    ct === kt || (ultima && ct.length >= 4 && kt.startsWith(ct)) || (kt.length >= 4 && ct.startsWith(kt));
+    ct === kt || (ultima && ct.length >= 4 && !SIN_RECORTE.has(kt) && kt.startsWith(ct)) || (kt.length >= 4 && ct.startsWith(kt));
   for (let i = 0; i + k.length <= c.length; i++) {
     if (k.every((kt, j) => igual(c[i + j], kt, i + j === c.length - 1))) return true;
   }
@@ -624,6 +631,11 @@ export async function analizarBbva(archivos: File[]): Promise<AnalisisBbva> {
     let base = concreta ? porCodigo : delConcepto;
     // Una transferencia recibida cuyo propio detalle nombra a una procesadora (Cabal, Naranja, Amex…) es un cobro con tarjeta.
     if ((base === "transferencia" || base === CAT.transfRecibidas) && c.credito > 0 && mencionaProcesadora(c.detalle)) base = CAT.cobrosTarjeta;
+    // Plata que ENTRA de una aseguradora o prepaga (siniestro, reintegro) es una transferencia recibida, no un gasto en seguros;
+    // vale también cuando el concepto es "DNET CREDITO" y el grupo quedó como plataforma pero este detalle nombra a Zurich.
+    if (c.credito > 0 && (base === CAT.seguros || base === CAT.prepagas || (base === CAT.plataformas && !mencionaPlataforma(c.detalle) && seguroOPrepaga(c.detalle)))) {
+      base = CAT.transfRecibidas;
+    }
     return refinarPorDetalle(base, c.detalle);
   };
   const movimientos: Movimiento[] = crudos
