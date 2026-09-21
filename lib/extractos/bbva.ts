@@ -123,6 +123,9 @@ const CODIGOS_BBVA: Record<string, string> = {
   "758": CAT.iva, // IVA TASA RED (10,5 %)
   "761": DEBITO_DIRECTO, // OG-DEBITO DI: una empresa debita en la cuenta → decide el texto (ver clasificarDebitoDirecto)
   "879": CAT.sueldos, // OG-DEBITO HABERES OL
+  // 880 OG-TRANSFERE: transferencia recibida por el servicio de gestión de pagos (en el PDF dice "GESTION PAGO"). Cabal liquida
+  // sus cupones así; el detalle lo nombra y el movimiento pasa a Cobros con tarjeta (mismo par PDF/Excel de marzo 2026).
+  "880": "transferencia",
   "933": "transferencia", // TRANSFERENCI -CU (con NRO.TRANSF.)
   // 983 DNET CREDITO: crédito por Datanet/Interbanking. En los archivos del dueño es siempre PedidosYa (Delivery Hero en el
   // detalle) → plataforma si el detalle lo nombra; si otra empresa pagara por Datanet, quedaría como transferencia recibida.
@@ -143,6 +146,9 @@ const CATEGORIAS: [string, string[]][] = [
   [CAT.sueldos, ["SUELDO", "HABERES", "PAGO DE HABERES", "JORNAL"]],
   [CAT.impCheque, ["LEY 25413", "IMPUESTO CHEQUE", "IMPUESTO LEY"]],
   [CAT.iibb, ["ARBA", "AGIP", "INGRESOS BRUTOS", "IIBB", "SIRCREB", "SIRTAC", "RETENCION AR", "PERCEPCION IIBB"]],
+  // Una percepción o retención por régimen de AFIP ("RG 4815/20" sobre compras en dólares, código 544) es "IVA y percepciones",
+  // no un pago a AFIP: va antes de la regla que busca "AFIP" a secas (par PDF/Excel real de marzo 2026).
+  [CAT.iva, ["REGIMEN AFIP", "RETENCION GANANCIAS", "PERCEPCION IVA", "RETENCION IVA"]],
   [CAT.impuestos, ["AFIP", "ARCA", "VEP", "PAGOS AFIP", "PLAN DE PAGOS AFIP"]],
   [CAT.iva, ["IVA", "PERCEPCION", "RETENCION GANANCIAS", "REGIMEN AFIP", "RETENCION"]],
   [CAT.otrosImp, ["IMPUESTO", "TASA", "SELLOS", "SELLADO"]],
