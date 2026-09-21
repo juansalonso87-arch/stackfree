@@ -1,6 +1,6 @@
 # Tablero de Planillar
 
-Pendientes y rutinas del proyecto. Lo mantiene Claude al cierre de cada sesión; Juan lo lee acá (GitHub, también desde el celular) o pregunta "¿cómo vamos?". Última actualización: **2026-09-21**.
+Pendientes y rutinas del proyecto. Lo mantiene Claude al cierre de cada sesión; Juan lo lee acá (GitHub, también desde el celular) o pregunta "¿cómo vamos?". Última actualización: **2026-09-21** (tarde).
 
 ## En curso
 
@@ -8,7 +8,7 @@ Pendientes y rutinas del proyecto. Lo mantiene Claude al cierre de cada sesión;
 
 ## Próximo (en orden)
 
-1. **Galicia y Nación**: bancos nuevos, Excel y PDF. Hace falta un mes real de cada uno en los dos formatos.
+1. **Galicia** (en pausa hasta tener archivos de una PyME): el único par que hay es de una congregación sin cobros con tarjeta ni plataformas; sirvió para conocer los formatos (ver `AGENTS.md`) pero no alcanza para validar el vocabulario. **Nación**: hace falta un mes real en Excel y PDF.
 2. **Payway (Prisma)** como segunda procesadora de la conciliación (misma herramienta que Fiserv). Hace falta el reporte de liquidaciones de Payway y el extracto del banco del mismo período.
 3. **Reporte de cobros QR de Fiserv** para conciliar también los créditos que llegan por CVU (hoy quedan como "Fiserv por CVU").
 4. **Guías con capturas** en cada herramienta de banco: pestañas "Excel" y "PDF" con las pantallas del home banking marcadas, para gente sin experiencia. Después de terminar las herramientas.
@@ -22,7 +22,9 @@ Pendientes y rutinas del proyecto. Lo mantiene Claude al cierre de cada sesión;
 ## Esperando de Juan
 
 - [ ] Par de **Santander**: resumen en PDF + Excel de movimientos del mismo mes.
-- [ ] Archivos de **Galicia** y **Nación** (Excel y PDF, mismo mes) cuando los tengas.
+- [ ] **Galicia**: Excel y PDF del mismo mes de una cuenta **de comercio** (con cobros con tarjeta, PedidosYa, AFIP…), no la de la congregación. Y el menú exacto de Office Banking para bajar cada formato.
+- [ ] **Nación**: Excel y PDF del mismo mes.
+- [ ] Decidir cómo agrupar **plazos fijos** (propuesta: categoría "Inversiones" con colocaciones y vencimientos separados) cuando retomemos Galicia.
 - [ ] Reporte de **Payway** + extracto del banco del mismo período.
 - [ ] **Capturas** de cada home banking para las guías (Win+Shift+S; nombre `banco-formato-N.png`, ej. `bbva-pdf-1.png`). Recién cuando cerremos las herramientas.
 - [ ] YouTube: **fijar el comentario** de Planillar en el video 1.
@@ -31,6 +33,7 @@ Pendientes y rutinas del proyecto. Lo mantiene Claude al cierre de cada sesión;
 
 ## Hecho (últimas dos semanas)
 
+- **21/09** Galicia: se revisó el único par disponible (PDF + Excel, 19 movimientos, coinciden) y se decidió esperar archivos de una PyME. Tablero del proyecto creado.
 - **21/09** BBVA en PDF validado con 20 pares PDF/Excel de 6 empresas (18 idénticos al centavo; en 2 el Excel del banco omite movimientos). Resúmenes con varias cuentas. Ajustes: "GESTION PAGO" (Cabal), Experta, créditos de aseguradoras, cheques por canje/depósito/ventanilla, código 543 y 880.
 - **20/09** BBVA y Comafi aceptan el **resumen de cuenta en PDF** (mismos controles, saldo corrido verificado, contraparte desde las tablas del resumen). Textos del sitio actualizados. pdf.js pasa a la build compatible con navegadores viejos.
 - **18/09** Nueva herramienta **Conciliación Fiserv ↔ banco** (Comafi 109/109, BBVA 91/91, Santander 104/104). PedidosYa: hoja **Caja por Día** (online vs. efectivo).
