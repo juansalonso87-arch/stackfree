@@ -28,9 +28,13 @@
 import { columnaPorDerecha, esImporte, fechaPdf, importePdf, leerTextoPdf, type FragmentoPdf, type LineaPdf } from "./pdf-texto";
 import { ErrorExtracto } from "./tipos";
 
-/** Fila cruda del resumen, con los mismos campos que entrega el Excel más el saldo. */
+/** Fila cruda del resumen, con los mismos campos que entrega el Excel más el saldo y la cuenta. */
 export interface FilaPdfBbva {
   fecha: Date;
+  /** Cuenta a la que pertenece ("CC $ 337-772910/7"): el resumen puede traer varias. */
+  cuenta: string;
+  /** "PESOS" o "DOLARES", según el símbolo de la cuenta ("CC $" / "CC U$S"). */
+  moneda: string;
   /** Texto completo del concepto con sus referencias ("CUPONES CABAL 413540-10000205718"). */
   original: string;
   /** Columna ORIGEN del resumen ("D", "D 587"): canal por el que entró la operación. */
@@ -41,14 +45,23 @@ export interface FilaPdfBbva {
   saldo: number;
 }
 
-export interface LecturaPdfBbva {
-  filas: FilaPdfBbva[];
+/** Lo que el resumen declara de cada cuenta: sirve para controlar lo leído. */
+export interface CuentaPdfBbva {
   cuenta: string;
+  moneda: string;
   saldoAnterior: number | null;
   saldoFinal: number | null;
   /** Totales declarados en "TOTAL MOVIMIENTOS" (débitos en positivo). */
   totalDebitos: number | null;
   totalCreditos: number | null;
+  /** Cuántas filas de movimientos se leyeron en la cuenta. */
+  filas: number;
+}
+
+export interface LecturaPdfBbva {
+  filas: FilaPdfBbva[];
+  /** Una por bloque "Movimientos en cuentas" del resumen, en orden; las cuentas sin movimientos también figuran (con 0 filas). */
+  cuentas: CuentaPdfBbva[];
   /** Filas cuyo saldo impreso coincide con el saldo anterior más el movimiento. */
   eslabones: number;
   eslabonesOk: number;
@@ -234,11 +247,9 @@ export async function leerPdfBbva(archivo: File): Promise<LecturaPdfBbva> {
 
   const filas: FilaPdfBbva[] = [];
   const avisos: string[] = [];
-  let cuenta = "";
-  let saldoAnterior: number | null = null;
-  let saldoFinal: number | null = null;
-  let totalDebitos: number | null = null;
-  let totalCreditos: number | null = null;
+  const cuentas: CuentaPdfBbva[] = [];
+  let actual: CuentaPdfBbva | null = null;
+  let enDetalle = false;
   let eslabones = 0;
   let eslabonesOk = 0;
   let cols: Columnas | null = null;
@@ -253,8 +264,23 @@ export async function leerPdfBbva(archivo: File): Promise<LecturaPdfBbva> {
     const t = l.texto;
 
     if (/^Movimientos en cuentas\b/i.test(t)) {
-      const sig = lineas[i + 1]?.texto.match(/\b(CC|CA)\s*\$?\s*([\d/-]+)/);
-      if (sig) cuenta = `${sig[1]} ${sig[2]}`;
+      enDetalle = true;
+      continue;
+    }
+    // Cada cuenta abre su bloque: "CC $ 337-772910/7 (Cta.Cte.Bancaria) - Iva-Responsable Inscripto".
+    const cab = enDetalle ? t.match(/^(CC|CA)\s*(\$|U\$S|USD|U\$D)?\s*(\d[\d/-]*)\s*\((Cta|Caja|Cuenta)/i) : null;
+    if (cab) {
+      actual = {
+        cuenta: `${cab[1].toUpperCase()} ${cab[2] ?? "$"} ${cab[3]}`,
+        moneda: cab[2] && cab[2] !== "$" ? "DOLARES" : "PESOS",
+        saldoAnterior: null,
+        saldoFinal: null,
+        totalDebitos: null,
+        totalCreditos: null,
+        filas: 0,
+      };
+      cuentas.push(actual);
+      saldoCorrido = null;
       continue;
     }
     if (/^RECIBIDAS\b/.test(t)) iRecibidas = i;
@@ -269,17 +295,22 @@ export async function leerPdfBbva(archivo: File): Promise<LecturaPdfBbva> {
     }
     if (!enTabla || !cols) continue;
 
+    // Si el resumen no encabezó la cuenta (variante desconocida), se abre una genérica para no perder los controles.
+    if (!actual) {
+      actual = { cuenta: "", moneda: "PESOS", saldoAnterior: null, saldoFinal: null, totalDebitos: null, totalCreditos: null, filas: 0 };
+      cuentas.push(actual);
+    }
     if (/^SALDO ANTERIOR\b/i.test(t)) {
       const s = importePdf(l.fragmentos[l.fragmentos.length - 1].texto);
       if (s !== null) {
         saldoCorrido = s;
-        saldoAnterior ??= s;
+        actual.saldoAnterior ??= s;
       }
       continue;
     }
     if (/^SALDO AL\b/i.test(t)) {
       const s = importePdf(l.fragmentos[l.fragmentos.length - 1].texto);
-      if (s !== null) saldoFinal = s;
+      if (s !== null) actual.saldoFinal = s;
       continue;
     }
     if (/^TOTAL MOVIMIENTOS\b/i.test(t)) {
@@ -288,8 +319,8 @@ export async function leerPdfBbva(archivo: File): Promise<LecturaPdfBbva> {
         .map((f) => importePdf(f.texto))
         .filter((n): n is number => n !== null);
       if (nums.length >= 2) {
-        totalDebitos = Math.abs(nums[0]);
-        totalCreditos = nums[1];
+        actual.totalDebitos = Math.abs(nums[0]);
+        actual.totalCreditos = nums[1];
       }
       enTabla = false;
       continue;
@@ -311,7 +342,8 @@ export async function leerPdfBbva(archivo: File): Promise<LecturaPdfBbva> {
       if (Math.abs(saldoCorrido + credito - debito - fila.saldo) <= TOLERANCIA) eslabonesOk++;
     }
     saldoCorrido = saldo;
-    filas.push({ fecha, original: fila.concepto, origen: fila.origen, detalle: "", credito, debito, saldo });
+    actual.filas++;
+    filas.push({ fecha, cuenta: actual.cuenta, moneda: actual.moneda, original: fila.concepto, origen: fila.origen, detalle: "", credito, debito, saldo });
   }
 
   if (filas.length === 0) {
@@ -349,7 +381,5 @@ export async function leerPdfBbva(archivo: File): Promise<LecturaPdfBbva> {
   if (eslabones > 0 && eslabonesOk < eslabones) {
     avisos.push(`El saldo impreso no coincide con el saldo anterior más el movimiento en ${eslabones - eslabonesOk} de ${eslabones} filas: puede haber una línea que no se leyó bien.`);
   }
-  if (saldoFinal === null && saldoCorrido !== null) saldoFinal = saldoCorrido;
-
-  return { filas, cuenta, saldoAnterior, saldoFinal, totalDebitos, totalCreditos, eslabones, eslabonesOk, enriquecidos, avisos };
+  return { filas, cuentas, eslabones, eslabonesOk, enriquecidos, avisos };
 }

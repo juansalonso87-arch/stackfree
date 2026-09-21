@@ -137,6 +137,8 @@ const CODIGOS_BBVA: Record<string, string> = {
  * `coincide`). El orden importa: lo específico va antes que lo genérico.
  */
 const CATEGORIAS: [string, string[]][] = [
+  // "GESTION DE SUELDOS-CLI.AJEN" es la comisión del banco por el servicio de pago de haberes, no un sueldo.
+  [CAT.comisiones, ["GESTION DE SUELDOS", "COMISION SUELDOS", "COMISION HABERES"]],
   [CAT.sueldos, ["SUELDO", "HABERES", "PAGO DE HABERES", "JORNAL"]],
   [CAT.impCheque, ["LEY 25413", "IMPUESTO CHEQUE", "IMPUESTO LEY"]],
   [CAT.iibb, ["ARBA", "AGIP", "INGRESOS BRUTOS", "IIBB", "SIRCREB", "SIRTAC", "RETENCION AR", "PERCEPCION IIBB"]],
@@ -157,7 +159,8 @@ const CATEGORIAS: [string, string[]][] = [
   // servicios por banca online, no un cobro: va antes de la regla de tarjetas porque también dice TARJETA.
   [CAT.servicios, ["PAGO DE SERVICIOS TARJETA"]],
   // "PAGO VISA" (débito) es el pago del resumen de la tarjeta: va ANTES de "Cobros con tarjeta", que también contiene VISA.
-  [CAT.pagoTarjeta, ["PAGO VISA", "PAGO MASTERCARD", "PAGO MASTER", "PAGO AMEX", "PAGO TARJETA", "PAGO NARANJA", "PAGO CABAL", "PAGO RESUMEN"]],
+  // "CUENTA VISA NRO." (débito) es el pago del resumen de la tarjeta de crédito de la empresa (resumen en PDF).
+  [CAT.pagoTarjeta, ["PAGO VISA", "PAGO MASTERCARD", "PAGO MASTER", "PAGO AMEX", "PAGO TARJETA", "PAGO NARANJA", "PAGO CABAL", "PAGO RESUMEN", "CUENTA VISA", "CUENTA MASTERCARD", "CUENTA AMEX"]],
   [CAT.comprasDebito, ["PAGO CON VIS", "PAGO CON VISA", "COMPRA VISA DEBITO", "VISA DEBITO", "COMPRA DEBITO", "COMPRA CON TARJETA", "COMPRA MAESTRO", "CONSUMO TARJETA"]],
   [
     // CUPON. ARGEN / CUPONES CABAL / MAE-ACREDITA: liquidaciones de cobros con tarjeta (confirmado por el dueño con archivo real).
@@ -204,7 +207,7 @@ const REESCRITURAS: [RegExp, string][] = [
 const ABREVIATURAS: Record<string, string> = {
   MANT: "MANTENIMIENTO", MTO: "MANTENIMIENTO", MANTEN: "MANTENIMIENTO",
   CTA: "CUENTA", CTAS: "CUENTAS", CTE: "CORRIENTE", CC: "CUENTA CORRIENTE",
-  COM: "COMISION", COMIS: "COMISION", COMS: "COMISIONES",
+  COM: "COMISION", COMI: "COMISION", COMIS: "COMISION", COMS: "COMISIONES",
   IMP: "IMPUESTO", IMPTO: "IMPUESTO", IMPTOS: "IMPUESTOS", IMPS: "IMPUESTOS",
   DEB: "DEBITO", DEBS: "DEBITOS", DTO: "DEBITO", DB: "DEBITO",
   CRED: "CREDITO", CREDS: "CREDITOS", CR: "CREDITO",
@@ -313,15 +316,19 @@ function reglas(): [string, string[]][] {
  * por palabra y acepta palabras RECORTADAS: "TRANSFERENCI" vale por
  * "TRANSFERENCIA" y "PROVE" por "PROVEEDOR" (mínimo 4 letras para no
  * confundir siglas). Las claves de 2-3 letras se comparan exactas.
+ * El banco recorta el concepto al final, así que una palabra del concepto
+ * solo puede ser un recorte de la clave si es la ÚLTIMA del concepto
+ * ("PAGO CHEQUE 48HS" no es "CHEQUERA"; detectado con un resumen real el
+ * 2026-09-21). Una clave corta sí vale en cualquier posición.
  */
 export function coincide(concepto: string, clave: string): boolean {
   const c = concepto.split(" ").filter(Boolean);
   const k = clave.split(" ").filter(Boolean);
   if (k.length === 0 || c.length < k.length) return false;
-  const igual = (ct: string, kt: string) =>
-    ct === kt || (ct.length >= 4 && kt.startsWith(ct)) || (kt.length >= 4 && ct.startsWith(kt));
+  const igual = (ct: string, kt: string, ultima: boolean) =>
+    ct === kt || (ultima && ct.length >= 4 && kt.startsWith(ct)) || (kt.length >= 4 && ct.startsWith(kt));
   for (let i = 0; i + k.length <= c.length; i++) {
-    if (k.every((kt, j) => igual(c[i + j], kt))) return true;
+    if (k.every((kt, j) => igual(c[i + j], kt, i + j === c.length - 1))) return true;
   }
   return false;
 }
@@ -445,6 +452,9 @@ interface CrudoBbva {
   debito: number;
   /** Saldo después del movimiento (solo el resumen en PDF lo trae). */
   saldo?: number;
+  /** Cuenta y moneda (el resumen en PDF puede traer varias cuentas). */
+  cuenta?: string;
+  moneda?: string;
 }
 
 interface LecturaBbva {
@@ -466,6 +476,9 @@ interface LecturaBbva {
 async function leerDesdePdf(archivo: File): Promise<LecturaBbva> {
   const { leerPdfBbva } = await import("./bbva-pdf");
   const l = await leerPdfBbva(archivo);
+  // Un resumen puede traer varias cuentas (pesos, dólares, una segunda corriente): las que no tienen movimientos se ignoran.
+  const conMovimientos = l.cuentas.filter((c) => c.filas > 0);
+  const varias = conMovimientos.length > 1;
   const crudos: CrudoBbva[] = l.filas.map((f) => ({
     fecha: f.fecha,
     nroDoc: "",
@@ -476,20 +489,33 @@ async function leerDesdePdf(archivo: File): Promise<LecturaBbva> {
     credito: f.credito,
     debito: f.debito,
     saldo: f.saldo,
+    cuenta: varias ? f.cuenta : undefined,
+    moneda: f.moneda,
   }));
-  const debitos = crudos.reduce((s, c) => s + c.debito, 0);
-  const creditos = crudos.reduce((s, c) => s + c.credito, 0);
   const controles: Control[] = [];
   if (l.eslabones > 0) controles.push(control("Resumen en PDF", "Filas cuyo saldo impreso cierra con el movimiento", l.eslabonesOk, l.eslabones, l.eslabonesOk === l.eslabones, "ent"));
-  if (l.saldoAnterior !== null && l.saldoFinal !== null) {
-    const calculado = l.saldoAnterior + creditos - debitos;
-    controles.push(control("Resumen en PDF", "Saldo anterior + movimientos = saldo final", calculado, l.saldoFinal, Math.abs(calculado - l.saldoFinal) <= 0.02));
+  for (const c of conMovimientos) {
+    const propios = l.filas.filter((f) => f.cuenta === c.cuenta);
+    const debitos = propios.reduce((s, f) => s + f.debito, 0);
+    const creditos = propios.reduce((s, f) => s + f.credito, 0);
+    const sufijo = varias ? ` (${c.cuenta})` : "";
+    if (c.saldoAnterior !== null && c.saldoFinal !== null) {
+      const calculado = c.saldoAnterior + creditos - debitos;
+      controles.push(control("Resumen en PDF", `Saldo anterior + movimientos = saldo final${sufijo}`, calculado, c.saldoFinal, Math.abs(calculado - c.saldoFinal) <= 0.02));
+    }
+    if (c.totalDebitos !== null) controles.push(control("Resumen en PDF", `Total de débitos declarado${sufijo}`, debitos, c.totalDebitos, Math.abs(debitos - c.totalDebitos) <= 0.02));
+    if (c.totalCreditos !== null) controles.push(control("Resumen en PDF", `Total de créditos declarado${sufijo}`, creditos, c.totalCreditos, Math.abs(creditos - c.totalCreditos) <= 0.02));
   }
-  if (l.totalDebitos !== null) controles.push(control("Resumen en PDF", "Total de débitos declarado", debitos, l.totalDebitos, Math.abs(debitos - l.totalDebitos) <= 0.02));
-  if (l.totalCreditos !== null) controles.push(control("Resumen en PDF", "Total de créditos declarado", creditos, l.totalCreditos, Math.abs(creditos - l.totalCreditos) <= 0.02));
   if (l.enriquecidos > 0) controles.push(control("Resumen en PDF", "Movimientos con contraparte tomada de las tablas del resumen", l.enriquecidos, l.enriquecidos, true, "ent"));
   const avisos = [...l.avisos, "El resumen en PDF no trae el código de operación del banco: clasifiqué por el texto del concepto (que en el PDF viene más completo que en el Excel)."];
-  return { crudos, ilegibles: 0, conCodigo: 0, avisos, controles, saldoInicial: l.saldoAnterior ?? undefined, saldoFinal: l.saldoFinal ?? undefined };
+  // Saldo inicial y final para los KPI: los de la única cuenta con movimientos (si hay varias, la primera en pesos).
+  const principal = conMovimientos.find((c) => c.moneda === "PESOS") ?? conMovimientos[0];
+  if (varias && principal) {
+    avisos.push(
+      `El resumen tiene ${conMovimientos.length} cuentas con movimientos (${conMovimientos.map((c) => c.cuenta).join(", ")}): el saldo inicial y final que se muestran son de ${principal.cuenta}; el Detalle indica la cuenta de cada movimiento.`,
+    );
+  }
+  return { crudos, ilegibles: 0, conCodigo: 0, avisos, controles, saldoInicial: principal?.saldoAnterior ?? undefined, saldoFinal: principal?.saldoFinal ?? undefined };
 }
 
 async function leerDesdePlanilla(archivo: File): Promise<LecturaBbva> {
@@ -601,6 +627,8 @@ export async function analizarBbva(archivos: File[]): Promise<AnalisisBbva> {
       debito: c.debito,
       importe: c.credito - c.debito,
       saldo: c.saldo,
+      cuenta: c.cuenta,
+      moneda: c.moneda,
     }))
     .sort((a, b) => (a.fecha?.getTime() ?? 0) - (b.fecha?.getTime() ?? 0) || (a.comprobante ?? "").localeCompare(b.comprobante ?? ""));
 
@@ -685,9 +713,23 @@ const ESQUEMA: EsquemaDetalle = {
   ],
 };
 
+/** El resumen en PDF trae el saldo después de cada movimiento y, si hay varias cuentas, la cuenta: se agregan como columnas. */
+function esquemaDe(movimientos: Movimiento[]): EsquemaDetalle {
+  const columnas = [...ESQUEMA.columnas];
+  if (movimientos.some((m) => typeof m.saldo === "number")) {
+    const iNeto = columnas.findIndex((c) => c.id === "importe");
+    columnas.splice(iNeto + 1, 0, { id: "saldo", titulo: "Saldo", ancho: 16, valor: (m) => m.saldo ?? null, formato: FMT_NUM });
+  }
+  if (movimientos.some((m) => m.cuenta)) {
+    columnas.splice(1, 0, { id: "cuenta", titulo: "Cuenta", ancho: 20, valor: (m) => m.cuenta ?? "" });
+  }
+  return { columnas };
+}
+
 export async function generarExcelBbva(a: AnalisisBbva): Promise<Blob> {
   const wb = await crearLibro();
-  const det = planificarDetalle(ESQUEMA, a.movimientos.length);
+  const esquema = esquemaDe(a.movimientos);
+  const det = planificarDetalle(esquema, a.movimientos.length);
   const conceptosNorm = new Set(a.movimientos.map((m) => m.concepto)).size;
   const subtitulo =
     `Período: ${formatearFecha(a.desde)} al ${formatearFecha(a.hasta)}  |  ${a.movimientos.length} movimientos  |  ` +
@@ -733,6 +775,6 @@ export async function generarExcelBbva(a: AnalisisBbva): Promise<Blob> {
   );
   escribirPivot(wb, a.movimientos, det, { claves: [{ titulo: "Concepto", columna: "concepto", ancho: 46 }], subtitulo }, PALETA);
   escribirDiagnostico(wb, a.diagnostico, subtitulo, PALETA);
-  escribirDetalle(wb, a.movimientos, ESQUEMA, PALETA);
+  escribirDetalle(wb, a.movimientos, esquema, PALETA);
   return libroABlob(wb);
 }
