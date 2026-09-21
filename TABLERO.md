@@ -29,7 +29,7 @@ Pendientes y rutinas del proyecto. Lo mantiene Claude al cierre de cada sesión;
 - [ ] Reporte de **Payway** + extracto del banco del mismo período.
 - [ ] **Capturas** de cada home banking para las guías (Win+Shift+S; nombre `banco-formato-N.png`, ej. `bbva-pdf-1.png`). Recién cuando cerremos las herramientas.
 - [ ] **Mirar y aprobar los 3 shorts** (con sonido) y subirlos: uno por día, YouTube + TikTok (+ Instagram si querés), con los textos del archivo.
-- [ ] **Crear la cuenta de TikTok** `@planillar` con hola@planillar.com, pasarla a "Cuenta de empresa" y poner el link planillar.com en la bio (texto en el archivo de textos). Foto: `_canalcanal-perfil-800.png`.
+- [ ] **TikTok**: completar el perfil (foto `_canalcanal-perfil-800.png`, bio `Herramientas gratis para PyMEs 📊 planillar.com`) y vincular YouTube en Editar perfil. TikTok Argentina ya no ofrece el cambio gratis a cuenta de empresa (solo la verificada con documentos, no la hacemos); el link clicleable en la bio llega a los 1.000 seguidores → revisar entonces.
 - [ ] YouTube: **fijar el comentario** de Planillar en el video 1.
 - [ ] Search Console: seguir con las **tandas de indexación** (lista de URLs de los días 2 a 4).
 - [ ] AdSense: avisar cuando llegue el mail de **aprobación** (2 a 4 semanas desde el 16/09).
