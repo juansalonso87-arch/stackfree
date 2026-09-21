@@ -11,6 +11,12 @@ const enlacesLegales = [
   { href: "/legal/terminos", label: "Términos de uso" },
 ];
 
+/** Canales donde se publican los tutoriales y los shorts. */
+const redes = [
+  { href: siteConfig.redes.youtube, label: "YouTube" },
+  { href: siteConfig.redes.tiktok, label: "TikTok" },
+];
+
 export function Footer() {
   const anio = new Date().getFullYear();
 
@@ -53,6 +59,16 @@ export function Footer() {
                 <Link href={e.href} className="hover:text-foreground hover:underline">
                   {e.label}
                 </Link>
+              </li>
+            ))}
+          </ul>
+          <p className="pt-2 text-sm font-semibold">Videos</p>
+          <ul className="space-y-1.5 text-sm text-muted-foreground">
+            {redes.map((r) => (
+              <li key={r.href}>
+                <a href={r.href} target="_blank" rel="noopener noreferrer" className="hover:text-foreground hover:underline">
+                  {r.label}
+                </a>
               </li>
             ))}
           </ul>

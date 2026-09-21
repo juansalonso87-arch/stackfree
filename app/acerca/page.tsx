@@ -32,6 +32,7 @@ export default function PaginaAcerca() {
       url: siteConfig.url,
       email: siteConfig.emailContacto,
       foundingLocation: "Buenos Aires, Argentina",
+      sameAs: [siteConfig.redes.youtube, siteConfig.redes.tiktok],
     },
   };
 

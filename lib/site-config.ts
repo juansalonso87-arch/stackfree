@@ -58,6 +58,11 @@ export const siteConfig = {
    */
   repoUrl: "https://github.com/juansalonso87-arch/stackfree",
   licencia: "AGPL-3.0",
+  /** Redes donde se publican los videos tutoriales y los shorts (footer, "Acerca de" y datos estructurados). */
+  redes: {
+    youtube: "https://www.youtube.com/@Planillar",
+    tiktok: "https://www.tiktok.com/@planillar.com",
+  },
   /**
    * Código de verificación de Google Search Console (propiedad vieja
    * https://stackfree.vercel.app/; la nueva, planillar.com, se verifica por un
