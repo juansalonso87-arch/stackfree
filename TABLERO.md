@@ -4,7 +4,7 @@ Pendientes y rutinas del proyecto. Lo mantiene Claude al cierre de cada sesión;
 
 ## En curso
 
-- **Shorts / TikTok**: los 3 primeros shorts de Mercado Pago están publicados (TikTok @planillar.com: los tres el 21/09; YouTube: el 1 publicado, el 2 y el 3 programados para el 23 y el 24/09). Siguen los shorts 4-6, que hay que grabar (guiones a preparar): "¿Es seguro subir mi extracto?", "Tu banco te cobra esto por mes", "Santander a Excel en 10 segundos".
+- **Shorts / TikTok**: los 3 primeros shorts de Mercado Pago están publicados (TikTok @planillar.com: los tres el 21/09; YouTube: el 1 publicado, el 2 y el 3 programados para el 23 y el 24/09). Los shorts 4-6 tienen guion (Word) y extractos de demo probados en `04 - Shorts seguridad y bancos`: falta que Juan los grabe y yo los armo con el mismo molde.
 - **Santander en PDF**: cuando llegue el par (resumen en PDF + Excel del mismo mes) se arma `lib/extractos/santander-pdf.ts` y se valida movimiento por movimiento, como se hizo con BBVA (23 meses, 6 empresas) y Comafi (1 mes).
 
 ## Próximo (en orden)
@@ -22,6 +22,7 @@ Pendientes y rutinas del proyecto. Lo mantiene Claude al cierre de cada sesión;
 
 ## Esperando de Juan
 
+- [ ] **Grabar los shorts 4, 5 y 6** (30-40 s cada uno) siguiendo los guiones de `04 - Shorts seguridad y bancos`, con los archivos de demo de esa carpeta (nunca un extracto real). Mandarme las grabaciones.
 - [ ] Par de **Santander**: resumen en PDF + Excel de movimientos del mismo mes.
 - [ ] **Galicia**: Excel y PDF del mismo mes de una cuenta **de comercio** (con cobros con tarjeta, PedidosYa, AFIP…), no la de la congregación. Y el menú exacto de Office Banking para bajar cada formato.
 - [ ] **Nación**: Excel y PDF del mismo mes.
@@ -35,6 +36,7 @@ Pendientes y rutinas del proyecto. Lo mantiene Claude al cierre de cada sesión;
 
 ## Hecho (últimas dos semanas)
 
+- **21/09** Guiones de los **shorts 4-6** (seguridad, costo del banco, Santander a Excel) y dos extractos de demo (BBVA y Santander, "Lo de Ana" agosto 2026) generados y verificados: 157 y 195 movimientos, todos los controles en verde, 0 en "Otros".
 - **21/09** Cuenta de **TikTok @planillar.com** creada y los **3 shorts publicados** (TikTok y YouTube; 2 y 3 programados). Links de YouTube y TikTok en el footer y en "Acerca de".
 - **21/09** Tres **shorts verticales** del video de Mercado Pago generados sin editor (Whisper para la transcripción + ffmpeg + textos dibujados con el motor del sitio): el 4,04 %, transferencias al alias, canal más caro. Textos de publicación listos.
 - **21/09** Galicia: se revisó el único par disponible (PDF + Excel, 19 movimientos, coinciden) y se decidió esperar archivos de una PyME. Tablero del proyecto creado.
