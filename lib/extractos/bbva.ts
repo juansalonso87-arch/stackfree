@@ -30,6 +30,7 @@ import {
   ErrorExtracto,
   ORGANISMOS_IMPOSITIVOS,
   PLATAFORMAS,
+  PROCESADORAS_TARJETA,
   resolverSentido,
   seguroOPrepaga,
   type AnalisisExtracto,
@@ -175,7 +176,9 @@ const CATEGORIAS: [string, string[]][] = [
   [CAT.servicios, ["DEBITO AUTOMATICO", "PAGO ELECTRONICO", "PAGO DIRECTO", "SERVICIOS", "PAGO DE SERVICIOS", "PAGO SERVICIOS", "DEBITO DIRECTO", "OG DEBITO DI", "PROSEGUR", "ALARMA"]],
   // "PAGO A PROVE DB MIN" = pagos a proveedores (confirmado por el dueño con archivo real).
   [CAT.proveedores, ["PAGO A PROVEEDORES", "PAGO PROVEEDOR", "PAGO BTOB", "B2B", "INTERBANKING", "DNET DEBITO"]],
-  ["transferencia", ["TRANSFERENCIA", "TRF", "TRANSF", "DNET CREDITO"]],
+  // "GESTION PAGO": pagos que llegan (o salen) por el servicio de gestión de pagos de BBVA; Cabal liquida así sus cupones
+  // (resumen real de marzo 2026: 6 créditos que la tabla "Transferencias recibidas" atribuye a CABAL CL).
+  ["transferencia", ["TRANSFERENCIA", "TRF", "TRANSF", "DNET CREDITO", "GESTION PAGO", "GESTION DE PAGOS"]],
 ];
 
 /* ------------------------------------------------------------------ */
@@ -334,6 +337,7 @@ export function coincide(concepto: string, clave: string): boolean {
 }
 
 const mencionaPlataforma = (texto: string) => PLATAFORMAS.some((p) => coincide(normalizarConcepto(texto), p));
+const mencionaProcesadora = (texto: string) => PROCESADORAS_TARJETA.some((p) => coincide(normalizarConcepto(texto), p));
 
 /** Categoría base (puede ser neutra) de un texto normalizado según las reglas por texto. */
 function clasificarTexto(texto: string): string {
@@ -611,7 +615,10 @@ export async function analizarBbva(archivos: File[]): Promise<AnalisisBbva> {
     const delConcepto = categoriaBase.get(conceptos[i]) ?? CATEGORIA_DEFECTO;
     const porCodigo = CODIGOS_BBVA[c.codigo];
     const concreta = porCodigo !== undefined && porCodigo !== DEBITO_DIRECTO && !(porCodigo in CATEGORIAS_NEUTRAS);
-    return refinarPorDetalle(concreta ? porCodigo : delConcepto, c.detalle);
+    let base = concreta ? porCodigo : delConcepto;
+    // Una transferencia recibida cuyo propio detalle nombra a una procesadora (Cabal, Naranja, Amex…) es un cobro con tarjeta.
+    if ((base === "transferencia" || base === CAT.transfRecibidas) && c.credito > 0 && mencionaProcesadora(c.detalle)) base = CAT.cobrosTarjeta;
+    return refinarPorDetalle(base, c.detalle);
   };
   const movimientos: Movimiento[] = crudos
     .map((c, i) => ({

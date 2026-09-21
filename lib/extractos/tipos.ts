@@ -134,7 +134,8 @@ export function resolverSentido(base: string, esCredito: boolean): string {
 }
 
 /** Quién paga o cobra, según el detalle: plataforma de ventas, procesadora de tarjetas, o nadie reconocible. */
-export const PLATAFORMAS = ["DELIVERY HERO", "PEDIDOSYA", "PEDIDOS YA", "RAPPI", "MERCADO PAGO", "MERCADOPAGO", "MERCADO LIBRE", "MERCADOLIBRE", "MODO", "UALA", "GLOVO"];
+// "PAGOS YA SA" es otra razón social con la que PedidosYa transfiere (mismo CUIT 30-71522115-9 que "DELIVERY HERO FI" en un resumen real de BBVA).
+export const PLATAFORMAS = ["DELIVERY HERO", "PEDIDOSYA", "PEDIDOS YA", "PAGOS YA", "RAPPI", "MERCADO PAGO", "MERCADOPAGO", "MERCADO LIBRE", "MERCADOLIBRE", "MODO", "UALA", "GLOVO"];
 export const PROCESADORAS_TARJETA = ["FIRST DATA", "FISERV", "PRISMA", "PAYWAY", "POSNET", "CABAL", "AMERICAN EXPRESS", "AMEX", "NARANJA", "ARGENCARD", "MASTERCARD", "VISA", "GETNET", "LAPOS", "CLOVER"];
 /**
  * Seguros y prepagas son categorías distintas (pedido del dueño, 2026-09-17):

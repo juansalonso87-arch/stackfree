@@ -204,10 +204,13 @@ function leerTablaAuxiliar(lineas: LineaPdf[], desde: number, ancla: Date, descr
   return filas;
 }
 
-/** "072 | 30715221159DELIVERY HERO FI | P.PROV.E/C OTROS B | VARIOS 4219437 4219437" → CUIT + nombre, referencia 4219437. */
+/**
+ * "072 | 30715221159DELIVERY HERO FI | P.PROV.E/C OTROS B | VARIOS 4219437 4219437" → CUIT + nombre, referencia 4219437.
+ * El nombre puede venir pegado al CUIT o separado por un punto ("30654364229.CABAL CL").
+ */
 function describirRecibida(medio: string[]) {
   const texto = medio.join(" ");
-  const m = texto.match(/\b(\d{11})\s*([A-Z][A-Z .&-]*?)(?=\s+[A-Z.]+\/|\s+VARIOS|\s+\d|$)/);
+  const m = texto.match(/\b(\d{11})[.\s-]*([A-Z][A-Z .&-]*?)(?=\s+[A-Z.]+\/|\s+VARIOS|\s+[A-Z]{3}\d{3}\b|\s+\d|$)/);
   if (!m) return null;
   const ref = texto.match(/VARIOS\s+(\d{5,})/);
   return { referencia: ref ? sinCeros(ref[1]) : "", descripcion: `${m[2].trim()} | CUIT ${m[1]}`.replace(/^\s*\|\s*/, "") };
@@ -370,7 +373,8 @@ export async function leerPdfBbva(archivo: File): Promise<LecturaPdfBbva> {
     let extra: FilaAuxiliar | undefined;
     if (f.debito > 0 && /DEBITO DIRECTO|DEBITO AUTOM/i.test(f.original)) extra = buscar(debitosAuto, f, f.debito);
     else if (f.debito > 0 && /TRANSF|PAGOS AFIP|BTOB/i.test(f.original)) extra = buscar(enviadas, f, f.debito);
-    else if (f.credito > 0 && /DNET|TRANSF|TR\.|CREDITO/i.test(f.original)) extra = buscar(recibidas, f, f.credito);
+    // Cualquier crédito puede ser una transferencia recibida: Cabal paga por "GESTION PAGO" y Delivery Hero por "DNET CREDITO".
+    else if (f.credito > 0 && !/CUPON|MAESTRO|DEPOSITO/i.test(f.original)) extra = buscar(recibidas, f, f.credito);
     if (extra) {
       usadas.add(extra);
       f.detalle = extra.descripcion;
