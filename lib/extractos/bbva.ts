@@ -86,7 +86,7 @@ const EMPRESAS_DEBITO_DIRECTO: Record<string, string> = {
  * (2026-09). Un código ausente cae a la clasificación por texto.
  */
 const CODIGOS_BBVA: Record<string, string> = {
-  "001": "efectivo", // EFECTIVO (depósito o extracción por caja)
+  "001": "efectivo", // EFECTIVO: depósito por caja o, en débito con número de cheque en el detalle, cheque cobrado por ventanilla (ver categoriaDe)
   "005": "cheque", // CH/CLEAR.48: cheque debitado por clearing
   "013": CAT.comisiones, // COM.TRANSFER
   "015": CAT.comisiones, // COM.TRANSF
@@ -629,6 +629,9 @@ export async function analizarBbva(archivos: File[]): Promise<AnalisisBbva> {
     const porCodigo = CODIGOS_BBVA[c.codigo];
     const concreta = porCodigo !== undefined && porCodigo !== DEBITO_DIRECTO && !(porCodigo in CATEGORIAS_NEUTRAS);
     let base = concreta ? porCodigo : delConcepto;
+    // 001 "EFECTIVO" en débito con número de cheque en el detalle ("CTE 000000509164") es un cheque cobrado por ventanilla:
+    // el resumen en PDF lo llama "PAGO CHEQUE VENTANILLA NRO. 00509164". Decisión del dueño (2026-09-21): es Cheque pagado.
+    if (c.codigo === "001" && c.debito > 0 && /\bCTE\s*\d{6,}/i.test(c.detalle)) base = "cheque";
     // Una transferencia recibida cuyo propio detalle nombra a una procesadora (Cabal, Naranja, Amex…) es un cobro con tarjeta.
     if ((base === "transferencia" || base === CAT.transfRecibidas) && c.credito > 0 && mencionaProcesadora(c.detalle)) base = CAT.cobrosTarjeta;
     // Plata que ENTRA de una aseguradora o prepaga (siniestro, reintegro) es una transferencia recibida, no un gasto en seguros;
