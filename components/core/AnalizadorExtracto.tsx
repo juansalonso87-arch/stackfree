@@ -83,6 +83,23 @@ function claveDe(f: File) {
 }
 
 /**
+ * Las librerías pesadas (SheetJS, ExcelJS, pdf.js) se descargan la primera vez
+ * que se usan. Si en ese momento no hay internet, el navegador tira un error
+ * técnico en inglés: se traduce a algo accionable (pasa sobre todo cuando
+ * alguien prueba la herramienta con el wifi apagado para comprobar la privacidad).
+ */
+function mensajeDeError(e: unknown): string | undefined {
+  if (!(e instanceof Error)) return undefined;
+  if (/chunk|dynamically imported module|Failed to fetch|NetworkError/i.test(e.message)) {
+    return (
+      "Faltaba descargar una parte de la herramienta y parece que no hay conexión. " +
+      "Conectate un momento y volvé a intentar: tu archivo nunca se envía, solo se descarga el programa que lo lee."
+    );
+  }
+  return e.message;
+}
+
+/**
  * Flujo genérico de los analizadores de administración: elegir el archivo
  * exportado del banco/plataforma, analizarlo en el navegador, ver el resumen
  * en pantalla (indicadores, controles, tabla) y descargar el Excel completo.
@@ -146,7 +163,7 @@ export function AnalizadorExtracto({
       setResultado(await analizar(todos, porEntrada));
       setEstado("listo");
     } catch (e) {
-      setError(e instanceof Error ? e.message : undefined);
+      setError(mensajeDeError(e));
       setEstado("error");
     }
   };
@@ -167,7 +184,7 @@ export function AnalizadorExtracto({
       setTimeout(() => URL.revokeObjectURL(url), 10_000);
     } catch (e) {
       console.error("[analizador] excel", e);
-      setErrorExcel(e instanceof Error ? e.message : "No se pudo generar el Excel.");
+      setErrorExcel(mensajeDeError(e) ?? "No se pudo generar el Excel.");
     } finally {
       setGenerando(false);
     }
