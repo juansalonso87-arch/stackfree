@@ -10,6 +10,7 @@ import {
   Images,
   Landmark,
   Minimize2,
+  ReceiptText,
   Repeat,
   RotateCw,
   Scaling,
@@ -1383,6 +1384,82 @@ export const herramientas: Herramienta[] = [
       },
     ],
     cargar: () => import("@/components/tools/ventas-pedidosya/VentasPedidosYaTool"),
+  },
+  {
+    slug: "liquidacion-pedidosya",
+    nombre: "Liquidación de PedidosYa",
+    h1: "Liquidación de PedidosYa: controlá cuánto te van a depositar y por qué",
+    subtitulo:
+      "Subís el estado de cuenta semanal de PedidosYa (Finanzas) y el reporte de pedidos de cada local (Reportes → Pedidos), todos juntos en el mismo recuadro, y en segundos ves la cascada completa: venta bruta, tus promos, comisión, cargo por pedidos con Plus, tarifa de pago online, IVA, reclamos y reintegros, hasta el depósito que tiene que entrar al banco. Con la venta día a día para cruzar con la planilla del local y una hoja con lo que conviene reclamarle a PedidosYa. Sin subir tus datos a ningún servidor.",
+    tituloSeo: "Liquidación PedidosYa: estado de cuenta a Excel y control del depósito",
+    descripcionSeo:
+      "Subí el estado de cuenta y el reporte de pedidos de PedidosYa y controlá la liquidación: comisión, Plus, tarifa de pago online, IVA, reclamos y reintegros, venta día a día y depósito estimado. Gratis y en tu navegador.",
+    descripcionCorta: "Cruzá el estado de cuenta y el reporte de pedidos de PedidosYa y controlá cuánto te deposita cada semana.",
+    keywords: [
+      "estado de cuenta pedidosya excel",
+      "liquidacion pedidosya",
+      "cuanto me deposita pedidosya",
+      "pedidosya finanzas estado de cuenta",
+      "descuentos pedidosya a cobrar",
+      "cargo por pedidos con plus",
+      "tarifa de pago online pedidosya",
+      "reintegros pedidosya pedidos rechazados",
+      "control de caja pedidosya efectivo",
+    ],
+    icono: ReceiptText,
+    categoria: "administracion",
+    estado: "activa",
+    formatosEntrada: ["application/vnd.ms-excel", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", "text/csv"],
+    guiaDescarga: {
+      titulo: "Cómo descargar los dos archivos del Portal Partner de PedidosYa",
+      pasos: [
+        "Estado de cuenta (la liquidación): entrá al Portal Partner → Finanzas → elegí la semana que querés controlar → “Descargar estado de cuenta”. Se bajan dos archivos: subí acá el Excel (el PDF no hace falta). Ojo: se descarga con extensión .xls y trae todas tus sucursales juntas; subilo tal cual, sin abrirlo ni guardarlo de nuevo.",
+        "Repetí ese paso por cada semana del período que quieras analizar: PedidosYa liquida de lunes a domingo, así que un mes son cuatro o cinco archivos.",
+        "Reporte de pedidos (el detalle): entrá a Reportes → Pedidos, filtrá el período y el local, y tocá “Descargar”. Este reporte se baja por local: si tenés más de uno, repetí el paso para cada sucursal.",
+        "Arrastrá todos los archivos juntos al recuadro de arriba (podés seleccionarlos de una en la carpeta Descargas). La herramienta reconoce sola cuál es cada uno.",
+      ],
+      nota: "Los archivos tienen que corresponderse en el período: el reporte de pedidos debe cubrir los mismos días que los estados de cuenta que subas, y de todos los locales que aparecen en ellos. Si falta la semana de un estado de cuenta, esos días se muestran igual pero sin el detalle de tus promos, el cargo por Plus ni los reintegros (aparecen como “s/d”); si falta el reporte de pedidos de un local, a esos pedidos no se les puede calcular la tarifa de pago online ni el IVA y el depósito estimado queda más alto que el real. En los dos casos la herramienta te avisa exactamente qué archivo falta.",
+    },
+    pasos: [
+      "Arrastrá al recuadro los estados de cuenta y los reportes de pedidos que tengas (todos juntos, de varias semanas y varios locales).",
+      "Tocá “Analizar la liquidación”: se reconoce cada archivo, se cruza pedido por pedido y se controla que la venta y la comisión coincidan en los dos reportes.",
+      "Mirá la cascada de la venta al depósito, la venta día a día para cruzar con la planilla del local y el cuadro “Para revisar”, con los pedidos que conviene reclamarle a PedidosYa.",
+      "Descargá el Excel completo: Liquidación semana por semana, Día a día, Por sucursal, Revisar, Control y Detalle, con fórmulas que se recalculan si corregís o filtrás algo.",
+    ],
+    tituloPasos: "Cómo controlar tu liquidación paso a paso",
+    faq: [
+      {
+        pregunta: "¿Por qué el depósito es menor que el “a cobrar” del estado de cuenta?",
+        respuesta:
+          "Porque el estado de cuenta no muestra dos costos: la tarifa de pago online (lo que cuesta cobrar con tarjeta, alrededor del 2,5 % al 3,4 % de lo que se pagó por la app) y el IVA del 21 % sobre las comisiones, las tarifas, el cargo por Plus y los reclamos. Los dos sí están en el reporte de pedidos. En los casos reales con los que se validó la herramienta, esa diferencia era de entre el 8 % y el 9 % del depósito: por eso conviene subir los dos archivos.",
+      },
+      {
+        pregunta: "El local informa una venta distinta a la que muestra PedidosYa. ¿Cuál está bien?",
+        respuesta:
+          "Las dos, pero miden cosas distintas. La “venta bruta” es lo que compró el cliente a precio de carta; la “venta neta” es esa venta menos tus promos y menos los descuentos que PedidosYa te cobra, y es la base de la liquidación. Entre una y otra suele haber un 6 % a 8 % de diferencia. A eso se suman tres cosas que descalzan el día a día: los pedidos cancelados (que el local suele anotar y PedidosYa no cuenta como venta), las sucursales (el estado de cuenta las trae juntas y el reporte de pedidos va por local) y los reclamos, que se descuentan cuando se confirman y no el día del pedido. La tabla “Día a día” te muestra las tres cifras una al lado de la otra para que encuentres cuál usa tu planilla.",
+      },
+      {
+        pregunta: "¿Qué son los “Descuentos de PedidosYa a cobrar”?",
+        respuesta:
+          "Descuentos que PedidosYa le dio al cliente y después te descuenta de la liquidación, con IVA incluido (es el descuento neto multiplicado por 1,21). Conviene mirarlos uno por uno: en los archivos reales con los que se validó la herramienta, el reporte de pedidos informaba esos mismos importes como “descuento financiado por PedidosYa”, y hubo pedidos entregados en los que la venta neta quedó en cero y aun así se cobró la comisión completa. Todos salen listados en la hoja “Revisar” con su número de pedido, para reclamarlos.",
+      },
+      {
+        pregunta: "¿Qué son los reintegros?",
+        respuesta:
+          "Pedidos rechazados por los que PedidosYa te compensa la mitad de lo que valía el pedido menos la comisión, porque la comida ya estaba hecha. Esos pedidos no figuran en la lista de pedidos liquidados (no son venta) y el reporte de pedidos tampoco los muestra: solo aparecen en la hoja “Reintegros” del estado de cuenta, así que sin ese archivo esa plata no se ve.",
+      },
+      {
+        pregunta: "¿Cómo controlo la caja del local con los pedidos en efectivo?",
+        respuesta:
+          "Con la columna “Cobrado en efectivo” de la tabla día a día: son los pedidos que el cliente pagó fuera de la app, así que esa plata ya está en el local. Los dos reportes de PedidosYa informan ese importe y la herramienta controla que coincidan. Después, PedidosYa te descuenta del depósito la comisión de esos pedidos, y por eso el depósito no es la venta menos los costos a secas.",
+      },
+      {
+        pregunta: "¿Mis archivos se suben a algún servidor?",
+        respuesta:
+          "No. Se leen y se cruzan dentro de tu navegador, y el Excel se genera ahí mismo. Podés comprobarlo desconectando internet después de cargar la página: la herramienta sigue funcionando.",
+      },
+    ],
+    cargar: () => import("@/components/tools/liquidacion-pedidosya/LiquidacionPedidosYaTool"),
   },
   {
     slug: "conciliacion-fiserv-banco",

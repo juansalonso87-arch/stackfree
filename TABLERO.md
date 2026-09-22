@@ -1,9 +1,10 @@
 # Tablero de Planillar
 
-Pendientes y rutinas del proyecto. Lo mantiene Claude al cierre de cada sesión; Juan lo lee acá (GitHub, también desde el celular) o pregunta "¿cómo vamos?". Última actualización: **2026-09-21** (tarde).
+Pendientes y rutinas del proyecto. Lo mantiene Claude al cierre de cada sesión; Juan lo lee acá (GitHub, también desde el celular) o pregunta "¿cómo vamos?". Última actualización: **2026-09-22**.
 
 ## En curso
 
+- **Liquidación de PedidosYa** (herramienta nueva, lista y probada con agosto 2026 completo): falta subirla. Con ella quedaron dos cosas para hacer con los datos reales del local: reclamarle a PedidosYa los **$ 674.089 de "descuentos a cobrar"** (su propio reporte de pedidos los informa como financiados por ellos) y **cruzar los cuatro depósitos estimados con el extracto del banco** de agosto para ver si además hay retenciones.
 - **Shorts / TikTok**: los 3 primeros shorts de Mercado Pago están publicados (TikTok @planillar.com: los tres el 21/09; YouTube: el 1 publicado, el 2 y el 3 programados para el 23 y el 24/09). Los shorts 4-6 tienen guion (Word) y extractos de demo probados en `04 - Shorts seguridad y bancos`: falta que Juan los grabe y yo los armo con el mismo molde.
 - **Santander en PDF**: cuando llegue el par (resumen en PDF + Excel del mismo mes) se arma `lib/extractos/santander-pdf.ts` y se valida movimiento por movimiento, como se hizo con BBVA (23 meses, 6 empresas) y Comafi (1 mes).
 
@@ -22,6 +23,8 @@ Pendientes y rutinas del proyecto. Lo mantiene Claude al cierre de cada sesión;
 
 ## Esperando de Juan
 
+- [ ] **PedidosYa**: decirme qué columna usa la planilla diaria del local (venta bruta, venta neta o lo cobrado) y pasarme dos o tres días con sus números, para dejar por escrito dónde está la diferencia.
+- [ ] **PedidosYa**: extracto del banco de agosto 2026 para cruzar los depósitos de las cuatro semanas (5.312.831 / 5.589.561 / 5.472.118 / 4.874.174) y ver si además hay retenciones.
 - [ ] **Grabar los shorts 4, 5 y 6** (30-40 s cada uno) siguiendo los guiones de `04 - Shorts seguridad y bancos`, con los archivos de demo de esa carpeta (nunca un extracto real). Mandarme las grabaciones.
 - [ ] Par de **Santander**: resumen en PDF + Excel de movimientos del mismo mes.
 - [ ] **Galicia**: Excel y PDF del mismo mes de una cuenta **de comercio** (con cobros con tarjeta, PedidosYa, AFIP…), no la de la congregación. Y el menú exacto de Office Banking para bajar cada formato.
@@ -36,6 +39,7 @@ Pendientes y rutinas del proyecto. Lo mantiene Claude al cierre de cada sesión;
 
 ## Hecho (últimas dos semanas)
 
+- **22/09** Nueva herramienta **Liquidación de PedidosYa**: un solo recuadro donde entran el estado de cuenta semanal (Finanzas) y el reporte de pedidos de cada local, se reconocen solos y se cruzan pedido por pedido. Validada con agosto 2026 completo (4 estados de cuenta + 2 reportes, 1.251 pedidos, $ 36.468.260): venta y comisión idénticas al centavo en los dos reportes, y aparecieron los dos costos que el estado de cuenta no muestra (tarifa de pago online e IVA, 6,4 % de la venta).
 - **21/09** Guiones de los **shorts 4-6** (seguridad, costo del banco, Santander a Excel) y dos extractos de demo (BBVA y Santander, "Lo de Ana" agosto 2026) generados y verificados: 157 y 195 movimientos, todos los controles en verde, 0 en "Otros".
 - **21/09** Cuenta de **TikTok @planillar.com** creada y los **3 shorts publicados** (TikTok y YouTube; 2 y 3 programados). Links de YouTube y TikTok en el footer y en "Acerca de".
 - **21/09** Tres **shorts verticales** del video de Mercado Pago generados sin editor (Whisper para la transcripción + ffmpeg + textos dibujados con el motor del sitio): el 4,04 %, transferencias al alias, canal más caro. Textos de publicación listos.

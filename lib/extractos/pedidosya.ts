@@ -18,7 +18,7 @@
 
 import { ErrorExtracto, type Control } from "./tipos";
 import { aFecha, aNumero, clavePeriodo, normalizarBasico, round2 } from "./texto";
-import { detectarFilaCabecera, leerPlanilla, type Celda } from "./planilla";
+import { detectarFilaCabecera, leerPlanilla, type Celda, type Hoja } from "./planilla";
 import { control } from "./excel";
 import { DIAS_SEMANA, HORA_CORTE_DEFECTO, diaDeTurno } from "./mercadopago";
 
@@ -199,14 +199,23 @@ export function parsearArticulos(t: string): { cantidad: number; nombre: string 
     .filter((i) => i.nombre.length > 0);
 }
 
-export async function analizarPedidosYa(archivos: File[], horaCorte = HORA_CORTE_DEFECTO): Promise<AnalisisPedidosYa> {
+/**
+ * `hojasYaLeidas` evita abrir dos veces el mismo archivo cuando quien llama ya
+ * lo leyó para reconocerlo (lo usa la liquidación, que acepta los dos reportes
+ * de PedidosYa en el mismo recuadro). La clave es el nombre del archivo.
+ */
+export async function analizarPedidosYa(
+  archivos: File[],
+  horaCorte = HORA_CORTE_DEFECTO,
+  hojasYaLeidas?: Map<string, Hoja[]>,
+): Promise<AnalisisPedidosYa> {
   if (archivos.length === 0) throw new ErrorExtracto("No hay archivos para analizar.");
   if (horaCorte < 0 || horaCorte > 23) throw new ErrorExtracto("La hora de corte tiene que estar entre 0 y 23.");
   const avisos: string[] = [];
   const filas: Record<string, Celda>[] = [];
 
   for (const archivo of archivos) {
-    const hojas = await leerPlanilla(archivo);
+    const hojas = hojasYaLeidas?.get(archivo.name) ?? (await leerPlanilla(archivo));
     const hoja = hojas.find((h) => h.filas.length > 1) ?? hojas[0];
     const filaCab = detectarFilaCabecera(hoja.filas, (celdas) => COLUMNAS.nro.some((n) => celdas.includes(n)) && COLUMNAS.local.some((n) => celdas.includes(n)));
     if (filaCab < 0) {
