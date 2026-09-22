@@ -24,8 +24,8 @@ export const FORMATOS = [
 const pct = (parte: number, total: number) => (total ? `${((parte / total) * 100).toFixed(2).replace(".", ",")} %` : "—");
 const SD = "falta el archivo";
 
-export async function analizar(archivos: File[]): Promise<ResultadoAnalisis> {
-  return resultadoDesdeLiquidacion(await analizarLiquidacionPeYa(archivos));
+export async function analizar(archivos: File[], planillaLocal = ""): Promise<ResultadoAnalisis> {
+  return resultadoDesdeLiquidacion(await analizarLiquidacionPeYa(archivos, planillaLocal));
 }
 
 export function resultadoDesdeLiquidacion(a: AnalisisLiquidacionPeYa): ResultadoAnalisis {
@@ -129,7 +129,32 @@ export function resultadoDesdeLiquidacion(a: AnalisisLiquidacionPeYa): Resultado
     });
   }
 
-  /* --- 4. Para revisar --- */
+  /* --- 4. Comparación con la planilla del local --- */
+  const pl = a.planillaLocal;
+  if (pl && pl.filas.length) {
+    const ETIQUETA: Record<string, string> = {
+      coincide: "Coincide",
+      descuentos: "Descuentos de PedidosYa",
+      cancelados: "Cancelado anotado",
+      revisar: "Revisar",
+      "sin-datos": "Sin datos",
+    };
+    tablas.push({
+      titulo: "Tu planilla del local, día por día",
+      columnas: ["Fecha", "Informó el local", "Según PedidosYa", "Diferencia", "Qué la explica"],
+      numericas: [1, 2, 3],
+      filas: pl.filas.map((f) => [
+        formatearFecha(f.fecha),
+        formatearPesos(f.informado),
+        f.estado === "sin-datos" ? "—" : formatearPesos(f.segunPeya),
+        f.estado === "sin-datos" ? "—" : formatearPesos(f.diferencia),
+        `${ETIQUETA[f.estado]}${f.detalle ? ` · ${f.detalle}` : ""}`,
+      ]),
+      resaltar: (f) => String(f[4]).startsWith("Revisar") || String(f[4]).startsWith("Sin datos"),
+    });
+  }
+
+  /* --- 5. Para revisar --- */
   const grupos = incidenciasPorTipo(a);
   if (grupos.length) {
     tablas.push({
@@ -154,6 +179,22 @@ export function resultadoDesdeLiquidacion(a: AnalisisLiquidacionPeYa): Resultado
     { etiqueta: "Ya cobraste en efectivo", valor: formatearPesos(t.efectivo) },
     ...(cancelados ? [{ etiqueta: "Pedidos cancelados (no son venta)", valor: `${formatearEntero(cancelados)} · ${formatearPesos(montoCancelado)}` }] : []),
     ...(enDisputa ? [{ etiqueta: "Descuentos de PedidosYa a revisar", valor: formatearPesos(-enDisputa), tono: "negativo" as const }] : []),
+    ...(pl && pl.filas.length
+      ? [
+          {
+            etiqueta: "Tu planilla vs. PedidosYa",
+            valor:
+              `${formatearEntero(pl.coinciden + pl.conDescuentos + pl.conCancelados)} de ${formatearEntero(pl.filas.length - pl.sinDatos)} días explicados` +
+              (pl.sinDatos ? ` (${formatearEntero(pl.sinDatos)} sin reportes)` : ""),
+            tono: pl.aRevisar ? ("negativo" as const) : ("positivo" as const),
+          },
+          {
+            etiqueta: "Informaste de más (lo que PedidosYa descuenta después)",
+            valor: formatearPesos(pl.diferencia),
+            tono: pl.diferencia > 0 ? ("negativo" as const) : undefined,
+          },
+        ]
+      : []),
   ];
 
   const archivos = a.archivos.length > 3 ? `${a.archivos.length} archivos` : a.archivos.join(" + ");

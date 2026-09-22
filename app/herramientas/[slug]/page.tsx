@@ -99,22 +99,28 @@ export default async function PaginaHerramienta({ params }: Props) {
       acceptedAnswer: { "@type": "Answer", text: f.respuesta },
     })),
   };
+  // La sección de las migas: Administración tiene portada propia; el resto vuelve al listado del inicio.
+  const seccion =
+    h.categoria === "administracion"
+      ? { nombre: nombresCategoria.administracion, ruta: "/administracion" }
+      : { nombre: "Herramientas", ruta: "/#herramientas" };
   const jsonLdMigas = {
     "@context": "https://schema.org",
     "@type": "BreadcrumbList",
     itemListElement: [
       { "@type": "ListItem", position: 1, name: "Inicio", item: siteConfig.url },
+      { "@type": "ListItem", position: 2, name: seccion.nombre, item: `${siteConfig.url}${seccion.ruta}` },
       ...(p.variante
         ? [
             {
               "@type": "ListItem",
-              position: 2,
+              position: 3,
               name: h.nombre,
               item: `${siteConfig.url}${rutaHerramienta(h.slug)}`,
             },
-            { "@type": "ListItem", position: 3, name: p.variante.etiqueta, item: urlAbsoluta },
+            { "@type": "ListItem", position: 4, name: p.variante.etiqueta, item: urlAbsoluta },
           ]
-        : [{ "@type": "ListItem", position: 2, name: h.nombre, item: urlAbsoluta }]),
+        : [{ "@type": "ListItem", position: 3, name: h.nombre, item: urlAbsoluta }]),
     ],
   };
   const jsonLdApp = {
@@ -143,8 +149,8 @@ export default async function PaginaHerramienta({ params }: Props) {
           Inicio
         </Link>
         <ChevronRight className="size-3.5" aria-hidden="true" />
-        <Link href="/#herramientas" className="hover:text-foreground hover:underline">
-          Herramientas
+        <Link href={seccion.ruta} className="hover:text-foreground hover:underline">
+          {seccion.nombre}
         </Link>
         <ChevronRight className="size-3.5" aria-hidden="true" />
         {p.variante ? (

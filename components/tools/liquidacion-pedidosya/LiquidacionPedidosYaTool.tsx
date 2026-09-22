@@ -1,16 +1,23 @@
 "use client";
 
+import { useState } from "react";
 import { Info } from "lucide-react";
 import { AnalizadorExtracto } from "@/components/core/AnalizadorExtracto";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { FORMATOS, MAX_ARCHIVOS, MAX_MB, analizar } from "./logic";
 
+const EJEMPLO = "30/08/2026\t$ 1.369.576,00\n29/08/2026\t$ 1.080.620,00";
+
 /**
  * Interfaz de "Liquidación de PedidosYa": un solo recuadro donde entran los dos
  * reportes del Portal Partner (estado de cuenta y reporte de pedidos, de todas
- * las semanas y locales). Cada archivo se reconoce por su contenido.
+ * las semanas y locales). Cada archivo se reconoce por su contenido. Opcional:
+ * pegar la planilla diaria del local para que el análisis explique, día por día,
+ * por qué no coincide con lo que liquida PedidosYa.
  */
 export default function LiquidacionPedidosYaTool() {
+  const [planilla, setPlanilla] = useState("");
+
   return (
     <AnalizadorExtracto
       accept={FORMATOS}
@@ -37,8 +44,34 @@ export default function LiquidacionPedidosYaTool() {
           </AlertDescription>
         </Alert>
       }
+      opciones={
+        <details className="rounded-lg border border-input bg-card p-4">
+          <summary className="cursor-pointer text-sm font-medium">
+            ¿Tu local anota la venta de PedidosYa día por día? Pegala acá y te digo dónde está la diferencia (opcional)
+          </summary>
+          <div className="mt-3 space-y-2">
+            <label htmlFor="planilla-local" className="text-sm text-muted-foreground">
+              Una línea por día, con la fecha y el importe de la <strong>venta cobrada por la app</strong> (sin los cobros en
+              efectivo). Podés pegar las dos columnas directo desde tu planilla.
+            </label>
+            <textarea
+              id="planilla-local"
+              value={planilla}
+              onChange={(e) => setPlanilla(e.target.value)}
+              rows={6}
+              spellCheck={false}
+              placeholder={EJEMPLO}
+              className="w-full rounded-lg border border-input bg-background p-3 font-mono text-xs outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50"
+            />
+            <p className="text-xs text-muted-foreground">
+              El análisis compara cada día y te dice qué explica la diferencia: casi siempre son los descuentos que PedidosYa
+              cobra después (el local anota la venta como la mostró la app) y los pedidos cancelados que quedaron anotados.
+            </p>
+          </div>
+        </details>
+      }
       etiquetaAccion="Analizar la liquidación"
-      analizar={(archivos) => analizar(archivos)}
+      analizar={(archivos) => analizar(archivos, planilla)}
     />
   );
 }

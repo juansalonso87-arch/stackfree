@@ -83,6 +83,7 @@ export async function generarExcelLiquidacionPeYa(a: AnalisisLiquidacionPeYa): P
     `${a.pedidos ? ` + reporte de pedidos` : " (sin reporte de pedidos)"}  |  Generado: ${formatearFecha(new Date())}`;
 
   hojaLiquidacion(wb, a, subtitulo);
+  if (a.planillaLocal?.filas.length) hojaPlanillaLocal(wb, a, subtitulo);
   hojaDiaADia(wb, a, subtitulo, fin);
   hojaPorSucursal(wb, a, subtitulo, fin);
   hojaRevisar(wb, a, subtitulo);
@@ -181,6 +182,68 @@ function hojaLiquidacion(wb: ExcelJS.Workbook, a: AnalisisLiquidacionPeYa, subti
 
   anchos(ws, [56, ...a.periodos.map(() => 18), 18]);
   congelar(ws, fc, 1);
+}
+
+/* ------------------------------------------------------------------ */
+/* 1 bis. Tu planilla del local contra la liquidación                    */
+/* ------------------------------------------------------------------ */
+
+const ETIQUETA_ESTADO: Record<string, string> = {
+  coincide: "Coincide",
+  descuentos: "Descuentos de PedidosYa",
+  cancelados: "Cancelado anotado",
+  revisar: "Revisar",
+  "sin-datos": "Sin datos",
+};
+
+function hojaPlanillaLocal(wb: ExcelJS.Workbook, a: AnalisisLiquidacionPeYa, subtitulo: string): void {
+  const pl = a.planillaLocal!;
+  const ws = wb.addWorksheet("Planilla del local");
+  const cabeceras = ["Fecha", "Informó el local", "Según PedidosYa", "Diferencia", "Descuentos de PedidosYa", "Cancelado anotado", "Sin explicar", "Resultado", "Qué la explica"];
+  encabezadoHoja(ws, "Tu planilla del local contra la liquidación", subtitulo, cabeceras.length, PALETA);
+  const fc = 4;
+  filaCabecera(ws, fc, cabeceras, PALETA);
+  let fila = fc + 1;
+  pl.filas.forEach((f, i) => {
+    ws.getCell(fila, 1).value = fechaExcel(f.fecha);
+    ws.getCell(fila, 2).value = f.informado;
+    ws.getCell(fila, 3).value = f.estado === "sin-datos" ? "—" : f.segunPeya;
+    ws.getCell(fila, 4).value = f.estado === "sin-datos" ? "—" : f.diferencia;
+    ws.getCell(fila, 5).value = f.descuentosPeya;
+    ws.getCell(fila, 6).value = f.canceladoNeto;
+    ws.getCell(fila, 7).value = f.sinExplicar;
+    ws.getCell(fila, 8).value = ETIQUETA_ESTADO[f.estado];
+    ws.getCell(fila, 9).value = f.detalle;
+    formatos(ws, fila, fila, { 1: FMT_FECHA, 2: FMT_PESOS, 3: FMT_PESOS, 4: FMT_PESOS, 5: FMT_PESOS, 6: FMT_PESOS, 7: FMT_PESOS });
+    estiloFila(ws, fila, cabeceras.length, { alterna: i % 2 === 1, alerta: f.estado === "revisar" || f.estado === "sin-datos" });
+    fila++;
+  });
+  const primera = fc + 1;
+  const ultima = fila - 1;
+  // Los días sin reportes no entran en el total (inflarían la diferencia).
+  ws.getCell(fila, 1).value = "TOTAL (días con reportes)";
+  ws.getCell(fila, 2).value = formula(`SUMIFS(B${primera}:B${ultima},H${primera}:H${ultima},"<>${ETIQUETA_ESTADO["sin-datos"]}")`);
+  for (const c of [5, 6, 7]) ws.getCell(fila, c).value = formula(`SUM(${letra(c)}${primera}:${letra(c)}${ultima})`);
+  ws.getCell(fila, 3).value = pl.segunPeya;
+  ws.getCell(fila, 4).value = pl.diferencia;
+  formatos(ws, fila, fila, { 2: FMT_PESOS, 3: FMT_PESOS, 4: FMT_PESOS, 5: FMT_PESOS, 6: FMT_PESOS, 7: FMT_PESOS });
+  estiloTotal(ws, fila, cabeceras.length, PALETA);
+  fila += 2;
+  const resumen = [
+    `${pl.coinciden} día(s) coinciden exacto con la venta neta cobrada por la app.`,
+    `${pl.conDescuentos} día(s) cierran sumando los descuentos que PedidosYa te cobra: el local anota la venta como la mostró la app y PedidosYa los descuenta en la liquidación.`,
+    `${pl.conCancelados} día(s) cierran sumando además un pedido cancelado que quedó anotado como venta.`,
+    `${pl.aRevisar} día(s) quedan para revisar${pl.sinDatos ? ` y ${pl.sinDatos} sin reportes que los cubran` : ""}.`,
+    "La cuenta que cierra: venta digital anotada por el local − descuentos que te cobra PedidosYa − pedidos cancelados = venta neta cobrada por la app.",
+  ];
+  for (const t of resumen) {
+    ws.getCell(fila, 1).value = t;
+    ws.getCell(fila, 1).font = fuentes.subtitulo;
+    fila++;
+  }
+  anchos(ws, [12, 17, 17, 15, 20, 18, 14, 22, 90]);
+  congelar(ws, fc);
+  autofiltro(ws, fc, 1, ultima, cabeceras.length);
 }
 
 /* ------------------------------------------------------------------ */

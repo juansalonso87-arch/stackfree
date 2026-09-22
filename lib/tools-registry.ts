@@ -1422,6 +1422,7 @@ export const herramientas: Herramienta[] = [
     },
     pasos: [
       "Arrastrá al recuadro los estados de cuenta y los reportes de pedidos que tengas (todos juntos, de varias semanas y varios locales).",
+      "Opcional: si tu local anota la venta de PedidosYa día por día, pegá esa planilla en el recuadro de abajo (una línea por día, con la fecha y el importe cobrado por la app). El análisis compara día por día y te explica cada diferencia.",
       "Tocá “Analizar la liquidación”: se reconoce cada archivo, se cruza pedido por pedido y se controla que la venta y la comisión coincidan en los dos reportes.",
       "Mirá la cascada de la venta al depósito, la venta día a día para cruzar con la planilla del local y el cuadro “Para revisar”, con los pedidos que conviene reclamarle a PedidosYa.",
       "Descargá el Excel completo: Liquidación semana por semana, Día a día, Por sucursal, Revisar, Control y Detalle, con fórmulas que se recalculan si corregís o filtrás algo.",
@@ -1436,7 +1437,7 @@ export const herramientas: Herramienta[] = [
       {
         pregunta: "El local informa una venta distinta a la que muestra PedidosYa. ¿Cuál está bien?",
         respuesta:
-          "Las dos, pero miden cosas distintas. La “venta bruta” es lo que compró el cliente a precio de carta; la “venta neta” es esa venta menos tus promos y menos los descuentos que PedidosYa te cobra, y es la base de la liquidación. Entre una y otra suele haber un 6 % a 8 % de diferencia. A eso se suman tres cosas que descalzan el día a día: los pedidos cancelados (que el local suele anotar y PedidosYa no cuenta como venta), las sucursales (el estado de cuenta las trae juntas y el reporte de pedidos va por local) y los reclamos, que se descuentan cuando se confirman y no el día del pedido. La tabla “Día a día” te muestra las tres cifras una al lado de la otra para que encuentres cuál usa tu planilla.",
+          "Las dos, pero miden cosas distintas. La “venta bruta” es lo que compró el cliente a precio de carta; la “venta neta” es esa venta menos tus promos y menos los descuentos que PedidosYa te cobra, y es la base de la liquidación. Entre una y otra suele haber un 6 % a 8 % de diferencia. A eso se suman tres cosas que descalzan el día a día: los pedidos cancelados (que el local suele anotar y PedidosYa no cuenta como venta), las sucursales (el estado de cuenta las trae juntas y el reporte de pedidos va por local) y los reclamos, que se descuentan cuando se confirman y no el día del pedido. La tabla “Día a día” te muestra las tres cifras una al lado de la otra, y si pegás la planilla del local en el recuadro opcional, el análisis te dice día por día qué explica la diferencia: en el caso real con el que se validó, 22 de 28 días cerraban al peso sumando los descuentos que PedidosYa cobra después (el local anota la venta como se la mostró la app) y 2 más por un pedido cancelado que había quedado anotado como venta.",
       },
       {
         pregunta: "¿Qué son los “Descuentos de PedidosYa a cobrar”?",
