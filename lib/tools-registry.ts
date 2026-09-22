@@ -1390,7 +1390,7 @@ export const herramientas: Herramienta[] = [
     nombre: "Liquidación de PedidosYa",
     h1: "Liquidación de PedidosYa: controlá cuánto te van a depositar y por qué",
     subtitulo:
-      "Subís el estado de cuenta semanal de PedidosYa (Finanzas) y el reporte de pedidos de cada local (Reportes → Pedidos), todos juntos en el mismo recuadro, y en segundos ves la cascada completa: venta bruta, tus promos, comisión, cargo por pedidos con Plus, tarifa de pago online, IVA, reclamos y reintegros, hasta el depósito que tiene que entrar al banco. Con la venta día a día para cruzar con la planilla del local y una hoja con lo que conviene reclamarle a PedidosYa. Sin subir tus datos a ningún servidor.",
+      "Subís el estado de cuenta semanal de PedidosYa (Finanzas) y el reporte de pedidos de cada local (Reportes → Pedidos), todos juntos en el mismo recuadro, y en segundos ves la cascada completa: venta bruta, tus promos, comisión, cargo por pedidos con Plus, tarifa de pago online, IVA, reclamos y reintegros, hasta el depósito que tiene que entrar al banco. Con la venta día a día para cruzar con la planilla del local, el lado comercial (qué productos se venden, a qué hora y qué día rinde más) y una hoja con lo que conviene reclamarle a PedidosYa. Sin subir tus datos a ningún servidor.",
     tituloSeo: "Liquidación PedidosYa: estado de cuenta a Excel y control del depósito",
     descripcionSeo:
       "Subí el estado de cuenta y el reporte de pedidos de PedidosYa y controlá la liquidación: comisión, Plus, tarifa de pago online, IVA, reclamos y reintegros, venta día a día y depósito estimado. Gratis y en tu navegador.",
@@ -1425,7 +1425,7 @@ export const herramientas: Herramienta[] = [
       "Opcional: si tu local anota la venta de PedidosYa día por día, pegá esa planilla en el recuadro de abajo (una línea por día, con la fecha y el importe). No hace falta que aclares qué anota —la venta total, solo lo cobrado por la app o solo el efectivo—: la herramienta prueba las tres formas, usa la que cierra con tus números y te dice cuál fue.",
       "Tocá “Analizar la liquidación”: se reconoce cada archivo, se cruza pedido por pedido y se controla que la venta y la comisión coincidan en los dos reportes.",
       "Mirá la cascada de la venta al depósito, la venta día a día para cruzar con la planilla del local y el cuadro “Para revisar”, con los pedidos que conviene reclamarle a PedidosYa.",
-      "Descargá el Excel completo: Liquidación semana por semana, Día a día, Por sucursal, Revisar, Control y Detalle, con fórmulas que se recalculan si corregís o filtrás algo.",
+      "Descargá el Excel completo: Liquidación semana por semana, Planilla del local, Día a día, Por sucursal, Cuándo vendés (por hora y por día de la semana), Productos más vendidos, Revisar, Control y Detalle, con fórmulas que se recalculan si corregís o filtrás algo.",
     ],
     tituloPasos: "Cómo controlar tu liquidación paso a paso",
     faq: [
@@ -1448,6 +1448,11 @@ export const herramientas: Herramienta[] = [
         pregunta: "¿Qué son los reintegros?",
         respuesta:
           "Pedidos rechazados por los que PedidosYa te compensa la mitad de lo que valía el pedido menos la comisión, porque la comida ya estaba hecha. Esos pedidos no figuran en la lista de pedidos liquidados (no son venta) y el reporte de pedidos tampoco los muestra: solo aparecen en la hoja “Reintegros” del estado de cuenta, así que sin ese archivo esa plata no se ve.",
+      },
+      {
+        pregunta: "¿Además de la plata, me dice algo del negocio?",
+        respuesta:
+          "Sí, si subís el reporte de pedidos. El Excel trae la hoja “Cuándo vendés” (pedidos y venta por hora, promedio por día de la semana, cuánto cobrás por la app y cuánto en efectivo, cuántos pedidos llevan promo tuya o Plus y los tiempos medianos de preparación y entrega) y la hoja “Productos”, con el ranking de lo más vendido por sucursal, armado desde la columna “Artículos”. En pantalla ves el cuadro por hora y los 15 productos que más salen.",
       },
       {
         pregunta: "¿Cómo controlo la caja del local con los pedidos en efectivo?",

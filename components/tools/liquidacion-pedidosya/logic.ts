@@ -131,6 +131,51 @@ export function resultadoDesdeLiquidacion(a: AnalisisLiquidacionPeYa): Resultado
     });
   }
 
+  /* --- 3 bis. Lo comercial: cuándo te compran y qué se vende (del reporte de pedidos) --- */
+  const ventas = a.pedidos?.ventas ?? [];
+  if (ventas.length) {
+    const porHora = new Map<number, { pedidos: number; bruto: number }>();
+    for (const p of ventas) {
+      const x = porHora.get(p.hora) ?? { pedidos: 0, bruto: 0 };
+      x.pedidos++;
+      x.bruto = round2(x.bruto + p.venta);
+      porHora.set(p.hora, x);
+    }
+    const brutoConHora = round2([...porHora.values()].reduce((s, x) => s + x.bruto, 0));
+    tablas.push({
+      titulo: "Cuándo te compran (por hora)",
+      columnas: ["Hora", "Pedidos", "Venta bruta", "% de la venta", "Ticket promedio"],
+      numericas: [1, 2, 3, 4],
+      filas: [...porHora.entries()]
+        .sort((x, y) => x[0] - y[0])
+        .map(([hora, x]) => [
+          `${String(hora).padStart(2, "0")}:00 a ${String(hora).padStart(2, "0")}:59`,
+          formatearEntero(x.pedidos),
+          formatearPesos(x.bruto),
+          pct(x.bruto, brutoConHora),
+          formatearPesos(round2(x.bruto / x.pedidos)),
+        ]),
+    });
+  }
+  const items = a.pedidos?.items ?? [];
+  if (items.length) {
+    const unidadesPorLocal = new Map<string, number>();
+    for (const i of items) unidadesPorLocal.set(i.local, (unidadesPorLocal.get(i.local) ?? 0) + i.unidades);
+    const top = [...items].sort((x, y) => y.unidades - x.unidades).slice(0, 15);
+    tablas.push({
+      titulo: `Productos más vendidos${items.length > top.length ? ` (los ${top.length} primeros; el Excel trae los ${formatearEntero(items.length)})` : ""}`,
+      columnas: ["Producto", "Sucursal", "Unidades", "Pedidos", "% de la sucursal"],
+      numericas: [2, 3, 4],
+      filas: top.map((i) => [
+        i.producto,
+        i.local,
+        formatearEntero(i.unidades),
+        formatearEntero(i.pedidos),
+        pct(i.unidades, unidadesPorLocal.get(i.local) ?? 0),
+      ]),
+    });
+  }
+
   /* --- 4. Comparación con la planilla del local --- */
   const pl = a.planillaLocal;
   if (pl && pl.filas.length) {
@@ -171,10 +216,24 @@ export function resultadoDesdeLiquidacion(a: AnalisisLiquidacionPeYa): Resultado
   }
 
   const enDisputa = round2(a.incidencias.filter((i) => i.tipo === "descuento-peya").reduce((s, i) => s + i.importe, 0));
+  // El día que más vendió (sumando las sucursales), para el panel de arriba.
+  const brutoPorDia = new Map<string, { fecha: Date; bruto: number }>();
+  for (const d of a.dias) {
+    const k = claveDia(d.fecha);
+    const x = brutoPorDia.get(k) ?? { fecha: d.fecha, bruto: 0 };
+    x.bruto = round2(x.bruto + d.bruto);
+    brutoPorDia.set(k, x);
+  }
+  const mejor = [...brutoPorDia.values()].sort((x, y) => y.bruto - x.bruto)[0];
+  const mejorDia = mejor
+    ? { dia: `${mejor.fecha.toLocaleDateString("es-AR", { weekday: "long" })} ${formatearFecha(mejor.fecha)}`, bruto: mejor.bruto }
+    : null;
 
   const kpis: ResultadoAnalisis["kpis"] = [
     { etiqueta: "Venta bruta", valor: formatearPesos(t.bruto), tono: "positivo" },
     { etiqueta: "Pedidos liquidados", valor: formatearEntero(t.pedidos) },
+    { etiqueta: "Ticket promedio", valor: formatearPesos(t.pedidos ? round2(t.bruto / t.pedidos) : 0) },
+    ...(mejorDia ? [{ etiqueta: "Mejor día", valor: `${mejorDia.dia} · ${formatearPesos(mejorDia.bruto)}` }] : []),
     { etiqueta: "Se lleva PedidosYa", valor: `${formatearPesos(costoPlataforma)} (${pct(costoPlataforma, t.bruto)})`, tono: "negativo" },
     { etiqueta: "Tus promos", valor: `${formatearPesos(t.promos)} (${pct(t.promos, t.bruto)})` },
     { etiqueta: "Reclamos de usuarios", valor: t.reclamos ? `${formatearPesos(-t.reclamos)} (${pct(-t.reclamos, t.bruto)})` : "Ninguno", tono: t.reclamos ? "negativo" : "positivo" },

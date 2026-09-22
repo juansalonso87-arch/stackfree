@@ -161,6 +161,8 @@ export interface Incidencia {
 export interface FilaDetalleLiquidacion {
   fecha: Date;
   hora: string;
+  /** Hora del día 0-23 (para el cuadro por hora); null si el pedido solo está en el estado de cuenta. */
+  horaDelDia: number | null;
   diaSemana: string;
   sucursal: string;
   nro: string;
@@ -525,6 +527,7 @@ function cruzar(estados: EstadoCuenta[], analisis: AnalisisPedidosYa | null, arc
     detalle.push({
       fecha: soloDia(p.momento),
       hora: hhmm(p.momento),
+      horaDelDia: p.momento.getHours(),
       diaSemana: DIAS_SEMANA[soloDia(p.momento).getDay()],
       sucursal: p.local,
       nro: p.nro,
@@ -555,6 +558,7 @@ function cruzar(estados: EstadoCuenta[], analisis: AnalisisPedidosYa | null, arc
     detalle.push({
       fecha: e.fecha,
       hora: "",
+      horaDelDia: null,
       diaSemana: DIAS_SEMANA[e.fecha.getDay()],
       sucursal: e.sucursal,
       nro,

@@ -6,7 +6,7 @@
  */
 
 import type ExcelJS from "exceljs";
-import { formatearFecha } from "./texto";
+import { formatearFecha, round2 } from "./texto";
 import {
   anchos,
   autofiltro,
@@ -25,10 +25,12 @@ import {
   relleno,
   FMT_ENT,
   FMT_FECHA,
+  FMT_NUM,
   FMT_PCT,
   FMT_PESOS,
   type Paleta,
 } from "./excel";
+import { medianaEntrega, medianaPreparacion, promedioPorDiaSemana } from "./pedidosya";
 import { MODOS_PLANILLA_LOCAL, porSucursal, type AnalisisLiquidacionPeYa, type PeriodoLiquidacion } from "./peya-liquidacion";
 
 const PALETA: Paleta = { principal: "C62828", total: "F8D7DA" };
@@ -63,6 +65,7 @@ const COL = {
   aDepositar: "U",
   cancelado: "V",
   articulos: "W",
+  horaDelDia: "X",
 } as const;
 
 const rango = (col: string, fin: number) => `${refHoja(HOJA_DETALLE)}!$${col}$2:$${col}$${fin}`;
@@ -86,6 +89,11 @@ export async function generarExcelLiquidacionPeYa(a: AnalisisLiquidacionPeYa): P
   if (a.planillaLocal?.filas.length) hojaPlanillaLocal(wb, a, subtitulo);
   hojaDiaADia(wb, a, subtitulo, fin);
   hojaPorSucursal(wb, a, subtitulo, fin);
+  // Lo comercial sale del reporte de pedidos (horarios y artículos): sin él no hay nada que mostrar.
+  if (a.pedidos) {
+    hojaCuandoVendes(wb, a, subtitulo, fin);
+    if (a.pedidos.items.length) hojaProductos(wb, a, subtitulo);
+  }
   hojaRevisar(wb, a, subtitulo);
   hojaControl(wb, a, subtitulo);
   hojaDetalle(wb, a);
@@ -360,6 +368,158 @@ function hojaPorSucursal(wb: ExcelJS.Workbook, a: AnalisisLiquidacionPeYa, subti
 }
 
 /* ------------------------------------------------------------------ */
+/* 3 bis. Cuándo vendés: por hora y por día de la semana                 */
+/* ------------------------------------------------------------------ */
+
+function hojaCuandoVendes(wb: ExcelJS.Workbook, a: AnalisisLiquidacionPeYa, subtitulo: string, fin: number): void {
+  const ventas = a.pedidos!.ventas;
+  const ws = wb.addWorksheet("Cuándo vendés");
+  const cab = ["Hora", "Pedidos", "Venta bruta", "% de la venta", "Ticket promedio"];
+  encabezadoHoja(ws, "Cuándo te compran", `${subtitulo}  |  Sale del reporte de pedidos: los pedidos que solo están en el estado de cuenta no tienen hora`, cab.length, PALETA);
+  const fc = 4;
+  filaCabecera(ws, fc, cab, PALETA);
+  const rHora = rango(COL.horaDelDia, fin);
+  const rBruto = rango(COL.bruto, fin);
+  const soloEntregados = `${rango(COL.estado, fin)},"${ENTREGADO}"`;
+  const horas = [...new Set(ventas.map((p) => p.hora))].sort((x, y) => x - y);
+  let fila = fc + 1;
+  const primera = fila;
+  for (const h of horas) {
+    const hh = String(h).padStart(2, "0");
+    ws.getCell(fila, 1).value = `${hh}:00 a ${hh}:59`;
+    ws.getCell(fila, 2).value = formula(`COUNTIFS(${rHora},${h},${soloEntregados})`);
+    ws.getCell(fila, 3).value = formula(`SUMIFS(${rBruto},${rHora},${h},${soloEntregados})`);
+    ws.getCell(fila, 5).value = formula(`IFERROR(C${fila}/B${fila},"")`);
+    estiloFila(ws, fila, cab.length, { alterna: (fila - primera) % 2 === 1 });
+    fila++;
+  }
+  const ultima = fila - 1;
+  const total = fila;
+  for (let r = primera; r <= ultima; r++) ws.getCell(r, 4).value = formula(`IFERROR(C${r}/$C$${total},"")`);
+  ws.getCell(total, 1).value = "TOTAL";
+  ws.getCell(total, 2).value = formula(`SUM(B${primera}:B${ultima})`);
+  ws.getCell(total, 3).value = formula(`SUM(C${primera}:C${ultima})`);
+  ws.getCell(total, 4).value = formula(`IFERROR(SUM(D${primera}:D${ultima}),"")`);
+  ws.getCell(total, 5).value = formula(`IFERROR(C${total}/B${total},"")`);
+  estiloTotal(ws, total, cab.length, PALETA);
+  formatos(ws, primera, total, { 2: FMT_ENT, 3: FMT_PESOS, 4: FMT_PCT, 5: FMT_PESOS });
+
+  // Segundo cuadro: promedio por día de la semana (compara días sin que pese cuántos hubo).
+  let f = total + 2;
+  const cab2 = ["Día de la semana", "Días", "Pedidos", "Venta bruta", "Pedidos por día", "Venta por día", "Ticket promedio"];
+  ws.getCell(f, 1).value = "Promedio por día de la semana";
+  ws.getCell(f, 1).font = fuentes.titulo(PALETA);
+  f++;
+  filaCabecera(ws, f, cab2, PALETA);
+  f++;
+  const primera2 = f;
+  const rDiaSem = rango(COL.dia, fin);
+  for (const d of promedioPorDiaSemana(ventas)) {
+    ws.getCell(f, 1).value = d.dia;
+    ws.getCell(f, 2).value = d.turnos;
+    ws.getCell(f, 3).value = formula(`COUNTIFS(${rDiaSem},$A${f},${soloEntregados})`);
+    ws.getCell(f, 4).value = formula(`SUMIFS(${rBruto},${rDiaSem},$A${f},${soloEntregados})`);
+    ws.getCell(f, 5).value = formula(`IFERROR(C${f}/B${f},"")`);
+    ws.getCell(f, 6).value = formula(`IFERROR(D${f}/B${f},"")`);
+    ws.getCell(f, 7).value = formula(`IFERROR(D${f}/C${f},"")`);
+    estiloFila(ws, f, cab2.length, { alterna: (f - primera2) % 2 === 1 });
+    f++;
+  }
+  formatos(ws, primera2, f - 1, { 2: FMT_ENT, 3: FMT_ENT, 4: FMT_PESOS, 5: FMT_NUM, 6: FMT_PESOS, 7: FMT_PESOS });
+
+  // Tercer cuadro: cómo te pagan y cuánto tardás (lo operativo del local).
+  f += 1;
+  ws.getCell(f, 1).value = "Cómo te pagan y cuánto tardás";
+  ws.getCell(f, 1).font = fuentes.titulo(PALETA);
+  f++;
+  filaCabecera(ws, f, ["Dato", "Pedidos", "Venta bruta", "% de la venta", "Ticket promedio"], PALETA);
+  f++;
+  const primera3 = f;
+  // Sale del Detalle (los dos reportes juntos): así "promo tuya" es la promo del
+  // estado de cuenta y no la suma con el cargo por Plus, como la informa PedidosYa.
+  const entregados = a.detalle.filter((d) => d.estado === ENTREGADO);
+  const bruto = (xs: typeof entregados) => round2(xs.reduce((s, d) => s + d.bruto, 0));
+  const totalBruto = bruto(entregados) || 1;
+  const conEstado = a.estados.length > 0;
+  const grupos: [string, typeof entregados][] = [
+    ["Pagados por la app", entregados.filter((d) => d.efectivo === 0)],
+    ["Pagados en efectivo en el local", entregados.filter((d) => d.efectivo > 0)],
+    conEstado
+      ? ["Con promo tuya", entregados.filter((d) => (d.promos ?? 0) > 0)]
+      : ["Con promo tuya o cargo por Plus", entregados.filter((d) => ventas.some((p) => p.nro === d.nro && p.descuentoPropio > 0))],
+    ["Con pedidos con Plus", entregados.filter((d) => (d.plus ?? 0) > 0)],
+    ["Con reclamo del cliente", entregados.filter((d) => d.reclamo < 0)],
+  ];
+  for (const [etiqueta, xs] of grupos) {
+    ws.getCell(f, 1).value = etiqueta;
+    ws.getCell(f, 2).value = xs.length;
+    ws.getCell(f, 3).value = bruto(xs);
+    ws.getCell(f, 4).value = round2(bruto(xs) / totalBruto);
+    ws.getCell(f, 5).value = xs.length ? round2(bruto(xs) / xs.length) : 0;
+    estiloFila(ws, f, 5, { alterna: (f - primera3) % 2 === 1 });
+    f++;
+  }
+  formatos(ws, primera3, f - 1, { 2: FMT_ENT, 3: FMT_PESOS, 4: FMT_PCT, 5: FMT_PESOS });
+  const prep = medianaPreparacion(ventas);
+  const entrega = medianaEntrega(ventas);
+  if (prep !== null || entrega !== null) {
+    f++;
+    ws.getCell(f, 1).value =
+      `Tiempos (mediana): ${prep !== null ? `${prep} min de preparación (aceptado → listo)` : "preparación sin dato"}` +
+      `${entrega !== null ? ` · ${entrega} min del pedido a la entrega` : ""}`;
+    ws.getCell(f, 1).font = fuentes.subtitulo;
+  }
+
+  anchos(ws, [30, 12, 16, 13, 16, 16, 16]);
+  congelar(ws, fc);
+}
+
+/* ------------------------------------------------------------------ */
+/* 3 ter. Productos más vendidos                                         */
+/* ------------------------------------------------------------------ */
+
+function hojaProductos(wb: ExcelJS.Workbook, a: AnalisisLiquidacionPeYa, subtitulo: string): void {
+  const items = a.pedidos!.items;
+  const ws = wb.addWorksheet("Productos");
+  const cab = ["Sucursal", "Producto", "Unidades", "Pedidos en que aparece", "% de las unidades de la sucursal", "Puesto"];
+  encabezadoHoja(
+    ws,
+    "Productos más vendidos, por sucursal",
+    `${subtitulo}  |  Armado con la columna "Artículos" del reporte de pedidos; las opciones entre corchetes (guarniciones, gustos) no cuentan como producto aparte`,
+    cab.length,
+    PALETA,
+  );
+  const fc = 4;
+  filaCabecera(ws, fc, cab, PALETA);
+  ws.getRow(fc).height = 32;
+  const unidadesPorLocal = new Map<string, number>();
+  for (const i of items) unidadesPorLocal.set(i.local, (unidadesPorLocal.get(i.local) ?? 0) + i.unidades);
+  let fila = fc + 1;
+  const primera = fila;
+  let localActual = "";
+  let puesto = 0;
+  for (const i of items) {
+    if (i.local !== localActual) {
+      localActual = i.local;
+      puesto = 0;
+    }
+    puesto++;
+    ws.getCell(fila, 1).value = i.local;
+    ws.getCell(fila, 2).value = i.producto;
+    ws.getCell(fila, 3).value = i.unidades;
+    ws.getCell(fila, 4).value = i.pedidos;
+    ws.getCell(fila, 5).value = round2(i.unidades / (unidadesPorLocal.get(i.local) || 1));
+    ws.getCell(fila, 6).value = puesto;
+    estiloFila(ws, fila, cab.length, { alterna: (fila - primera) % 2 === 1, alerta: puesto <= 5 });
+    fila++;
+  }
+  formatos(ws, primera, fila - 1, { 3: FMT_ENT, 4: FMT_ENT, 5: FMT_PCT, 6: FMT_ENT });
+  anchos(ws, [26, 54, 11, 15, 16, 10]);
+  congelar(ws, fc);
+  autofiltro(ws, fc, 1, Math.max(fila - 1, fc), cab.length);
+}
+
+/* ------------------------------------------------------------------ */
 /* 4. Revisar: lo que hay que mirar (y en varios casos reclamar)         */
 /* ------------------------------------------------------------------ */
 
@@ -500,6 +660,7 @@ function hojaDetalle(wb: ExcelJS.Workbook, a: AnalisisLiquidacionPeYa): void {
       d.aDepositar,
       d.cancelado,
       d.articulos,
+      d.horaDelDia,
     ];
     v.forEach((valor, j) => {
       const celda = ws.getCell(fila, j + 1);
@@ -510,7 +671,7 @@ function hojaDetalle(wb: ExcelJS.Workbook, a: AnalisisLiquidacionPeYa): void {
     formatos(ws, fila, fila, Object.fromEntries([1, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22].map((c) => [c, c === 1 ? FMT_FECHA : FMT_PESOS])));
     fila++;
   }
-  anchos(ws, [12, 11, 7, 24, 15, 11, 15, 18, 16, 14, 12, 15, 14, 15, 13, 12, 14, 12, 12, 15, 14, 12, 48]);
+  anchos(ws, [12, 11, 7, 24, 15, 11, 15, 18, 16, 14, 12, 15, 14, 15, 13, 12, 14, 12, 12, 15, 14, 12, 48, 11]);
   congelar(ws, 1, 1);
   autofiltro(ws, 1, 1, Math.max(fila - 1, 1), cabeceras.length);
 }
