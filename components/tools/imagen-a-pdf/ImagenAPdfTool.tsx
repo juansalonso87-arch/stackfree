@@ -1,12 +1,13 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { ArrowDown, ArrowUp, FileText, ShieldCheck, Trash2, X } from "lucide-react";
+import { ArrowDown, ArrowUp, FileText, Trash2, X } from "lucide-react";
 import { FileDropzone } from "@/components/core/FileDropzone";
 import { ProcessingCard, type EstadoProceso } from "@/components/core/ProcessingCard";
 import { DownloadButton } from "@/components/core/DownloadButton";
 import { Button } from "@/components/ui/button";
 import type { PropsHerramienta } from "@/lib/tools-registry";
+import { NotaPrivacidad } from "@/components/core/NotaPrivacidad";
 import {
   FORMATOS_ENTRADA,
   MAX_ARCHIVOS,
@@ -266,10 +267,7 @@ export default function ImagenAPdfTool({ opciones: opcionesVariante }: PropsHerr
               Convertir otras imágenes
             </Button>
           </div>
-          <p className="flex items-center gap-1.5 text-xs text-muted-foreground">
-            <ShieldCheck className="size-3.5 text-primary" aria-hidden="true" />
-            Creado en tu navegador. Tus imágenes no se subieron a ningún servidor.
-          </p>
+          <NotaPrivacidad texto="Creado en tu navegador. Tus imágenes no se subieron a ningún servidor." />
         </div>
       )}
     </ProcessingCard>

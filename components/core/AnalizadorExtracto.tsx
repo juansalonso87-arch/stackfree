@@ -11,6 +11,7 @@ import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { cn } from "@/lib/utils";
 import { formatearBytes } from "@/lib/imagen";
 import type { Control } from "@/lib/extractos/tipos";
+import { NotaPrivacidad } from "@/components/core/NotaPrivacidad";
 
 export interface Kpi {
   etiqueta: string;
@@ -463,10 +464,7 @@ export function AnalizadorExtracto({
             </section>
           ))}
 
-          <p className="flex items-center gap-1.5 text-xs text-muted-foreground">
-            <ShieldCheck className="size-3.5 text-primary" aria-hidden="true" />
-            Procesado en tu navegador. Tu extracto no se subió a ningún servidor.
-          </p>
+          <NotaPrivacidad texto="Procesado en tu navegador. Tu extracto no se subió a ningún servidor." />
         </div>
       )}
     </ProcessingCard>

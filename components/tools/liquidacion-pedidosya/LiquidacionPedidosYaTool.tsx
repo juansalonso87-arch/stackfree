@@ -4,9 +4,16 @@ import { useState } from "react";
 import { Info } from "lucide-react";
 import { AnalizadorExtracto } from "@/components/core/AnalizadorExtracto";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { MODOS_PLANILLA_LOCAL, type ModoPlanillaElegido } from "@/lib/extractos/peya-liquidacion";
 import { FORMATOS, MAX_ARCHIVOS, MAX_MB, analizar } from "./logic";
 
 const EJEMPLO = "30/08/2026\t$ 1.369.576,00\n29/08/2026\t$ 1.080.620,00";
+
+/** Cada local lleva la cuenta a su manera; por defecto lo deduce la herramienta. */
+const OPCIONES: { id: ModoPlanillaElegido; etiqueta: string; ayuda: string }[] = [
+  { id: "auto", etiqueta: "Que lo detecte la herramienta", ayuda: "prueba las tres formas y usa la que cierra con tus números" },
+  ...MODOS_PLANILLA_LOCAL,
+];
 
 /**
  * Interfaz de "Liquidación de PedidosYa": un solo recuadro donde entran los dos
@@ -17,6 +24,7 @@ const EJEMPLO = "30/08/2026\t$ 1.369.576,00\n29/08/2026\t$ 1.080.620,00";
  */
 export default function LiquidacionPedidosYaTool() {
   const [planilla, setPlanilla] = useState("");
+  const [modo, setModo] = useState<ModoPlanillaElegido>("auto");
 
   return (
     <AnalizadorExtracto
@@ -50,9 +58,30 @@ export default function LiquidacionPedidosYaTool() {
             ¿Tu local anota la venta de PedidosYa día por día? Pegala acá y te digo dónde está la diferencia (opcional)
           </summary>
           <div className="mt-3 space-y-2">
-            <label htmlFor="planilla-local" className="text-sm text-muted-foreground">
-              Una línea por día, con la fecha y el importe de la <strong>venta cobrada por la app</strong> (sin los cobros en
-              efectivo). Podés pegar las dos columnas directo desde tu planilla.
+            <fieldset className="space-y-1">
+              <legend className="text-sm font-medium">¿Qué anota tu local en esa planilla?</legend>
+              {OPCIONES.map((m) => (
+                <label key={m.id} className="flex items-start gap-2 text-sm">
+                  <input
+                    type="radio"
+                    name="modo-planilla"
+                    value={m.id}
+                    checked={modo === m.id}
+                    onChange={() => setModo(m.id)}
+                    className="mt-1"
+                  />
+                  <span>
+                    <strong>{m.etiqueta}</strong>{" "}
+                    <span className="text-muted-foreground">— {m.ayuda}</span>
+                  </span>
+                </label>
+              ))}
+              <p className="text-xs text-muted-foreground">
+                Con la primera opción no tenés que decidir nada: el análisis prueba las tres y te dice cuál usó.
+              </p>
+            </fieldset>
+            <label htmlFor="planilla-local" className="block pt-2 text-sm text-muted-foreground">
+              Una línea por día, con la fecha y el importe. Podés pegar las dos columnas directo desde tu planilla.
             </label>
             <textarea
               id="planilla-local"
@@ -71,7 +100,7 @@ export default function LiquidacionPedidosYaTool() {
         </details>
       }
       etiquetaAccion="Analizar la liquidación"
-      analizar={(archivos) => analizar(archivos, planilla)}
+      analizar={(archivos) => analizar(archivos, planilla, modo)}
     />
   );
 }

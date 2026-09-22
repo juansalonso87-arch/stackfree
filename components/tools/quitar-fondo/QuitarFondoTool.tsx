@@ -1,12 +1,13 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { Info, Loader2, ShieldCheck, Wand2 } from "lucide-react";
+import { Info, Loader2, Wand2 } from "lucide-react";
 import { FileDropzone } from "@/components/core/FileDropzone";
 import { ProcessingCard, type EstadoProceso } from "@/components/core/ProcessingCard";
 import { DownloadButton } from "@/components/core/DownloadButton";
 import { ImageCompare } from "@/components/core/ImageCompare";
 import { Button } from "@/components/ui/button";
+import { NotaPrivacidad } from "@/components/core/NotaPrivacidad";
 import {
   componerSobreBlanco,
   ladoMaximo,
@@ -219,10 +220,7 @@ export default function QuitarFondoTool() {
             </Button>
           </div>
 
-          <p className="flex items-center gap-1.5 text-xs text-muted-foreground">
-            <ShieldCheck className="size-3.5 text-primary" aria-hidden="true" />
-            Procesado en tu navegador. Tu imagen no se subió a ningún servidor.
-          </p>
+          <NotaPrivacidad texto="Procesado en tu navegador. Tu imagen no se subió a ningún servidor." />
         </div>
       )}
     </ProcessingCard>

@@ -39,10 +39,15 @@ export function Header() {
             <MessageSquareWarning className="size-4" aria-hidden="true" />
             <span className="sr-only sm:not-sr-only">Reportar algo raro</span>
           </Link>
-          <span className="hidden items-center gap-1 rounded-md px-3 py-1.5 text-xs text-muted-foreground md:inline-flex">
+          {/* La promesa del sitio lleva a la página que explica cómo comprobarla. */}
+          <Link
+            href="/verificar-privacidad"
+            title="Cómo comprobar que tus archivos no salen de tu dispositivo"
+            className="hidden items-center gap-1 rounded-md px-3 py-1.5 text-xs text-muted-foreground transition-colors hover:bg-muted hover:text-foreground md:inline-flex"
+          >
             <ShieldCheck className="size-3.5 text-primary" aria-hidden="true" />
             Sin subir archivos
-          </span>
+          </Link>
         </nav>
       </div>
     </header>

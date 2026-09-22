@@ -29,7 +29,7 @@ import {
   FMT_PESOS,
   type Paleta,
 } from "./excel";
-import { porSucursal, type AnalisisLiquidacionPeYa, type PeriodoLiquidacion } from "./peya-liquidacion";
+import { MODOS_PLANILLA_LOCAL, porSucursal, type AnalisisLiquidacionPeYa, type PeriodoLiquidacion } from "./peya-liquidacion";
 
 const PALETA: Paleta = { principal: "C62828", total: "F8D7DA" };
 const AMARILLO = "FFF2CC";
@@ -198,9 +198,10 @@ const ETIQUETA_ESTADO: Record<string, string> = {
 
 function hojaPlanillaLocal(wb: ExcelJS.Workbook, a: AnalisisLiquidacionPeYa, subtitulo: string): void {
   const pl = a.planillaLocal!;
+  const modo = MODOS_PLANILLA_LOCAL.find((m) => m.id === pl.modo)!;
   const ws = wb.addWorksheet("Planilla del local");
   const cabeceras = ["Fecha", "Informó el local", "Según PedidosYa", "Diferencia", "Descuentos de PedidosYa", "Cancelado anotado", "Sin explicar", "Resultado", "Qué la explica"];
-  encabezadoHoja(ws, "Tu planilla del local contra la liquidación", subtitulo, cabeceras.length, PALETA);
+  encabezadoHoja(ws, `Tu planilla del local contra la liquidación · ${modo.etiqueta} (${modo.ayuda})`, subtitulo, cabeceras.length, PALETA);
   const fc = 4;
   filaCabecera(ws, fc, cabeceras, PALETA);
   let fila = fc + 1;
@@ -230,11 +231,12 @@ function hojaPlanillaLocal(wb: ExcelJS.Workbook, a: AnalisisLiquidacionPeYa, sub
   estiloTotal(ws, fila, cabeceras.length, PALETA);
   fila += 2;
   const resumen = [
-    `${pl.coinciden} día(s) coinciden exacto con la venta neta cobrada por la app.`,
+    `${pl.coinciden} día(s) coinciden exacto con ${modo.etiqueta.toLowerCase()} según PedidosYa.`,
     `${pl.conDescuentos} día(s) cierran sumando los descuentos que PedidosYa te cobra: el local anota la venta como la mostró la app y PedidosYa los descuenta en la liquidación.`,
     `${pl.conCancelados} día(s) cierran sumando además un pedido cancelado que quedó anotado como venta.`,
     `${pl.aRevisar} día(s) quedan para revisar${pl.sinDatos ? ` y ${pl.sinDatos} sin reportes que los cubran` : ""}.`,
-    "La cuenta que cierra: venta digital anotada por el local − descuentos que te cobra PedidosYa − pedidos cancelados = venta neta cobrada por la app.",
+    `La cuenta que cierra: lo que anota el local (${modo.ayuda}) − descuentos que te cobra PedidosYa − pedidos cancelados = ${modo.etiqueta.toLowerCase()} según PedidosYa.`,
+    ...(pl.sugerencia ? [`Ojo: tus números cierran mejor con la opción "${MODOS_PLANILLA_LOCAL.find((m) => m.id === pl.sugerencia)!.etiqueta}": volvé a analizar con esa opción.`] : []),
   ];
   for (const t of resumen) {
     ws.getCell(fila, 1).value = t;

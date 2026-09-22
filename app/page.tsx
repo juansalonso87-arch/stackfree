@@ -107,9 +107,15 @@ export default function HomePage() {
             <h2 className="font-heading text-2xl font-semibold tracking-tight">Análisis de movimientos bancarios</h2>
             <p className="mt-1 text-muted-foreground">Elegí tu banco o plataforma. Cada herramienta te explica qué archivo descargar.</p>
           </div>
-          <Link href="/administracion" className="text-sm font-medium text-primary hover:underline">
-            Cómo funciona y cómo comprobar la privacidad →
-          </Link>
+          {/* Dos destinos distintos: la portada de la sección y la página de privacidad. */}
+          <div className="flex flex-wrap items-center gap-x-5 gap-y-1 text-sm font-medium">
+            <Link href="/administracion" className="text-primary hover:underline">
+              Cómo funciona cada herramienta →
+            </Link>
+            <Link href="/verificar-privacidad" className="text-primary hover:underline">
+              Cómo comprobar la privacidad →
+            </Link>
+          </div>
         </div>
         <div className="mt-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {administracion.map((h) => (

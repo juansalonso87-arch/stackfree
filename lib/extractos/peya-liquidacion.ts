@@ -46,20 +46,38 @@ export interface DiaLiquidacion {
   montoCancelado: number;
   /** Lo que valía el pedido cancelado para el local (sin su promo): lo que suele quedar anotado por error. */
   canceladoNeto: number;
-  /** Descuentos que PedidosYa cobra sobre pedidos pagados por la app (no sobre los de efectivo). */
+  /** De esos cancelados, los que el cliente iba a pagar en efectivo. */
+  canceladoNetoEfectivo: number;
+  /** Descuentos que PedidosYa cobra sobre pedidos pagados por la app. */
   descuentoPeyaDigital: number;
+  /** Descuentos que PedidosYa cobra sobre pedidos cobrados en el local. */
+  descuentoPeyaEfectivo: number;
   /** Negativo: reclamos de usuarios sobre pedidos de ese día. */
   reclamos: number;
   tieneEstado: boolean;
   tienePedidos: boolean;
 }
 
+/**
+ * Qué anota el local en su planilla diaria. Cada local lleva la cuenta a su
+ * manera, así que el usuario elige y la comparación cambia de base.
+ */
+export type ModoPlanillaLocal = "total" | "digital" | "efectivo";
+/** Lo que elige el usuario: puede dejar que la herramienta lo deduzca sola. */
+export type ModoPlanillaElegido = ModoPlanillaLocal | "auto";
+
+export const MODOS_PLANILLA_LOCAL: { id: ModoPlanillaLocal; etiqueta: string; ayuda: string }[] = [
+  { id: "total", etiqueta: "La venta total del día", ayuda: "lo que cobró PedidosYa por la app más lo que cobraste en efectivo en el local" },
+  { id: "digital", etiqueta: "Solo lo cobrado por la app", ayuda: "los pedidos que pagó el cliente por PedidosYa, sin los que te pagaron en efectivo" },
+  { id: "efectivo", etiqueta: "Solo lo cobrado en efectivo", ayuda: "los pedidos que el cliente pagó en el local, en mano" },
+];
+
 /** Una fila de la comparación con la planilla diaria del local. */
 export interface FilaPlanillaLocal {
   fecha: Date;
-  /** Lo que informó el local (venta digital del día, sin los cobros en efectivo). */
+  /** Lo que informó el local ese día, según lo que eligió que anota. */
   informado: number;
-  /** Lo que PedidosYa toma como venta neta cobrada por la app. */
+  /** Lo que PedidosYa toma como venta de ese día, en la misma base. */
   segunPeya: number;
   descuentosPeya: number;
   canceladoNeto: number;
@@ -72,6 +90,10 @@ export interface FilaPlanillaLocal {
 }
 
 export interface ComparacionPlanillaLocal {
+  /** La base con la que se comparó (la que eligió el usuario o la que se dedujo). */
+  modo: ModoPlanillaLocal;
+  /** La eligió la herramienta sola. */
+  automatico: boolean;
   filas: FilaPlanillaLocal[];
   informado: number;
   segunPeya: number;
@@ -83,6 +105,8 @@ export interface ComparacionPlanillaLocal {
   sinDatos: number;
   /** Líneas pegadas que no se pudieron leer. */
   ilegibles: number;
+  /** Si otra opción explicaría más días, cuál (los números del local son de otra base). */
+  sugerencia: ModoPlanillaLocal | null;
 }
 
 /** Una semana de liquidación (o una semana suelta si falta su estado de cuenta). */
@@ -212,7 +236,11 @@ function sumar<T>(xs: T[], f: (x: T) => number): number {
 /* Lectura: reconocer qué es cada archivo                               */
 /* ------------------------------------------------------------------ */
 
-export async function analizarLiquidacionPeYa(archivos: File[], planillaLocal = ""): Promise<AnalisisLiquidacionPeYa> {
+export async function analizarLiquidacionPeYa(
+  archivos: File[],
+  planillaLocal = "",
+  modoPlanilla: ModoPlanillaElegido = "auto",
+): Promise<AnalisisLiquidacionPeYa> {
   if (archivos.length === 0) throw new ErrorExtracto("No hay archivos para analizar.");
   const avisos: string[] = [];
   const estados: EstadoCuenta[] = [];
@@ -258,10 +286,22 @@ export async function analizarLiquidacionPeYa(archivos: File[], planillaLocal = 
 
   const analisis = cruzar(unicos, pedidos, archivos.map((a) => a.name), avisos);
   if (planillaLocal.trim()) {
-    analisis.planillaLocal = compararConPlanillaLocal(analisis, parsearPlanillaLocal(planillaLocal));
-    if (analisis.planillaLocal.ilegibles) {
+    const pl = compararConPlanillaLocal(analisis, parsearPlanillaLocal(planillaLocal), modoPlanilla);
+    analisis.planillaLocal = pl;
+    if (pl.ilegibles) {
       avisos.push(
-        `${analisis.planillaLocal.ilegibles} línea(s) de la planilla del local no se entendieron (hace falta una fecha y un importe por línea, por ejemplo "30/08/2026  $ 1.369.576,00").`,
+        `${pl.ilegibles} línea(s) de la planilla del local no se entendieron (hace falta una fecha y un importe por línea, por ejemplo "30/08/2026  $ 1.369.576,00").`,
+      );
+    }
+    const base = MODOS_PLANILLA_LOCAL.find((m) => m.id === pl.modo)!;
+    if (pl.automatico) {
+      avisos.push(
+        `De tu planilla del local entendimos que anota ${base.etiqueta.toLowerCase()} (${base.ayuda}). Si no es eso, elegilo a mano en el recuadro y volvé a analizar.`,
+      );
+    } else if (pl.sugerencia) {
+      const otro = MODOS_PLANILLA_LOCAL.find((m) => m.id === pl.sugerencia)!;
+      avisos.push(
+        `Los números de tu planilla cierran mucho mejor con la opción "${otro.etiqueta}" (${otro.ayuda}): volvé a cargar los archivos eligiéndola, o dejá que la detecte sola.`,
       );
     }
   }
@@ -297,89 +337,137 @@ export function parsearPlanillaLocal(texto: string): { fecha: Date; importe: num
   return filas;
 }
 
+/** Lo que hay que mirar de cada día según lo que anote el local. */
+interface BaseDelDia {
+  /** Lo que PedidosYa toma como venta de ese día, en la base elegida. */
+  base: number;
+  /** Los descuentos que PedidosYa cobra sobre esos mismos pedidos. */
+  descuentos: number;
+  /** Los cancelados que pudieron quedar anotados en esa base. */
+  cancelado: number;
+  /** Con esta base hace falta el estado de cuenta (la venta neta sale de ahí). */
+  necesitaEstado: boolean;
+  tieneEstado: boolean;
+}
+
+const BASE_POR_MODO: Record<ModoPlanillaLocal, { texto: string; falta: string }> = {
+  total: { texto: "la venta neta del día (app + efectivo)", falta: "Para comparar la venta total hace falta el estado de cuenta de esa semana." },
+  digital: { texto: "la venta neta cobrada por la app", falta: "Para comparar lo cobrado por la app hace falta el estado de cuenta de esa semana." },
+  efectivo: { texto: "lo que cobraste en efectivo en el local", falta: "" },
+};
+
 /** Explica, día por día, la diferencia entre la planilla del local y la liquidación. */
 export function compararConPlanillaLocal(
   a: AnalisisLiquidacionPeYa,
   entradas: { fecha: Date; importe: number }[],
+  elegido: ModoPlanillaElegido = "auto",
 ): ComparacionPlanillaLocal {
   const pesos = (n: number) => `$ ${n.toLocaleString("es-AR", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
-  const porDia = new Map<string, { porApp: number; descuentos: number; cancelado: number; tieneEstado: boolean }>();
+
+  const porDia = new Map<string, Record<ModoPlanillaLocal, BaseDelDia>>();
   for (const d of a.dias) {
     const k = claveDia(d.fecha);
-    const x = porDia.get(k) ?? { porApp: 0, descuentos: 0, cancelado: 0, tieneEstado: true };
-    x.porApp = round2(x.porApp + (d.porApp ?? 0));
-    x.descuentos = round2(x.descuentos + d.descuentoPeyaDigital);
-    x.cancelado = round2(x.cancelado + d.canceladoNeto);
-    if (!d.tieneEstado) x.tieneEstado = false;
+    const x =
+      porDia.get(k) ??
+      ({
+        total: { base: 0, descuentos: 0, cancelado: 0, necesitaEstado: true, tieneEstado: true },
+        digital: { base: 0, descuentos: 0, cancelado: 0, necesitaEstado: true, tieneEstado: true },
+        efectivo: { base: 0, descuentos: 0, cancelado: 0, necesitaEstado: false, tieneEstado: true },
+      } as Record<ModoPlanillaLocal, BaseDelDia>);
+    x.total.base = round2(x.total.base + (d.neta ?? 0));
+    x.total.descuentos = round2(x.total.descuentos + d.descuentoPeyaDigital);
+    x.total.cancelado = round2(x.total.cancelado + d.canceladoNeto);
+    x.digital.base = round2(x.digital.base + (d.porApp ?? 0));
+    x.digital.descuentos = round2(x.digital.descuentos + d.descuentoPeyaDigital);
+    x.digital.cancelado = round2(x.digital.cancelado + d.canceladoNeto - d.canceladoNetoEfectivo);
+    x.efectivo.base = round2(x.efectivo.base + d.efectivo);
+    x.efectivo.descuentos = round2(x.efectivo.descuentos + d.descuentoPeyaEfectivo);
+    x.efectivo.cancelado = round2(x.efectivo.cancelado + d.canceladoNetoEfectivo);
+    for (const m of ["total", "digital", "efectivo"] as const) if (!d.tieneEstado) x[m].tieneEstado = false;
     porDia.set(k, x);
   }
 
-  const filas: FilaPlanillaLocal[] = [];
-  let ilegibles = 0;
-  for (const e of entradas) {
-    if (Number.isNaN(e.fecha.getTime())) {
-      ilegibles++;
-      continue;
-    }
-    const dia = porDia.get(claveDia(e.fecha));
-    if (!dia) {
+  const evaluar = (m: ModoPlanillaLocal): FilaPlanillaLocal[] => {
+    const filas: FilaPlanillaLocal[] = [];
+    for (const e of entradas) {
+      if (Number.isNaN(e.fecha.getTime())) continue;
+      const dia = porDia.get(claveDia(e.fecha))?.[m];
+      if (!dia || (dia.necesitaEstado && !dia.tieneEstado)) {
+        filas.push({
+          fecha: e.fecha,
+          informado: e.importe,
+          segunPeya: 0,
+          descuentosPeya: 0,
+          canceladoNeto: 0,
+          diferencia: 0,
+          sinExplicar: 0,
+          estado: "sin-datos",
+          detalle: dia ? BASE_POR_MODO[m].falta : "Ese día no está en los reportes que subiste.",
+        });
+        continue;
+      }
+      const diferencia = round2(e.importe - dia.base);
+      const restoDescuentos = round2(diferencia - dia.descuentos);
+      const restoCancelados = round2(restoDescuentos - dia.cancelado);
+      let estado: FilaPlanillaLocal["estado"] = "revisar";
+      let detalle = "";
+      let sinExplicar = restoDescuentos;
+      if (Math.abs(diferencia) < 1) {
+        estado = "coincide";
+        detalle = `Coincide con ${BASE_POR_MODO[m].texto}.`;
+        sinExplicar = 0;
+      } else if (dia.descuentos > 0 && Math.abs(restoDescuentos) < 1) {
+        estado = "descuentos";
+        detalle = `La diferencia son los ${pesos(dia.descuentos)} de descuentos que PedidosYa te cobra: el local anota la venta como la mostró la app y PedidosYa los descuenta después.`;
+        sinExplicar = 0;
+      } else if (dia.cancelado > 0 && Math.abs(restoCancelados) < 1) {
+        estado = "cancelados";
+        detalle =
+          (dia.descuentos ? `${pesos(dia.descuentos)} de descuentos que PedidosYa te cobra y ` : "") +
+          `${pesos(dia.cancelado)} de un pedido cancelado que quedó anotado como venta.`;
+        sinExplicar = 0;
+      } else {
+        const partes: string[] = [];
+        if (dia.descuentos) partes.push(`${pesos(dia.descuentos)} de descuentos de PedidosYa`);
+        if (dia.cancelado) partes.push(`${pesos(dia.cancelado)} de pedidos cancelados`);
+        detalle = `Quedan ${pesos(Math.abs(restoDescuentos))} sin explicar${partes.length ? ` (ese día hubo ${partes.join(" y ")})` : ""}.`;
+      }
       filas.push({
         fecha: e.fecha,
         informado: e.importe,
-        segunPeya: 0,
-        descuentosPeya: 0,
-        canceladoNeto: 0,
-        diferencia: e.importe,
-        sinExplicar: 0,
-        estado: "sin-datos",
-        detalle: "Ese día no está en los reportes que subiste.",
+        segunPeya: dia.base,
+        descuentosPeya: dia.descuentos,
+        canceladoNeto: dia.cancelado,
+        diferencia,
+        sinExplicar,
+        estado,
+        detalle,
       });
-      continue;
     }
-    const diferencia = round2(e.importe - dia.porApp);
-    const restoDescuentos = round2(diferencia - dia.descuentos);
-    const restoCancelados = round2(restoDescuentos - dia.cancelado);
-    let estado: FilaPlanillaLocal["estado"] = "revisar";
-    let detalle = "";
-    let sinExplicar = restoDescuentos;
-    if (Math.abs(diferencia) < 1) {
-      estado = "coincide";
-      detalle = "Coincide con la venta neta cobrada por la app.";
-      sinExplicar = 0;
-    } else if (Math.abs(restoDescuentos) < 1) {
-      estado = "descuentos";
-      detalle = `La diferencia son los ${pesos(dia.descuentos)} de descuentos que PedidosYa te cobra: el local anota la venta como la mostró la app y PedidosYa los descuenta después.`;
-      sinExplicar = 0;
-    } else if (dia.cancelado > 0 && Math.abs(restoCancelados) < 1) {
-      estado = "cancelados";
-      detalle =
-        (dia.descuentos ? `${pesos(dia.descuentos)} de descuentos que PedidosYa te cobra y ` : "") +
-        `${pesos(dia.cancelado)} de un pedido cancelado que quedó anotado como venta.`;
-      sinExplicar = 0;
-    } else {
-      const partes: string[] = [];
-      if (dia.descuentos) partes.push(`${pesos(dia.descuentos)} de descuentos de PedidosYa`);
-      if (dia.cancelado) partes.push(`${pesos(dia.cancelado)} de pedidos cancelados`);
-      if (!dia.tieneEstado) partes.push("falta el estado de cuenta de esa semana");
-      detalle = `Quedan ${pesos(Math.abs(restoDescuentos))} sin explicar${partes.length ? ` (ese día hubo ${partes.join(" y ")})` : ""}.`;
-    }
-    filas.push({
-      fecha: e.fecha,
-      informado: e.importe,
-      segunPeya: dia.porApp,
-      descuentosPeya: dia.descuentos,
-      canceladoNeto: dia.cancelado,
-      diferencia,
-      sinExplicar,
-      estado,
-      detalle,
-    });
-  }
-  filas.sort((x, y) => x.fecha.getTime() - y.fecha.getTime());
+    return filas.sort((x, y) => x.fecha.getTime() - y.fecha.getTime());
+  };
+
+  const explicados = (filas: FilaPlanillaLocal[]) => filas.filter((f) => f.estado !== "revisar" && f.estado !== "sin-datos").length;
+  const exactos = (filas: FilaPlanillaLocal[]) => filas.filter((f) => f.estado === "coincide").length;
+  const candidatos = (["total", "digital", "efectivo"] as const).map((m) => ({ m, filas: evaluar(m) }));
+
+  // Sin indicación del usuario, se queda con la base que explica más días (ante empate,
+  // la que tenga más coincidencias exactas y, si sigue igual, la venta total).
+  const automatico = elegido === "auto";
+  const mejor = [...candidatos].sort((x, y) => explicados(y.filas) - explicados(x.filas) || exactos(y.filas) - exactos(x.filas))[0];
+  const modo: ModoPlanillaLocal = automatico ? mejor.m : elegido;
+  const filas = candidatos.find((c) => c.m === modo)!.filas;
+
+  // Si el usuario eligió una base y los números cierran mucho mejor con otra, se lo decimos.
+  let sugerencia: ModoPlanillaLocal | null = null;
+  if (!automatico && explicados(mejor.filas) > explicados(filas) + 1) sugerencia = mejor.m;
+
   const cuenta = (e: FilaPlanillaLocal["estado"]) => filas.filter((f) => f.estado === e).length;
   // Los días que no cubren los reportes no entran en los totales: inflarían la diferencia.
   const comparables = filas.filter((f) => f.estado !== "sin-datos");
   return {
+    modo,
+    automatico,
     filas,
     informado: sumar(comparables, (f) => f.informado),
     segunPeya: sumar(comparables, (f) => f.segunPeya),
@@ -389,7 +477,8 @@ export function compararConPlanillaLocal(
     conCancelados: cuenta("cancelados"),
     aRevisar: cuenta("revisar"),
     sinDatos: cuenta("sin-datos"),
-    ilegibles,
+    ilegibles: entradas.filter((e) => Number.isNaN(e.fecha.getTime())).length,
+    sugerencia,
   };
 }
 
@@ -616,7 +705,9 @@ function armarDias(
         cancelados: 0,
         montoCancelado: 0,
         canceladoNeto: 0,
+        canceladoNetoEfectivo: 0,
         descuentoPeyaDigital: 0,
+        descuentoPeyaEfectivo: 0,
         reclamos: 0,
         tieneEstado: true,
         tienePedidos: false,
@@ -625,8 +716,9 @@ function armarDias(
       d.pedidos++;
       d.bruto = round2(d.bruto + f.bruto);
       d.efectivo = round2(d.efectivo + f.efectivo);
-      // En los pedidos cobrados en el local, el descuento de PedidosYa no afecta a la venta digital.
+      // El descuento de PedidosYa se separa según dónde cobró el pedido: no mezcla la venta digital con la de mostrador.
       if (f.efectivo === 0) d.descuentoPeyaDigital = round2(d.descuentoPeyaDigital + (f.descuentoPeya ?? 0));
+      else d.descuentoPeyaEfectivo = round2(d.descuentoPeyaEfectivo + (f.descuentoPeya ?? 0));
       if (porNroEstado.has(f.nro)) {
         d.promos = round2((d.promos ?? 0) + (f.promos ?? 0));
         d.neta = round2((d.neta ?? 0) + (f.neta ?? 0));
@@ -636,7 +728,9 @@ function armarDias(
     } else {
       d.cancelados++;
       d.montoCancelado = round2(d.montoCancelado + f.cancelado);
-      d.canceladoNeto = round2(d.canceladoNeto + (netoDelCancelado.get(f.nro) ?? f.cancelado));
+      const neto = netoDelCancelado.get(f.nro) ?? f.cancelado;
+      d.canceladoNeto = round2(d.canceladoNeto + neto);
+      if (/efectivo/i.test(f.formaPago)) d.canceladoNetoEfectivo = round2(d.canceladoNetoEfectivo + neto);
     }
     d.reclamos = round2(d.reclamos + f.reclamo);
     if (f.hora) d.tienePedidos = true;

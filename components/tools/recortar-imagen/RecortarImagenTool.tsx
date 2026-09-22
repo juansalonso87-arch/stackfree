@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useRef, useState, type KeyboardEvent, type PointerEvent } from "react";
-import { Crop, ImageIcon, Maximize2, ShieldCheck } from "lucide-react";
+import { Crop, ImageIcon, Maximize2 } from "lucide-react";
 import { FileDropzone } from "@/components/core/FileDropzone";
 import { ProcessingCard, type EstadoProceso } from "@/components/core/ProcessingCard";
 import { DownloadButton } from "@/components/core/DownloadButton";
@@ -9,6 +9,7 @@ import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { decodificarImagen, exportarCanvas } from "@/lib/imagen";
 import type { PropsHerramienta } from "@/lib/tools-registry";
+import { NotaPrivacidad } from "@/components/core/NotaPrivacidad";
 import {
   FORMATOS_ENTRADA,
   FORMATOS_SALIDA,
@@ -433,10 +434,7 @@ export default function RecortarImagenTool({ opciones }: PropsHerramienta) {
               Otra imagen
             </Button>
           </div>
-          <p className="flex items-center gap-1.5 text-xs text-muted-foreground">
-            <ShieldCheck className="size-3.5 text-primary" aria-hidden="true" />
-            Procesado en tu navegador. Tu imagen no se subió a ningún servidor.
-          </p>
+          <NotaPrivacidad texto="Procesado en tu navegador. Tu imagen no se subió a ningún servidor." />
         </div>
       )}
     </ProcessingCard>

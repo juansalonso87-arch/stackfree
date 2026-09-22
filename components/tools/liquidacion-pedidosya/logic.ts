@@ -9,7 +9,9 @@ import {
   analizarLiquidacionPeYa,
   incidenciasPorTipo,
   porSucursal,
+  MODOS_PLANILLA_LOCAL,
   type AnalisisLiquidacionPeYa,
+  type ModoPlanillaElegido,
 } from "@/lib/extractos/peya-liquidacion";
 import { claveDia, formatearEntero, formatearFecha, formatearPesos, round2 } from "@/lib/extractos/texto";
 
@@ -24,8 +26,8 @@ export const FORMATOS = [
 const pct = (parte: number, total: number) => (total ? `${((parte / total) * 100).toFixed(2).replace(".", ",")} %` : "—");
 const SD = "falta el archivo";
 
-export async function analizar(archivos: File[], planillaLocal = ""): Promise<ResultadoAnalisis> {
-  return resultadoDesdeLiquidacion(await analizarLiquidacionPeYa(archivos, planillaLocal));
+export async function analizar(archivos: File[], planillaLocal = "", modo: ModoPlanillaElegido = "auto"): Promise<ResultadoAnalisis> {
+  return resultadoDesdeLiquidacion(await analizarLiquidacionPeYa(archivos, planillaLocal, modo));
 }
 
 export function resultadoDesdeLiquidacion(a: AnalisisLiquidacionPeYa): ResultadoAnalisis {
@@ -139,8 +141,10 @@ export function resultadoDesdeLiquidacion(a: AnalisisLiquidacionPeYa): Resultado
       revisar: "Revisar",
       "sin-datos": "Sin datos",
     };
+    const modo = MODOS_PLANILLA_LOCAL.find((m) => m.id === pl.modo)!;
+    const comoLoLeimos = pl.automatico ? " · lo detectamos solo" : "";
     tablas.push({
-      titulo: "Tu planilla del local, día por día",
+      titulo: `Tu planilla del local, día por día (${modo.etiqueta.toLowerCase()}${comoLoLeimos})`,
       columnas: ["Fecha", "Informó el local", "Según PedidosYa", "Diferencia", "Qué la explica"],
       numericas: [1, 2, 3],
       filas: pl.filas.map((f) => [

@@ -174,10 +174,13 @@ export default async function PaginaHerramienta({ params }: Props) {
       <header className="max-w-3xl">
         <div className="mb-3 flex flex-wrap gap-2">
           <Badge variant="outline">{nombresCategoria[h.categoria]}</Badge>
-          <Badge variant="secondary">
-            <Lock data-icon="inline-start" />
-            Sin subir archivos
-          </Badge>
+          {/* La insignia es el enlace a la explicación: es donde el usuario duda. */}
+          <Link href="/verificar-privacidad" title="Cómo comprobar que tu archivo no sale de tu dispositivo">
+            <Badge variant="secondary" className="transition-colors hover:bg-secondary/70">
+              <Lock data-icon="inline-start" />
+              Sin subir archivos
+            </Badge>
+          </Link>
           <Badge variant="secondary">
             <Sparkles data-icon="inline-start" />
             Gratis y sin marca de agua

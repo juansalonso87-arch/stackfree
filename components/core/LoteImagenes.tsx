@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState, type ReactNode } from "react";
-import { AlertCircle, ImageIcon, ShieldCheck, Trash2, X } from "lucide-react";
+import { AlertCircle, ImageIcon, Trash2, X } from "lucide-react";
 import { FileDropzone } from "@/components/core/FileDropzone";
 import { ProcessingCard, type EstadoProceso } from "@/components/core/ProcessingCard";
 import { DownloadButton } from "@/components/core/DownloadButton";
@@ -10,6 +10,7 @@ import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { cn } from "@/lib/utils";
 import { formatearBytes } from "@/lib/imagen";
 import { crearZip } from "@/lib/zip";
+import { NotaPrivacidad } from "@/components/core/NotaPrivacidad";
 
 export interface ResultadoLote {
   original: File;
@@ -333,10 +334,7 @@ export function LoteImagenes({
             </Button>
           </div>
 
-          <p className="flex items-center gap-1.5 text-xs text-muted-foreground">
-            <ShieldCheck className="size-3.5 text-primary" aria-hidden="true" />
-            Procesado en tu navegador. Tus imágenes no se subieron a ningún servidor.
-          </p>
+          <NotaPrivacidad texto="Procesado en tu navegador. Tus imágenes no se subieron a ningún servidor." />
         </div>
       )}
     </ProcessingCard>

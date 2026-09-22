@@ -1,12 +1,13 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { AlertCircle, ArrowDown, ArrowUp, FileText, Layers, ShieldCheck, Trash2, X } from "lucide-react";
+import { AlertCircle, ArrowDown, ArrowUp, FileText, Layers, Trash2, X } from "lucide-react";
 import { FileDropzone } from "@/components/core/FileDropzone";
 import { ProcessingCard, type EstadoProceso } from "@/components/core/ProcessingCard";
 import { DownloadButton } from "@/components/core/DownloadButton";
 import { Button } from "@/components/ui/button";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { NotaPrivacidad } from "@/components/core/NotaPrivacidad";
 import {
   MAX_ARCHIVOS,
   MAX_MB_POR_ARCHIVO,
@@ -252,10 +253,7 @@ export default function UnirPdfTool() {
             </Button>
           </div>
 
-          <p className="flex items-center gap-1.5 text-xs text-muted-foreground">
-            <ShieldCheck className="size-3.5 text-primary" aria-hidden="true" />
-            Unido en tu navegador. Tus documentos no se subieron a ningún servidor.
-          </p>
+          <NotaPrivacidad texto="Unido en tu navegador. Tus documentos no se subieron a ningún servidor." />
         </div>
       )}
     </ProcessingCard>

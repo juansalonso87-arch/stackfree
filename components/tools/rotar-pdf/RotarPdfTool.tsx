@@ -1,11 +1,12 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { FileText, RotateCcw, RotateCw, ShieldCheck } from "lucide-react";
+import { FileText, RotateCcw, RotateCw } from "lucide-react";
 import { FileDropzone } from "@/components/core/FileDropzone";
 import { ProcessingCard, type EstadoProceso } from "@/components/core/ProcessingCard";
 import { DownloadButton } from "@/components/core/DownloadButton";
 import { Button } from "@/components/ui/button";
+import { NotaPrivacidad } from "@/components/core/NotaPrivacidad";
 import {
   ANGULOS,
   MAX_MB,
@@ -244,10 +245,7 @@ export default function RotarPdfTool() {
               Rotar otro PDF
             </Button>
           </div>
-          <p className="flex items-center gap-1.5 text-xs text-muted-foreground">
-            <ShieldCheck className="size-3.5 text-primary" aria-hidden="true" />
-            Procesado en tu navegador. Tu documento no se subió a ningún servidor.
-          </p>
+          <NotaPrivacidad texto="Procesado en tu navegador. Tu documento no se subió a ningún servidor." />
         </div>
       )}
     </ProcessingCard>
