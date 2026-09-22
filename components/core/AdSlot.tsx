@@ -1,8 +1,8 @@
 "use client";
 
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useSyncExternalStore } from "react";
 import { cn } from "@/lib/utils";
-import { adsConfig, adsenseHabilitado, type PosicionAnuncio } from "@/lib/ads-config";
+import { adsConfig, adsenseHabilitado, modoGrabacion, type PosicionAnuncio } from "@/lib/ads-config";
 
 declare global {
   interface Window {
@@ -28,6 +28,9 @@ const etiquetaPosicion: Record<PosicionAnuncio, string> = {
   "bottom-banner": "Banner inferior",
 };
 
+/** El modo grabación no cambia mientras la página está abierta. */
+const suscribirNada = () => () => {};
+
 interface AdSlotProps {
   posicion: PosicionAnuncio;
   className?: string;
@@ -42,8 +45,11 @@ interface AdSlotProps {
  */
 export function AdSlot({ posicion, className }: AdSlotProps) {
   const slot = adsConfig.slots[posicion];
-  const habilitado = adsenseHabilitado() && slot.length > 0;
   const insRef = useRef<HTMLModElement>(null);
+  // Modo grabación: se decide en el navegador. En el servidor siempre es false
+  // (si no, el HTML del servidor y el del cliente no coincidirían).
+  const grabando = useSyncExternalStore(suscribirNada, modoGrabacion, () => false);
+  const habilitado = adsenseHabilitado() && slot.length > 0 && !grabando;
 
   useEffect(() => {
     if (!habilitado || !insRef.current) return;
@@ -72,7 +78,7 @@ export function AdSlot({ posicion, className }: AdSlotProps) {
     );
   }
 
-  if (!adsConfig.mostrarPlaceholder) return null;
+  if (!adsConfig.mostrarPlaceholder || grabando) return null;
 
   return (
     <div

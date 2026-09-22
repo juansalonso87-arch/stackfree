@@ -50,3 +50,32 @@ export const adsConfig = {
 export function adsenseHabilitado(): boolean {
   return adsConfig.cliente.length > 0;
 }
+
+/** Clave en localStorage del modo grabación (solo en el navegador del dueño). */
+const CLAVE_GRABACION = "planillar:grabando";
+
+/**
+ * Modo grabación: oculta los espacios de publicidad para filmar los videos del
+ * canal sin tener que redeployar ni grabar en localhost (así en pantalla se lee
+ * el dominio real). Se enciende con `?grabando=1` en cualquier página y se apaga
+ * con `?grabando=0`; queda guardado en ese navegador hasta que se apague.
+ */
+let cacheGrabacion: boolean | null = null;
+
+export function modoGrabacion(): boolean {
+  if (typeof window === "undefined") return false;
+  // Se resuelve una sola vez por carga: así el valor es estable para React.
+  if (cacheGrabacion !== null) return cacheGrabacion;
+  try {
+    const pedido = new URLSearchParams(window.location.search).get("grabando");
+    if (pedido !== null) {
+      if (pedido === "0" || pedido === "false") window.localStorage.removeItem(CLAVE_GRABACION);
+      else window.localStorage.setItem(CLAVE_GRABACION, "1");
+    }
+    cacheGrabacion = window.localStorage.getItem(CLAVE_GRABACION) === "1";
+  } catch {
+    // Navegación privada con el almacenamiento bloqueado: sin modo grabación.
+    cacheGrabacion = false;
+  }
+  return cacheGrabacion;
+}
