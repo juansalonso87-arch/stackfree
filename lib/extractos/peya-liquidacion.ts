@@ -350,6 +350,8 @@ interface BaseDelDia {
   /** Con esta base hace falta el estado de cuenta (la venta neta sale de ahí). */
   necesitaEstado: boolean;
   tieneEstado: boolean;
+  /** Sucursales de ese día que el estado de cuenta subido no cubre. */
+  sinEstado: string[];
 }
 
 const BASE_POR_MODO: Record<ModoPlanillaLocal, { texto: string; falta: string }> = {
@@ -372,9 +374,9 @@ export function compararConPlanillaLocal(
     const x =
       porDia.get(k) ??
       ({
-        total: { base: 0, descuentos: 0, cancelado: 0, necesitaEstado: true, tieneEstado: true },
-        digital: { base: 0, descuentos: 0, cancelado: 0, necesitaEstado: true, tieneEstado: true },
-        efectivo: { base: 0, descuentos: 0, cancelado: 0, necesitaEstado: false, tieneEstado: true },
+        total: { base: 0, descuentos: 0, cancelado: 0, necesitaEstado: true, tieneEstado: true, sinEstado: [] },
+        digital: { base: 0, descuentos: 0, cancelado: 0, necesitaEstado: true, tieneEstado: true, sinEstado: [] },
+        efectivo: { base: 0, descuentos: 0, cancelado: 0, necesitaEstado: false, tieneEstado: true, sinEstado: [] },
       } as Record<ModoPlanillaLocal, BaseDelDia>);
     x.total.base = round2(x.total.base + (d.neta ?? 0));
     x.total.descuentos = round2(x.total.descuentos + d.descuentoPeyaDigital);
@@ -385,9 +387,16 @@ export function compararConPlanillaLocal(
     x.efectivo.base = round2(x.efectivo.base + d.efectivo);
     x.efectivo.descuentos = round2(x.efectivo.descuentos + d.descuentoPeyaEfectivo);
     x.efectivo.cancelado = round2(x.efectivo.cancelado + d.canceladoNetoEfectivo);
-    for (const m of ["total", "digital", "efectivo"] as const) if (!d.tieneEstado) x[m].tieneEstado = false;
+    for (const m of ["total", "digital", "efectivo"] as const) {
+      if (d.tieneEstado) continue;
+      x[m].tieneEstado = false;
+      if (!x[m].sinEstado.includes(d.sucursal)) x[m].sinEstado.push(d.sucursal);
+    }
     porDia.set(k, x);
   }
+
+  /** ¿Hay algún estado de cuenta subido que cubra ese día? */
+  const haySemana = (f: Date) => a.estados.some((e) => f >= soloDia(e.desde) && f <= soloDia(e.hasta));
 
   const evaluar = (m: ModoPlanillaLocal): FilaPlanillaLocal[] => {
     const filas: FilaPlanillaLocal[] = [];
@@ -404,7 +413,11 @@ export function compararConPlanillaLocal(
           diferencia: 0,
           sinExplicar: 0,
           estado: "sin-datos",
-          detalle: dia ? BASE_POR_MODO[m].falta : "Ese día no está en los reportes que subiste.",
+          detalle: !dia
+            ? "Ese día no está en los reportes que subiste."
+            : haySemana(e.fecha) && dia.sinEstado.length
+              ? `El estado de cuenta de esa semana sí está, pero no incluye ${dia.sinEstado.join(", ")}: PedidosYa lo emite por cuenta, no por local.`
+              : BASE_POR_MODO[m].falta,
         });
         continue;
       }
@@ -630,6 +643,19 @@ function cruzar(estados: EstadoCuenta[], analisis: AnalisisPedidosYa | null, arc
       control("Estado de cuenta ↔ reporte de pedidos", "Comisión de esos pedidos", cruce.comisionEstado, cruce.comisionPedidos, cerca(cruce.comisionEstado, cruce.comisionPedidos)),
       control("Estado de cuenta ↔ reporte de pedidos", "Cobrado en efectivo por el local", cruce.efectivoEstado, cruce.efectivoPedidos, cerca(cruce.efectivoEstado, cruce.efectivoPedidos)),
     );
+    // Caso real (2026-09-23): el dueño subió el estado de cuenta de una cuenta y
+    // el reporte de pedidos de un local de OTRA. No comparten un solo pedido, y
+    // los mensajes de "falta el estado de cuenta de esa semana" lo mandaban a
+    // buscar justo lo que ya había subido. PedidosYa emite un estado de cuenta
+    // por CUENTA, no por local: dos locales pueden estar en cuentas distintas.
+    if (enAmbos.length === 0) {
+      const sucEstado = [...new Set([...porNroEstado.values()].map((p) => p.sucursal))];
+      const sucPedidos = [...new Set(detalle.filter((d) => !porNroEstado.has(d.nro)).map((d) => d.sucursal))];
+      avisos.push(
+        `Los dos archivos son de cuentas distintas: no tienen ningún pedido en común. El estado de cuenta es de ${sucEstado.join(", ")} y el reporte de pedidos, de ${sucPedidos.join(", ")}. ` +
+          "PedidosYa emite un estado de cuenta por cuenta, no por local: bajá el estado de cuenta de la cuenta a la que pertenece ese local (o el reporte de pedidos de las sucursales del estado que ya subiste).",
+      );
+    }
     if (soloEstado.length) {
       const sucursales = [...new Set(soloEstado.map((n) => porNroEstado.get(n)!.sucursal))];
       avisos.push(
@@ -642,7 +668,12 @@ function cruzar(estados: EstadoCuenta[], analisis: AnalisisPedidosYa | null, arc
     }
   }
 
-  const faltanSemanas = periodos.filter((p) => !p.tieneEstado);
+  // Ojo: una semana puede no tener estado para ESTOS pedidos y tener igual un
+  // estado de cuenta subido (el de otra sucursal). Decirle "falta el estado de
+  // cuenta de esa semana" cuando lo subió es mandarlo a buscar lo que ya tiene.
+  const semanaCubierta = (p: PeriodoLiquidacion) =>
+    estados.some((e) => p.desde <= soloDia(e.hasta) && p.hasta >= soloDia(e.desde));
+  const faltanSemanas = periodos.filter((p) => !p.tieneEstado && !semanaCubierta(p));
   if (faltanSemanas.length) {
     avisos.push(
       `Falta el estado de cuenta de ${faltanSemanas.length === 1 ? "la semana" : "las semanas"} ${faltanSemanas.map((p) => p.etiqueta).join(", ")}: ` +
