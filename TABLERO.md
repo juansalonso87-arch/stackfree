@@ -1,12 +1,13 @@
 # Tablero de Planillar
 
-Pendientes y rutinas del proyecto. Lo mantiene Claude al cierre de cada sesión; Juan lo lee acá (GitHub, también desde el celular) o pregunta "¿cómo vamos?". Última actualización: **2026-09-22**.
+Pendientes y rutinas del proyecto. Lo mantiene Claude al cierre de cada sesión; Juan lo lee acá (GitHub, también desde el celular) o pregunta "¿cómo vamos?". Última actualización: **2026-09-23**.
 
 ## En curso
 
 - **Reclamo a PedidosYa**: los **$ 674.089 de "descuentos a cobrar"** de agosto (su propio reporte de pedidos los informa como financiados por ellos). Están listados con número de pedido en la hoja "Revisar" del Excel de la herramienta. Juan tiene que hacer el reclamo con el ejecutivo de cuenta.
 - **Shorts / TikTok**: los 3 primeros shorts de Mercado Pago están publicados (TikTok @planillar.com: los tres el 21/09; YouTube: el 1 publicado, el 2 y el 3 programados para el 23 y el 24/09). Los shorts 4-6 tienen guion (Word) y extractos de demo probados en `04 - Shorts seguridad y bancos`: falta que Juan los grabe y yo los armo con el mismo molde.
 - **Santander en PDF**: cuando llegue el par (resumen en PDF + Excel del mismo mes) se arma `lib/extractos/santander-pdf.ts` y se valida movimiento por movimiento, como se hizo con BBVA (23 meses, 6 empresas) y Comafi (1 mes).
+- **Contador de usos**: el código está subido y probado, pero **no cuenta nada hasta que Juan cree la base gratis en Vercel** (Storage → Upstash Redis, plan Free; las variables quedan solas). Hasta entonces la insignia no aparece y el sitio funciona igual. Después tampoco se ve hasta llegar a 100 usos por herramienta (`MINIMO_PARA_MOSTRAR` en `lib/contador.ts`; con `?contador=1` se ve igual).
 
 ## Próximo (en orden)
 
@@ -24,7 +25,9 @@ Pendientes y rutinas del proyecto. Lo mantiene Claude al cierre de cada sesión;
 ## Esperando de Juan
 
 - [ ] **PedidosYa**: hacer el reclamo por los $ 674.089 de descuentos (hoja "Revisar" del Excel, con número de pedido) y avisar qué contestan.
-- [ ] **Grabar los shorts 4, 5 y 6** (30-40 s cada uno) siguiendo los guiones de `04 - Shorts seguridad y bancos`, con los archivos de demo de esa carpeta (nunca un extracto real). Mandarme las grabaciones.
+- [ ] **Prender el contador de usos**: en vercel.com → proyecto `stackfree` → pestaña **Storage** → **Create Database** → **Upstash for Redis** → plan **Free** → conectar al proyecto (Production, Preview y Development). Vercel pone las variables solo; después hay que **redeployar** una vez. Sin eso el contador no cuenta.
+- [ ] **Instalar OBS Studio** (obsproject.com) para grabar la pantalla completa: la barra de juegos de Windows (Win+G) no filma el escritorio ni los carteles del sistema, por eso no salía el panel de wifi.
+- [ ] **Grabar los shorts 4, 5 y 6** (30-40 s cada uno) siguiendo los guiones de `04 - Shorts seguridad y bancos`, con los archivos de demo de esa carpeta (nunca un extracto real). Mandarme las grabaciones. Alternativa acordada el 23/09: Juan graba **solo la voz** y yo hago los movimientos de pantalla con un guion automático (`playwright-core` ya instalado en `_scripts`).
 - [ ] Par de **Santander**: resumen en PDF + Excel de movimientos del mismo mes.
 - [ ] **Galicia**: Excel y PDF del mismo mes de una cuenta **de comercio** (con cobros con tarjeta, PedidosYa, AFIP…), no la de la congregación. Y el menú exacto de Office Banking para bajar cada formato.
 - [ ] **Nación**: Excel y PDF del mismo mes.
@@ -38,6 +41,8 @@ Pendientes y rutinas del proyecto. Lo mantiene Claude al cierre de cada sesión;
 
 ## Hecho (últimas dos semanas)
 
+- **23/09** **Contador de usos** en cada herramienta: una insignia verde con cuántas veces se usó, que sube sola cuando alguien termina de procesar un archivo. Cuenta trabajo hecho (no visitas), tiene tope por navegador y por día, y lo único que viaja es el nombre de la herramienta (30 bytes), así que la CSP sigue igual. No se muestra ningún número inventado: sin base configurada no aparece, y debajo de 100 usos tampoco. `/verificar-privacidad` y la política de privacidad quedaron actualizadas para declararlo.
+- **23/09** Guiones de los shorts corregidos: se graba con **OBS Studio**, no con Win+G (la barra de juegos no filma el escritorio ni los carteles del sistema, por eso el panel de wifi no aparecía en el video del short 4).
 - **22/09** El Excel de la liquidación de PedidosYa suma el **lado comercial**: hoja "Cuándo vendés" (por hora, por día de la semana, app vs. efectivo, promos y Plus, tiempos de preparación y entrega) y hoja "Productos" (ranking por sucursal). En pantalla, el cuadro por hora, los 15 productos top y los KPIs de ticket promedio y mejor día.
 - **22/09** La comparación con la planilla del local **deduce sola qué anota el local** (venta total, solo lo cobrado por la app o solo el efectivo) y lo dice en el resultado; se puede forzar a mano. Además: el enlace de la portada que prometía la privacidad ahora lleva a `/verificar-privacidad` (antes iba a Administración) y esa página se ofrece desde el header, la insignia de cada herramienta y el pie de resultado de todas.
 - **22/09** La liquidación de PedidosYa **compara con la planilla diaria del local**: se pega la venta digital día por día y explica cada diferencia. Con los 30 días reales de agosto: 22 días cierran al peso sumando los descuentos que PedidosYa cobra después (el local anota la venta como la mostró la app), 2 más por un pedido cancelado anotado como venta, y quedaron 4 con diferencias chicas. En el mes el local informó $ 637.096 de más. Además, las migas de pan de las herramientas de Administración ahora dicen "Administración" y llevan a su portada, en vez de "Herramientas".

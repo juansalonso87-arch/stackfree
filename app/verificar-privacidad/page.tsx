@@ -39,10 +39,11 @@ const metodos = [
       "Abrí la herramienta y presioná F12 (o clic derecho → Inspeccionar). Se abre el panel de desarrollador.",
       "Entrá a la pestaña “Red” (“Network” en inglés) y dejala abierta.",
       "Subí tu archivo y procesalo. Cada línea que aparece es algo que el navegador pidió o envió.",
-      "Fijate en la columna “Método”: verás solo GET (el navegador PIDE archivos del sitio: programas, íconos). No aparece ningún POST ni PUT (que sería ENVIAR algo) con el nombre o el tamaño de tu archivo.",
+      "Fijate en la columna “Método”: casi todo son GET (el navegador PIDE archivos del sitio: programas, íconos). Tu archivo no aparece por ningún lado.",
+      "Vas a ver un único POST, a /api/usos: es el contador de veces que se usó la herramienta. Hacé clic encima y abrí “Carga útil” (“Payload”): dice exactamente esto, y nada más → {\"h\":\"extracto-bbva\"}. Son 30 bytes con el nombre de la herramienta. Ni el contenido, ni el nombre, ni el tamaño de tu archivo.",
     ],
     cierre:
-      "Un archivo de varios megas que se subiera aparecería ahí, sí o sí, con su tamaño. No está, porque nunca sale de tu computadora.",
+      "Ese es el punto: un archivo de varios megas que se subiera aparecería ahí, sí o sí, con su tamaño. Lo único que sale de la página pesa 30 bytes y lo podés leer entero de un vistazo.",
   },
   {
     id: "csp",
@@ -52,7 +53,8 @@ const metodos = [
     pasos: [
       "En la misma pestaña “Red”, hacé clic en la primera línea (el documento de la página) y abrí “Encabezados” (“Headers”).",
       "Buscá en la respuesta la línea Content-Security-Policy.",
-      "Vas a ver connect-src 'self' blob: data:. Significa que el navegador solo permite que esta página se conecte con nuestro propio dominio ('self', un sitio estático que no tiene dónde recibir archivos) y con objetos en la memoria de la propia pestaña (blob: y data:, que usan las herramientas para trabajar). Cualquier intento del código de enviar datos a otro servidor es bloqueado por el navegador antes de salir.",
+      "Vas a ver connect-src 'self' blob: data:. Significa que el navegador solo permite que esta página se conecte con nuestro propio dominio ('self') y con objetos en la memoria de la propia pestaña (blob: y data:, que usan las herramientas para trabajar). Cualquier intento del código de enviar datos a otro servidor es bloqueado por el navegador antes de salir.",
+      "En nuestro dominio hay una sola dirección que recibe algo, /api/usos, y lo que recibe es el nombre de una herramienta para sumar uno al contador. No hay ninguna dirección que reciba archivos: no existe en el código.",
     ],
     cierre: `Hay solo dos excepciones, declaradas a la vista: la herramienta “Quitar fondo” puede DESCARGAR su modelo de inteligencia artificial desde ${HOSTS_EXTERNOS.CDN_MODELO_IA.replace("https://", "")} (descarga, no envío), y la página de contacto puede enviar el formulario al servicio de correo. Ninguna herramienta de administración tiene excepciones.`,
   },
@@ -64,7 +66,8 @@ const metodos = [
     pasos: [
       "Todo el código del sitio es público, con licencia de software libre.",
       "La lógica de cada herramienta está en components/tools/<herramienta>/logic.ts; los analizadores de bancos, en lib/extractos/.",
-      "Buscá “fetch(” o “XMLHttpRequest” en ese código: no hay ninguna llamada de red propia. Lo único que se descarga son las librerías (leer Excel y PDF, generar Excel, decodificar imágenes) y el modelo de IA.",
+      "Buscá “fetch(” o “XMLHttpRequest” en ese código: en la lógica de las herramientas no hay ninguna llamada de red. Lo único que se descarga son las librerías (leer Excel y PDF, generar Excel, decodificar imágenes) y el modelo de IA.",
+      "La única llamada propia del sitio está en lib/contador.ts y manda el slug de la herramienta a /api/usos (el contador de usos). El archivo ni siquiera está al alcance de esa función.",
     ],
     cierre: "Lo que se publica en el sitio es exactamente lo que está en el repositorio: cada cambio queda registrado con fecha.",
   },
@@ -74,7 +77,7 @@ const faq = [
   {
     pregunta: "¿Y qué sí registran?",
     respuesta:
-      "Estadísticas de visitas sin cookies (qué páginas se visitan, desde qué país, qué navegador), a través de Vercel Analytics, y los anuncios de Google AdSense. Los videos tutoriales están alojados en YouTube, pero el reproductor se carga únicamente cuando tocás reproducir: hasta ese momento solo ves una imagen servida por nosotros. Nada de eso incluye el contenido, el nombre ni el tamaño de tus archivos. Los detalles están en la política de privacidad.",
+      "Tres cosas. Estadísticas de visitas sin cookies (qué páginas se visitan, desde qué país, qué navegador), a través de Vercel Analytics. Un contador por herramienta: cuando terminás de procesar un archivo, el navegador nos avisa “se usó tal herramienta” y suma uno al número que ves arriba, sin nada más y sin identificarte. Y los anuncios de Google AdSense. Los videos tutoriales están alojados en YouTube, pero el reproductor se carga únicamente cuando tocás reproducir: hasta ese momento solo ves una imagen servida por nosotros. Nada de eso incluye el contenido, el nombre ni el tamaño de tus archivos. Los detalles están en la política de privacidad.",
   },
   {
     pregunta: "¿Por qué no hacen como los demás y suben el archivo a un servidor?",

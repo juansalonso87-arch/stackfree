@@ -1,3 +1,4 @@
+import { Suspense } from "react";
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
@@ -20,6 +21,7 @@ import {
   AccordionTrigger,
 } from "@/components/ui/accordion";
 import { AdSlot } from "@/components/core/AdSlot";
+import { ContadorUsos } from "@/components/core/ContadorUsos";
 import { JsonLd } from "@/components/core/JsonLd";
 import { PedidoDevolucion } from "@/components/core/PedidoDevolucion";
 import { ToolCard } from "@/components/core/ToolCard";
@@ -185,6 +187,10 @@ export default async function PaginaHerramienta({ params }: Props) {
             <Sparkles data-icon="inline-start" />
             Gratis y sin marca de agua
           </Badge>
+          {/* Cuántas veces se usó. No aparece hasta que el número sea grande. */}
+          <Suspense fallback={null}>
+            <ContadorUsos slug={h.slug} />
+          </Suspense>
         </div>
         <h1 className="font-heading text-3xl font-bold tracking-tight text-balance sm:text-4xl">
           {p.h1}

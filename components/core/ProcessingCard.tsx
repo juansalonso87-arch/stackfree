@@ -1,6 +1,7 @@
 "use client";
 
-import type { ReactNode } from "react";
+import { useEffect, useRef, type ReactNode } from "react";
+import { usePathname } from "next/navigation";
 import { AlertCircle, Loader2, RotateCcw } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
@@ -8,6 +9,8 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Progress } from "@/components/ui/progress";
 import { PedidoDevolucion } from "@/components/core/PedidoDevolucion";
+import { slugDesdeRuta } from "@/lib/contacto";
+import { registrarUso } from "@/lib/contador";
 
 /**
  * Estados por los que pasa cualquier herramienta:
@@ -48,6 +51,22 @@ export function ProcessingCard({
   children,
   className,
 }: ProcessingCardProps) {
+  // Contador de usos: todas las herramientas pasan por acá, así que este es el
+  // único lugar donde hace falta sumar. Se cuenta un archivo terminado, no una
+  // visita, y solo viaja el slug de la herramienta (ver lib/contador.ts).
+  const pathname = usePathname();
+  const yaContado = useRef(false);
+  useEffect(() => {
+    if (estado !== "listo") {
+      yaContado.current = false;
+      return;
+    }
+    if (yaContado.current) return;
+    yaContado.current = true;
+    const slug = slugDesdeRuta(pathname);
+    if (slug) void registrarUso(slug);
+  }, [estado, pathname]);
+
   return (
     <Card className={cn("w-full", className)} aria-busy={estado === "procesando"}>
       <CardContent className="space-y-4">

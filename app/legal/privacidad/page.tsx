@@ -49,7 +49,17 @@ export default function PaginaPrivacidad() {
         Esta herramienta <strong>no utiliza cookies</strong> ni identifica a personas individuales;
         los datos se agregan de forma anónima.
       </p>
-      <h3>2.2 Publicidad</h3>
+      <h3>2.2 Contador de usos</h3>
+      <p>
+        Cada herramienta muestra cuántas veces se usó. Cuando terminás de procesar un archivo, tu
+        navegador envía a nuestro servidor <strong>únicamente el nombre de la herramienta</strong>{" "}
+        (por ejemplo, <code>extracto-bbva</code>) para sumar uno a ese contador. No se envía ni se
+        guarda el contenido, el nombre ni el tamaño de tu archivo, ni tu dirección IP, ni ningún
+        identificador que permita reconocerte o seguir tu actividad: lo que queda almacenado es un
+        número por herramienta. Podés comprobarlo vos mismo en{" "}
+        <Link href="/verificar-privacidad">cómo comprobar la privacidad</Link>.
+      </p>
+      <h3>2.3 Publicidad</h3>
       <p>
         El sitio se financia con publicidad de <strong>Google AdSense</strong>. Google y sus socios
         pueden usar cookies e identificadores similares para mostrar anuncios basados en tus visitas
@@ -71,7 +81,7 @@ export default function PaginaPrivacidad() {
         </a>
         .
       </p>
-      <h3>2.3 Datos de contacto</h3>
+      <h3>2.4 Datos de contacto</h3>
       <p>
         Si nos escribes por email, conservaremos tu mensaje y dirección solo para responderte.
       </p>
