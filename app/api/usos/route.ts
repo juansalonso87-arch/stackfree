@@ -20,10 +20,28 @@ export const dynamic = "force-dynamic";
 const PREFIJO = "usos:v1:";
 const CLAVE_TOTAL = `${PREFIJO}total`;
 
+/** Los dos juegos de nombres posibles: el de Vercel KV y el de Upstash. */
+const NOMBRES = [
+  ["KV_REST_API_URL", "KV_REST_API_TOKEN"],
+  ["UPSTASH_REDIS_REST_URL", "UPSTASH_REDIS_REST_TOKEN"],
+];
+
+/**
+ * Al conectar la base, Vercel deja agregarle un prefijo a los nombres de las
+ * variables (STORAGE_KV_REST_API_URL y compañía). Por eso no se buscan nombres
+ * exactos: se busca por el final y se usa el mismo prefijo para el token, así
+ * funciona con prefijo o sin él y no hay nada que configurar a mano.
+ */
 function credenciales(): { url: string; token: string } | null {
-  const url = process.env.KV_REST_API_URL ?? process.env.UPSTASH_REDIS_REST_URL;
-  const token = process.env.KV_REST_API_TOKEN ?? process.env.UPSTASH_REDIS_REST_TOKEN;
-  return url && token ? { url: url.replace(/\/$/, ""), token } : null;
+  const entradas = Object.entries(process.env);
+  for (const [finUrl, finToken] of NOMBRES) {
+    const encontrada = entradas.find(([nombre, valor]) => valor && nombre.endsWith(finUrl));
+    if (!encontrada) continue;
+    const prefijo = encontrada[0].slice(0, encontrada[0].length - finUrl.length);
+    const token = process.env[prefijo + finToken];
+    if (token) return { url: encontrada[1]!.replace(/\/$/, ""), token };
+  }
+  return null;
 }
 
 /**
