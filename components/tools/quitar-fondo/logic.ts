@@ -122,12 +122,33 @@ function manejarProgresoLibreria(clave: string, actual: number, total: number) {
   }
 }
 
+/**
+ * Número de intento de carga del modelo. Sube de a uno cada vez que falla.
+ *
+ * No es cosmético, arregla un bug real (visto el 2026-09-23): la librería
+ * memoriza la sesión con `memoize` de lodash usando `JSON.stringify(config)`
+ * como clave, y memoize **guarda también las promesas rechazadas**. Con una
+ * config fija, el primer fallo queda cacheado para siempre y cada "Reintentar"
+ * recibe el MISMO error sin tocar la red; solo se destraba recargando la página
+ * entera. Cambiar el intento cambia la clave, así el reintento arranca limpio.
+ *
+ * Tiene que ser el mismo valor en `preload` y en `removeBackground`, porque es
+ * lo que hace que la segunda reutilice la sesión que preparó la primera.
+ */
+let intentoModelo = 0;
+
 function configuracion(): Config {
   return {
     model: elegirModelo(),
     device: "cpu",
     output: { format: "image/png", quality: 1 },
     progress: manejarProgresoLibreria,
+    // `fetchArgs` va tal cual al fetch de cada trozo (las propiedades que no
+    // conoce las ignora) y entra en la clave del memoize. En los reintentos,
+    // `cache: "reload"` obliga además a pedir los trozos a la red en vez de
+    // usar una copia que pudo quedar cortada en la caché del navegador: la
+    // librería no tiene almacén propio, se apoya en la del navegador.
+    fetchArgs: intentoModelo === 0 ? {} : { cache: "reload", intento: intentoModelo },
   };
 }
 
@@ -150,6 +171,9 @@ export function precargarModelo(): Promise<void> {
       .catch((error) => {
         // Si falló (p. ej. sin internet), permitimos reintentar más tarde.
         promesaPrecarga = null;
+        // Y le cambiamos la clave a la librería: si no, el reintento recibe la
+        // misma promesa rechazada que quedó memorizada (ver `intentoModelo`).
+        intentoModelo += 1;
         throw error;
       });
   }
@@ -257,6 +281,8 @@ function exportarBlob(
 
 export type CodigoError =
   | "sin-conexion"
+  | "descarga-incompleta"
+  | "programa"
   | "navegador"
   | "memoria"
   | "timeout"
@@ -276,6 +302,26 @@ export class ErrorQuitarFondo extends Error {
   }
 }
 
+/**
+ * No se pudo bajar el JavaScript de la herramienta (el `import()` dinámico).
+ * El navegador lo informa con un texto que incluye "fetch", así que sin esta
+ * regla el usuario leía "no se pudo descargar el modelo", que manda a revisar
+ * lo que no es.
+ */
+function esFalloDePrograma(texto: string): boolean {
+  return /dynamically imported module|ChunkLoadError|Loading chunk|module script failed/i.test(
+    texto,
+  );
+}
+
+/**
+ * Un trozo del modelo llegó con menos bytes de los que debía. La librería lo
+ * informa como "Failed to fetch <recurso> with size 4194304 but got 1234".
+ */
+function esDescargaIncompleta(texto: string): boolean {
+  return /with size \d+ but got \d+/i.test(texto);
+}
+
 /** Convierte cualquier error técnico en un mensaje que una persona entienda. */
 export function aErrorAmigable(error: unknown): ErrorQuitarFondo {
   if (error instanceof ErrorQuitarFondo) return error;
@@ -288,6 +334,20 @@ export function aErrorAmigable(error: unknown): ErrorQuitarFondo {
 
   if (typeof WebAssembly === "undefined" || /WebAssembly|SharedArrayBuffer|ort-wasm/i.test(texto)) {
     return new ErrorQuitarFondo("navegador", MENSAJE_NAVEGADOR);
+  }
+  // Ojo con el orden: los dos casos de abajo también dicen "fetch", así que van
+  // antes de la regla general de conexión.
+  if (esFalloDePrograma(texto)) {
+    return new ErrorQuitarFondo(
+      "programa",
+      "Faltaba descargar una parte de la herramienta y no se pudo. Si estás sin conexión, conectate un momento; si no, recargá la página con Ctrl+F5. Tu imagen nunca se envía: lo que falta es el programa que la procesa.",
+    );
+  }
+  if (esDescargaIncompleta(texto)) {
+    return new ErrorQuitarFondo(
+      "descarga-incompleta",
+      "El modelo de IA llegó incompleto y el reintento sin usar la copia guardada tampoco funcionó. Suele pasar con una conexión inestable o en redes de oficina que cortan las descargas grandes (el modelo pesa entre 40 y 80 MB). Probá desde otra red, o desde el celular con datos móviles. Tu imagen no se envía a ningún lado.",
+    );
   }
   if (/Failed to fetch|NetworkError|Load failed|fetch|ERR_|network/i.test(texto)) {
     return new ErrorQuitarFondo(
@@ -330,6 +390,34 @@ function conTimeout<T>(promesa: Promise<T>, ms: number, mensaje: string): Promis
 /* Función principal                                                    */
 /* ------------------------------------------------------------------ */
 
+const MENSAJE_TIMEOUT_DESCARGA =
+  "La descarga del modelo está tardando demasiado. Revisa tu conexión e intenta de nuevo.";
+
+/**
+ * Deja el modelo listo, con un reintento automático.
+ *
+ * Reportado por el dueño el 2026-09-23: le fallaba en dos dispositivos y
+ * "Reintentar" no cambiaba nada. La causa es que un fallo de descarga queda
+ * memorizado dentro de la librería (ver `intentoModelo`), así que el segundo
+ * intento tiene que arrancar con otra config; de paso pide los trozos a la red
+ * en vez de usar una copia que pudo quedar cortada en la caché del navegador.
+ */
+async function asegurarModelo(timeoutMs: number): Promise<void> {
+  try {
+    await conTimeout(precargarModelo(), timeoutMs, MENSAJE_TIMEOUT_DESCARGA);
+    return;
+  } catch (error) {
+    if (error instanceof ErrorQuitarFondo && error.codigo === "timeout") throw error;
+    const texto = error instanceof Error ? `${error.name}: ${error.message}` : String(error);
+    if (!esDescargaIncompleta(texto) && !/Failed to fetch|NetworkError|Load failed/i.test(texto)) {
+      throw error;
+    }
+    reiniciarProgreso();
+    emitir(0, "La descarga vino incompleta. Reintentando…");
+    await conTimeout(precargarModelo(), timeoutMs, MENSAJE_TIMEOUT_DESCARGA);
+  }
+}
+
 export async function quitarFondo(
   archivo: File,
   opciones: OpcionesQuitarFondo = {},
@@ -350,11 +438,7 @@ export async function quitarFondo(
     emitir(0, "Preparando…");
 
     // 1) Modelo listo (si ya está en memoria, esto termina al instante).
-    await conTimeout(
-      precargarModelo(),
-      timeoutDescargaMs,
-      "La descarga del modelo está tardando demasiado. Revisa tu conexión e intenta de nuevo.",
-    );
+    await asegurarModelo(timeoutDescargaMs);
 
     // 2) Decodificar y, si hace falta, achicar la imagen.
     emitir(71, "Leyendo la imagen…");
