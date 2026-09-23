@@ -27,6 +27,12 @@ interface ProcessingCardProps {
   mensajeProgreso?: string;
   /** Mensaje amigable para mostrar cuando `estado === "error"`. */
   mensajeError?: string;
+  /**
+   * Detalle técnico corto, en letra chica debajo del mensaje. Es lo que hace
+   * que un reporte sirva: si a alguien le falla en su celular, no podemos
+   * mirarle la consola, y con una captura de pantalla alcanza.
+   */
+  detalleTecnico?: string;
   /** Reintentar con el mismo archivo. */
   onReintentar?: () => void;
   /** Volver al inicio para elegir otro archivo. */
@@ -46,6 +52,7 @@ export function ProcessingCard({
   progreso,
   mensajeProgreso,
   mensajeError,
+  detalleTecnico,
   onReintentar,
   onReiniciar,
   children,
@@ -103,6 +110,11 @@ export function ProcessingCard({
               <AlertDescription>
                 {mensajeError ??
                   "No pudimos procesar el archivo. Intenta de nuevo o prueba con otro archivo."}
+                {detalleTecnico && (
+                  <span className="mt-2 block font-mono text-xs break-words opacity-70">
+                    Detalle técnico: {detalleTecnico}
+                  </span>
+                )}
               </AlertDescription>
             </Alert>
             <div className="flex flex-wrap gap-2">
@@ -123,7 +135,9 @@ export function ProcessingCard({
               variante="linea"
               texto="¿El archivo debería haber funcionado? Avisanos y lo revisamos: el error que viste ya va incluido en el mensaje."
               etiquetaBoton="Reportar este error"
-              contexto={`Error mostrado: ${mensajeError ?? "No pudimos procesar el archivo."}`}
+              contexto={`Error mostrado: ${mensajeError ?? "No pudimos procesar el archivo."}${
+                detalleTecnico ? `\nDetalle técnico: ${detalleTecnico}` : ""
+              }`}
             />
           </div>
         )}

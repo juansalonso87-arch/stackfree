@@ -296,6 +296,13 @@ export class ErrorQuitarFondo extends Error {
   constructor(
     public codigo: CodigoError,
     mensaje: string,
+    /**
+     * Texto técnico corto (el error original + qué modelo se estaba usando).
+     * Va a la pantalla en letra chica y al formulario de reporte: sin esto, un
+     * usuario que falla en el celular no tiene forma de contarnos qué pasó, y
+     * nosotros no tenemos cómo mirarle la consola.
+     */
+    public detalle?: string,
   ) {
     super(mensaje);
     this.name = "ErrorQuitarFondo";
@@ -331,9 +338,10 @@ export function aErrorAmigable(error: unknown): ErrorQuitarFondo {
   console.error("[quitar-fondo]", error);
 
   const texto = error instanceof Error ? `${error.name}: ${error.message}` : String(error);
+  const detalle = `${texto.slice(0, 200)} · modelo ${elegirModelo()} · intento ${intentoModelo}`;
 
   if (typeof WebAssembly === "undefined" || /WebAssembly|SharedArrayBuffer|ort-wasm/i.test(texto)) {
-    return new ErrorQuitarFondo("navegador", MENSAJE_NAVEGADOR);
+    return new ErrorQuitarFondo("navegador", MENSAJE_NAVEGADOR, detalle);
   }
   // Ojo con el orden: los dos casos de abajo también dicen "fetch", así que van
   // antes de la regla general de conexión.
@@ -341,29 +349,34 @@ export function aErrorAmigable(error: unknown): ErrorQuitarFondo {
     return new ErrorQuitarFondo(
       "programa",
       "Faltaba descargar una parte de la herramienta y no se pudo. Si estás sin conexión, conectate un momento; si no, recargá la página con Ctrl+F5. Tu imagen nunca se envía: lo que falta es el programa que la procesa.",
+      detalle,
     );
   }
   if (esDescargaIncompleta(texto)) {
     return new ErrorQuitarFondo(
       "descarga-incompleta",
       "El modelo de IA llegó incompleto y el reintento sin usar la copia guardada tampoco funcionó. Suele pasar con una conexión inestable o en redes de oficina que cortan las descargas grandes (el modelo pesa entre 40 y 80 MB). Probá desde otra red, o desde el celular con datos móviles. Tu imagen no se envía a ningún lado.",
+      detalle,
     );
   }
   if (/Failed to fetch|NetworkError|Load failed|fetch|ERR_|network/i.test(texto)) {
     return new ErrorQuitarFondo(
       "sin-conexion",
       "No se pudo descargar el modelo de IA. Revisa tu conexión a internet e intenta de nuevo. (Tu imagen no se envía a ningún lado: solo se descarga el modelo.)",
+      detalle,
     );
   }
   if (/memory|allocation|RangeError|Array buffer allocation/i.test(texto)) {
     return new ErrorQuitarFondo(
       "memoria",
       "La imagen es demasiado grande para la memoria disponible en tu dispositivo. Prueba con una imagen más chica o cierra otras pestañas.",
+      detalle,
     );
   }
   return new ErrorQuitarFondo(
     "desconocido",
     "No pudimos procesar la imagen. Intenta de nuevo o prueba con otra foto.",
+    detalle,
   );
 }
 

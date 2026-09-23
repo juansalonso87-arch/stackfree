@@ -10,6 +10,7 @@ import { Button } from "@/components/ui/button";
 import { NotaPrivacidad } from "@/components/core/NotaPrivacidad";
 import {
   componerSobreBlanco,
+  ErrorQuitarFondo,
   ladoMaximo,
   nombreResultado,
   precargarModelo,
@@ -48,6 +49,7 @@ export default function QuitarFondoTool() {
   const [progreso, setProgreso] = useState<number>();
   const [mensajeProgreso, setMensajeProgreso] = useState<string>();
   const [error, setError] = useState<string>();
+  const [detalleError, setDetalleError] = useState<string>();
   const [resultado, setResultado] = useState<ResultadoQuitarFondo | null>(null);
   const [jpg, setJpg] = useState<Blob | null>(null);
   const [componiendo, setComponiendo] = useState(false);
@@ -61,6 +63,7 @@ export default function QuitarFondoTool() {
     setResultado(null);
     setJpg(null);
     setError(undefined);
+    setDetalleError(undefined);
     setEstado("idle");
     // Arrancamos la descarga del modelo ya mismo, en segundo plano, para que
     // cuando toque "Quitar fondo" no haya que esperar. Si falla, el error
@@ -73,6 +76,7 @@ export default function QuitarFondoTool() {
     setResultado(null);
     setJpg(null);
     setError(undefined);
+    setDetalleError(undefined);
     setProgreso(undefined);
     setEstado("idle");
   };
@@ -81,6 +85,7 @@ export default function QuitarFondoTool() {
     if (!archivo) return;
     setEstado("procesando");
     setError(undefined);
+    setDetalleError(undefined);
     setProgreso(0);
     setMensajeProgreso("Preparando…");
     try {
@@ -95,6 +100,7 @@ export default function QuitarFondoTool() {
       setEstado("listo");
     } catch (e) {
       setError(e instanceof Error ? e.message : undefined);
+      setDetalleError(e instanceof ErrorQuitarFondo ? e.detalle : undefined);
       setEstado("error");
     }
   };
@@ -147,6 +153,7 @@ export default function QuitarFondoTool() {
       progreso={progreso}
       mensajeProgreso={mensajeProgreso}
       mensajeError={error}
+      detalleTecnico={detalleError}
       onReintentar={procesar}
       onReiniciar={reiniciar}
     >
