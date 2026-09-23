@@ -26,8 +26,10 @@ export default function CobrosMercadoPagoTool() {
           <Info />
           <AlertTitle>Qué archivo necesitás</AlertTitle>
           <AlertDescription>
-            En Mercado Pago: <strong>Reportes → Cobros → “Detalle de Cobros” → elegís el período → descargar</strong>{" "}
-            (tarda un rato en generarse). Tiene que incluir la fecha con hora para aplicar el corte de turno.{" "}
+            En Mercado Pago: <strong>Reportes → “Cerrar y conciliar mes” → “Todas las transacciones”</strong>, elegís el
+            período, filtrás y creás el reporte en <strong>.xlsx</strong> (tarda un rato en generarse). Usá ese y no el de
+            “Cobros”: el de Cobros puede dejar afuera parte de lo cobrado, sobre todo los pagos con dinero en cuenta de
+            Mercado Pago. Si subís el de Cobros igual funciona y te avisamos.{" "}
             <a href="#guia-descarga" className="underline underline-offset-2">
               Ver la guía paso a paso
             </a>
@@ -64,9 +66,11 @@ export default function CobrosMercadoPagoTool() {
             <span>
               <span className="font-medium">Contar las transferencias recibidas como cobros</span>
               <span className="mt-0.5 block text-xs text-muted-foreground">
-                Si tus clientes te pagan por transferencia al alias o CVU en vez de QR, esas ventas llegan al reporte como
-                “ingreso de dinero”. Con esta opción se cuentan como cobros y se muestra lo que Mercado Pago retiene sobre
-                ellas. Desactivala si esas transferencias son cargas de saldo tuyas.
+                Si tus clientes te pagan por transferencia al alias o CVU en vez de QR, en el reporte de <strong>Cobros</strong>{" "}
+                esas ventas llegan como “ingreso de dinero”, igual que una carga de saldo tuya. Con esta opción se cuentan
+                como cobros y se muestra lo que Mercado Pago retiene sobre ellas; desactivala si son cargas tuyas. En el
+                reporte de “Todas las transacciones” no hace falta: ahí Mercado Pago ya las liquidó como cobro, así que la
+                opción se ignora.
               </span>
             </span>
           </label>

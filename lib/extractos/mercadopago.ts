@@ -37,6 +37,8 @@ export interface OpcionesMercadoPago {
 
 const ETIQUETAS_MEDIO_PAGO: Record<string, string> = {
   account_money: "Dinero en cuenta (saldo MP)",
+  // Igual que account_money, pero es el nombre que usa el reporte de liquidaciones.
+  available_money: "Dinero en cuenta (saldo MP)",
   // Pago de un QR o link desde la app de un banco (Transferencias 3.0): tiene comisión, a diferencia
   // de la transferencia directa al alias (MEDIO_TRANSFERENCIA_RECIBIDA).
   bank_transfer: "Transferencia desde app bancaria (por QR o link)",
@@ -155,12 +157,124 @@ export interface AnalisisMercadoPago {
   fondeos: { cantidad: number; monto: number };
   /** Transferencias recibidas: cuántas se contaron como cobro (o se dejaron afuera si la opción está apagada). */
   transferencias: { cantidad: number; monto: number; retenido: number; contadas: boolean; desdeMercadoPago: number };
+  /** Plata que salió de la cuenta y no se contó como venta (solo en el reporte de liquidaciones). */
+  salidas: SalidasDeDinero;
+  /** true si se leyó el reporte completo ("Todas las transacciones") y no el de Cobros. */
+  deLiquidaciones: boolean;
   tieneHora: boolean;
   horaCorte: number;
   desde: Date;
   hasta: Date;
   avisos: string[];
   archivos: string[];
+}
+
+/* ------------------------------------------------------------------ */
+/* Reporte "Todas las transacciones" (liquidaciones)                    */
+/* ------------------------------------------------------------------ */
+
+/**
+ * Mercado Pago tiene dos reportes y **no traen lo mismo**.
+ *
+ * El de **Cobros** (`collection-…`) puede quedarse corto: en la cuenta real del
+ * dueño (septiembre 2026) traía 126 movimientos contra 336, y lo que faltaba
+ * eran TODOS los cobros pagados con dinero en cuenta de Mercado Pago (el 57 %
+ * de la facturación), más algunas transferencias y tarjetas. Contra la planilla
+ * del local daba un 66 % menos de lo cobrado.
+ *
+ * El de **liquidaciones** (Reportes → "Cerrar y conciliar mes" → Todas las
+ * transacciones) sí trae todo: comparado día por día con los 21 días que
+ * informó el local, **19 coincidieron al peso** (los otros dos resultaron un
+ * cobro anotado después del cierre de caja y una diferencia del local).
+ *
+ * Trae menos columnas (no hay local, caja, cuotas ni contraparte) pero las que
+ * importan están, y las retenciones vienen explícitas en vez de estimadas.
+ */
+const COLUMNAS_LIQUIDACIONES = ["SOURCE_ID", "TRANSACTION_TYPE", "TRANSACTION_AMOUNT", "REAL_AMOUNT"];
+
+export function esReporteDeLiquidaciones(claves: string[]): boolean {
+  return COLUMNAS_LIQUIDACIONES.every((c) => claves.includes(c));
+}
+
+/** Plata que salió de la cuenta (no son ventas): se informa aparte. */
+export interface SalidasDeDinero {
+  cantidad: number;
+  monto: number;
+}
+
+/**
+ * Traduce las filas del reporte de liquidaciones a las mismas claves que usa el
+ * reporte de cobros, así el resto del analizador no cambia.
+ *
+ * Ojo con dos cosas:
+ * - **La fecha se toma tal cual viene.** El archivo escribe las horas con
+ *   desfasaje `-04:00` aunque sean horas de Argentina (-03:00); `aFecha` ignora
+ *   el desfasaje y se queda con la hora escrita, que es lo correcto. Convertir
+ *   la zona horaria rompe la comparación con la planilla del local (pasa de 19
+ *   días exactos sobre 21 a ninguno).
+ * - Las **devoluciones** vienen en una fila aparte, con el mismo SOURCE_ID y el
+ *   importe en negativo. Se suman al cobro original como devuelto; si tapan el
+ *   cobro entero, la operación pasa a "no concretadas" como reembolso.
+ */
+function filasDeLiquidaciones(
+  filasHoja: Celda[][],
+  claves: string[],
+  salidas: SalidasDeDinero,
+): Record<string, Celda>[] {
+  const i = (nombre: string) => claves.indexOf(nombre);
+  const C = {
+    id: i("SOURCE_ID"),
+    medio: i("PAYMENT_METHOD_TYPE"),
+    tipo: i("TRANSACTION_TYPE"),
+    monto: i("TRANSACTION_AMOUNT"),
+    fecha: i("TRANSACTION_DATE"),
+    tarifa: i("FEE_AMOUNT"),
+    neto: i("REAL_AMOUNT"),
+    liberacion: i("MONEY_RELEASE_DATE"),
+    unidad: i("BUSINESS_UNIT"),
+    subUnidad: i("SUB_UNIT"),
+  };
+  const filas = filasHoja.slice(1).filter((f) => String(f[C.id] ?? "").trim() !== "");
+
+  const devueltoPorId = new Map<string, number>();
+  for (const f of filas) {
+    if (String(f[C.tipo] ?? "").toUpperCase() !== "REFUND") continue;
+    const id = String(f[C.id] ?? "");
+    devueltoPorId.set(id, (devueltoPorId.get(id) ?? 0) + Math.abs(aNumero(f[C.monto])));
+  }
+
+  const salida: Record<string, Celda>[] = [];
+  for (const f of filas) {
+    if (String(f[C.tipo] ?? "").toUpperCase() === "REFUND") continue;
+    const bruto = aNumero(f[C.monto]);
+    if (bruto <= 0) {
+      // Plata que salió: pagos hechos con el saldo, contracargos, cargos.
+      salidas.cantidad++;
+      salidas.monto += Math.abs(bruto);
+      continue;
+    }
+    const id = String(f[C.id] ?? "");
+    const devuelto = devueltoPorId.get(id) ?? 0;
+    const medio = String(f[C.medio] ?? "").trim();
+    salida.push({
+      operation_id: id,
+      date_created: f[C.fecha] ?? null,
+      date_released: C.liberacion >= 0 ? (f[C.liberacion] ?? null) : null,
+      transaction_amount: bruto,
+      mercadopago_fee: C.tarifa >= 0 ? f[C.tarifa] : 0,
+      net_received_amount: f[C.neto] ?? 0,
+      amount_refunded: devuelto,
+      payment_type: medio,
+      // Una transferencia al alias no paga comisión; si la tiene, es un QR o un
+      // link pagado desde la app del banco, que sí la paga.
+      operation_type:
+        medio === "bank_transfer" && Math.abs(aNumero(f[C.tarifa])) === 0 ? "account_fund" : "regular_payment",
+      status: devuelto > 0 && devuelto >= bruto - 0.005 ? "refunded" : "approved",
+      business_unit: C.unidad >= 0 ? f[C.unidad] : null,
+      sub_unit: C.subUnidad >= 0 ? f[C.subUnidad] : null,
+    });
+  }
+  return salida;
 }
 
 /** 'Medio de pago (payment_type)' → 'payment_type'. */
@@ -191,22 +305,31 @@ export async function analizarMercadoPago(
   horaCorte = HORA_CORTE_DEFECTO,
   opciones: OpcionesMercadoPago = {},
 ): Promise<AnalisisMercadoPago> {
-  const transferenciasComoCobro = opciones.transferenciasComoCobro ?? true;
+  let transferenciasComoCobro = opciones.transferenciasComoCobro ?? true;
   if (archivos.length === 0) throw new ErrorExtracto("No hay archivos para analizar.");
   if (horaCorte < 0 || horaCorte > 23) throw new ErrorExtracto("La hora de corte tiene que estar entre 0 y 23.");
   const avisos: string[] = [];
   const filas: Record<string, Celda>[] = [];
+  const salidas: SalidasDeDinero = { cantidad: 0, monto: 0 };
+  let deLiquidaciones = false;
+  let deCobros = false;
 
   for (const archivo of archivos) {
     const hojas = await leerPlanilla(archivo);
     const hoja = hojas.find((h) => h.filas.length > 1) ?? hojas[0];
     const claves = hoja.filas[0].map(claveInterna);
+    if (esReporteDeLiquidaciones(claves)) {
+      deLiquidaciones = true;
+      filas.push(...filasDeLiquidaciones(hoja.filas, claves, salidas));
+      continue;
+    }
     if (!claves.some((k) => /^(date_created|date_approved|date_created_short)$/.test(k))) {
       throw new ErrorExtracto(
-        `"${archivo.name}" no parece el reporte de cobros de Mercado Pago (no trae la columna de fecha "date_created"). ` +
-          "Descargalo desde Mercado Pago → Reportes → Cobros (o Actividad → Descargar reporte).",
+        `"${archivo.name}" no parece un reporte de Mercado Pago (no trae ni la columna "date_created" ni "SOURCE_ID"). ` +
+          "Descargalo desde Mercado Pago → Reportes → Cerrar y conciliar mes → Todas las transacciones.",
       );
     }
+    deCobros = true;
     for (const fila of hoja.filas.slice(1)) {
       const obj: Record<string, Celda> = {};
       claves.forEach((k, i) => {
@@ -214,6 +337,27 @@ export async function analizarMercadoPago(
       });
       filas.push(obj);
     }
+  }
+
+  if (deCobros) {
+    // Comprobado con una cuenta real: el reporte de Cobros puede dejar afuera
+    // buena parte de lo cobrado (ver `esReporteDeLiquidaciones`).
+    avisos.push(
+      'Este es el reporte de "Cobros", que en algunas cuentas deja afuera operaciones (sobre todo las pagadas con dinero en cuenta de Mercado Pago). Si el total no coincide con lo que registra tu local, bajá el de Reportes → "Cerrar y conciliar mes" → Todas las transacciones, que trae todo.',
+    );
+  }
+  if (deLiquidaciones && !transferenciasComoCobro) {
+    // Acá no hay ambigüedad: Mercado Pago ya las liquidó como cobro y les
+    // aplicó su retención, así que la duda que resuelve la opción no existe.
+    transferenciasComoCobro = true;
+    avisos.push(
+      "En este reporte las transferencias ya vienen liquidadas por Mercado Pago como cobro (con su retención), así que se cuentan como venta aunque hayas desmarcado la opción.",
+    );
+  }
+  if (salidas.cantidad > 0) {
+    avisos.push(
+      `Se dejaron afuera ${salidas.cantidad} movimientos de salida de dinero por ${salidas.monto.toLocaleString("es-AR", { style: "currency", currency: "ARS" })} (pagos hechos con el saldo, contracargos o cargos). No son ventas.`,
+    );
   }
 
   // Varios exports pueden solaparse: una operación se cuenta una sola vez.
@@ -355,6 +499,8 @@ export async function analizarMercadoPago(
     noConcretadas,
     fondeos,
     transferencias,
+    salidas,
+    deLiquidaciones,
     tieneHora,
     horaCorte,
     desde: new Date(Math.min(...dias)),
