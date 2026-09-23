@@ -360,9 +360,17 @@ export function aErrorAmigable(error: unknown): ErrorQuitarFondo {
     );
   }
   if (/Failed to fetch|NetworkError|Load failed|fetch|ERR_|network/i.test(texto)) {
+    // Si el navegador se sabe sin conexión, es eso y punto. Si dice que hay
+    // conexión (y la hay: esta página cargó), mandar a "revisá tu internet" es
+    // desorientar. Visto el 2026-09-23 en el iPhone del dueño: los tres
+    // intentos fallaron igual, con la conexión perfecta y el CDN respondiendo
+    // bien desde otras máquinas; el pedido no llegaba a salir del teléfono.
+    const sinRed = typeof navigator !== "undefined" && navigator.onLine === false;
     return new ErrorQuitarFondo(
       "sin-conexion",
-      "No se pudo descargar el modelo de IA. Revisa tu conexión a internet e intenta de nuevo. (Tu imagen no se envía a ningún lado: solo se descarga el modelo.)",
+      sinRed
+        ? "Estás sin conexión y esta herramienta necesita descargar el modelo de IA la primera vez. Conectate un momento y probá de nuevo. (Tu imagen no se envía a ningún lado: solo se descarga el modelo.)"
+        : "No pudimos traer el modelo de IA desde staticimgly.com, el servidor que lo aloja. Tu conexión funciona, así que lo más común es un bloqueador de contenido, una VPN o Relay privado, o una red que filtra descargas grandes: son 40 MB. Probá desactivando el bloqueador o la VPN, cambiando de Wi-Fi a datos móviles, o usá esta herramienta desde una computadora. (Tu imagen no se envía a ningún lado: lo único que se descarga es el modelo.)",
       detalle,
     );
   }
