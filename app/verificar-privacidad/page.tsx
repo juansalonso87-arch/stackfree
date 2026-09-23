@@ -53,10 +53,11 @@ const metodos = [
     pasos: [
       "En la misma pestaña “Red”, hacé clic en la primera línea (el documento de la página) y abrí “Encabezados” (“Headers”).",
       "Buscá en la respuesta la línea Content-Security-Policy.",
-      "Vas a ver connect-src 'self' blob: data:. Significa que el navegador solo permite que esta página se conecte con nuestro propio dominio ('self') y con objetos en la memoria de la propia pestaña (blob: y data:, que usan las herramientas para trabajar). Cualquier intento del código de enviar datos a otro servidor es bloqueado por el navegador antes de salir.",
-      "En nuestro dominio hay una sola dirección que recibe algo, /api/usos, y lo que recibe es el nombre de una herramienta para sumar uno al contador. No hay ninguna dirección que reciba archivos: no existe en el código.",
+      "Buscá dentro de esa línea la parte que dice connect-src: ahí está, enumerada, la lista COMPLETA de lugares a los que el código de la página tiene permitido conectarse. Cualquier destino que no esté en esa lista lo bloquea el navegador antes de que salga, aunque el código lo intentara.",
+      "La lista empieza con 'self' (nuestro propio dominio), blob: y data: (que no son servidores: son objetos en la memoria de tu propia pestaña, los que usan las herramientas para trabajar).",
+      "Después vienen, con nombre y apellido, los únicos tres destinos de afuera, y ninguno recibe archivos.",
     ],
-    cierre: `Hay solo dos excepciones, declaradas a la vista: la herramienta “Quitar fondo” puede DESCARGAR su modelo de inteligencia artificial desde ${HOSTS_EXTERNOS.CDN_MODELO_IA.replace("https://", "")} (descarga, no envío), y la página de contacto puede enviar el formulario al servicio de correo. Ninguna herramienta de administración tiene excepciones.`,
+    cierre: `Los tres: ${HOSTS_EXTERNOS.CDN_MODELO_IA.replace("https://", "")}, de donde la herramienta “Quitar fondo” DESCARGA su modelo de inteligencia artificial (descarga, no envío); ${HOSTS_EXTERNOS.FORMULARIO_CONTACTO.replace("https://", "")}, a donde viaja el formulario de contacto cuando vos lo mandás (tu nombre, tu mail y tu mensaje, nunca un archivo); y los dominios de Google AdSense, que muestran la publicidad. En nuestro propio dominio hay una sola dirección que recibe algo, /api/usos, y lo que recibe es el nombre de una herramienta para sumar uno al contador. Dirección que reciba archivos no hay ninguna: no existe en el código. Y la lista es la misma en todas las páginas, no una distinta por herramienta: así no depende de cómo llegaste hasta acá.`,
   },
   {
     id: "codigo",
