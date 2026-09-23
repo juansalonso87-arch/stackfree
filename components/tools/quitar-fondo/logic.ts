@@ -52,6 +52,29 @@ function cargarLibreria() {
   return import("@imgly/background-removal");
 }
 
+/** Servidor donde la librería aloja el modelo (declarado en la CSP). */
+const SERVIDOR_MODELO = "https://staticimgly.com/";
+
+/**
+ * ¿Este dispositivo puede hablar con el servidor del modelo?
+ *
+ * Sirve para no acusar a ciegas. En el iPhone del dueño (2026-09-23) el
+ * servidor se abría perfecto escribiendo la dirección a mano, pero el pedido
+ * desde dentro de la página fallaba siempre con "Load failed": esa asimetría
+ * es la firma de un bloqueador de contenido, que filtra los pedidos que hace
+ * una página pero no las direcciones que uno abre. Con `mode: "no-cors"` no
+ * importa la respuesta ni los permisos CORS: lo único que se pregunta es si el
+ * pedido llega a salir. Si ni eso sale, algo lo está bloqueando.
+ */
+async function servidorDelModeloResponde(): Promise<boolean> {
+  try {
+    await fetch(SERVIDOR_MODELO, { mode: "no-cors", cache: "no-store" });
+    return true;
+  } catch {
+    return false;
+  }
+}
+
 function esDispositivoModesto(): boolean {
   if (typeof navigator === "undefined") return false;
   const memoria = (navigator as Navigator & { deviceMemory?: number }).deviceMemory;
@@ -292,6 +315,18 @@ export type CodigoError =
 const MENSAJE_NAVEGADOR =
   "Tu navegador no es compatible con esta herramienta. Prueba con una versión actualizada de Chrome, Edge, Firefox o Safari.";
 
+/** Mientras no sabemos si el servidor del modelo contesta o no (ver `precisarSiEstaBloqueado`). */
+const MENSAJE_SERVIDOR_MODELO =
+  "No pudimos traer el modelo de IA desde staticimgly.com, el servidor que lo aloja. Tu conexión funciona, así que probá desactivando bloqueadores de contenido o la VPN, cambiá de Wi-Fi a datos móviles, o usá esta herramienta desde una computadora. (Tu imagen no se envía a ningún lado: lo único que se descarga es el modelo.)";
+
+/** El servidor ni contesta: algo del dispositivo o de la red corta el pedido. */
+const MENSAJE_BLOQUEADO =
+  "Algo en este dispositivo o en su red está bloqueando staticimgly.com, el servidor donde vive el modelo de IA. No es tu conexión: el resto del sitio funciona. Suele ser un bloqueador de contenido del navegador, una VPN o un filtro de la red. En iPhone: Ajustes → Safari → Extensiones, y Ajustes → tu nombre → iCloud → Relay privado. Si no querés tocar nada, usá esta herramienta desde una computadora: las demás herramientas del sitio no dependen de ningún servidor y te siguen funcionando igual acá.";
+
+/** El servidor contesta, pero la descarga grande no llegó a completarse. */
+const MENSAJE_DESCARGA_PESADA =
+  "El servidor del modelo responde, pero este navegador no pudo completar la descarga de 40 MB. Suele pasar en teléfonos con poca memoria libre o con una conexión que se corta. Probá cerrando otras pestañas y apps, o hacelo desde una computadora. (Tu imagen no se envía a ningún lado.)";
+
 export class ErrorQuitarFondo extends Error {
   constructor(
     public codigo: CodigoError,
@@ -370,7 +405,7 @@ export function aErrorAmigable(error: unknown): ErrorQuitarFondo {
       "sin-conexion",
       sinRed
         ? "Estás sin conexión y esta herramienta necesita descargar el modelo de IA la primera vez. Conectate un momento y probá de nuevo. (Tu imagen no se envía a ningún lado: solo se descarga el modelo.)"
-        : "No pudimos traer el modelo de IA desde staticimgly.com, el servidor que lo aloja. Tu conexión funciona, así que lo más común es un bloqueador de contenido, una VPN o Relay privado, o una red que filtra descargas grandes: son 40 MB. Probá desactivando el bloqueador o la VPN, cambiando de Wi-Fi a datos móviles, o usá esta herramienta desde una computadora. (Tu imagen no se envía a ningún lado: lo único que se descarga es el modelo.)",
+        : MENSAJE_SERVIDOR_MODELO,
       detalle,
     );
   }
@@ -413,6 +448,23 @@ function conTimeout<T>(promesa: Promise<T>, ms: number, mensaje: string): Promis
 
 const MENSAJE_TIMEOUT_DESCARGA =
   "La descarga del modelo está tardando demasiado. Revisa tu conexión e intenta de nuevo.";
+
+/**
+ * Afina el mensaje de "no pudimos traer el modelo" preguntándole al servidor
+ * si contesta. Son dos problemas muy distintos y con soluciones distintas:
+ * que algo bloquee los pedidos (bloqueador, VPN, filtro de red) o que la
+ * descarga de 40 MB no haya podido completarse. Se consulta recién cuando ya
+ * falló, así no agrega ningún pedido al camino normal.
+ */
+async function precisarElMensaje(e: ErrorQuitarFondo): Promise<ErrorQuitarFondo> {
+  if (e.codigo !== "sin-conexion" || e.message !== MENSAJE_SERVIDOR_MODELO) return e;
+  const responde = await servidorDelModeloResponde();
+  return new ErrorQuitarFondo(
+    e.codigo,
+    responde ? MENSAJE_DESCARGA_PESADA : MENSAJE_BLOQUEADO,
+    `${e.detalle ?? ""} · servidor ${responde ? "responde" : "no responde"}`,
+  );
+}
 
 /**
  * Deja el modelo listo, con un reintento automático.
@@ -476,7 +528,7 @@ export async function quitarFondo(
     emitir(100, "¡Listo!");
     return { png, ancho: imagen.ancho, alto: imagen.alto, redimensionada: imagen.redimensionada };
   } catch (error) {
-    throw aErrorAmigable(error);
+    throw await precisarElMensaje(aErrorAmigable(error));
   } finally {
     if (onProgreso) oyentes.delete(onProgreso);
   }
