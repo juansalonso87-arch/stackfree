@@ -35,9 +35,16 @@ export interface RespuestaUsos {
  */
 export const MINIMO_PARA_MOSTRAR = 100;
 
-/** Tope de usos que un mismo navegador puede sumar por día. */
+/**
+ * Tope de usos que un mismo navegador puede sumar por día **y por herramienta**.
+ *
+ * Es por herramienta a propósito: con un tope compartido, alguien que procesa
+ * quince extractos por la mañana dejaba de sumar en todo lo que usara después,
+ * sin enterarse. El tope está para que nadie infle el número apretando en bucle,
+ * no para castigar a quien de verdad trabaja con varias herramientas el mismo día.
+ */
 const TOPE_DIARIO = 20;
-const CLAVE_TOPE = "planillar:usos-hoy";
+const CLAVE_TOPE = "planillar:usos-hoy:";
 
 /** Evento interno para que la insignia se actualice apenas termina un uso. */
 const EVENTO = "planillar:usos";
@@ -53,21 +60,22 @@ function hoy(): string {
 }
 
 /**
- * ¿Este navegador ya sumó demasiados usos hoy? Evita que una sola persona
- * apretando "analizar otro archivo" en bucle infle el número. No identifica a
- * nadie: es un número en el almacenamiento local del propio navegador.
+ * ¿Este navegador ya sumó demasiados usos hoy en esta herramienta? Evita que una
+ * sola persona apretando "analizar otro archivo" en bucle infle el número. No
+ * identifica a nadie: es un número en el almacenamiento local del propio navegador.
  */
-function superoElTope(): boolean {
+function superoElTope(slug: string): boolean {
   try {
-    const crudo = window.localStorage.getItem(CLAVE_TOPE);
+    const clave = CLAVE_TOPE + slug;
+    const crudo = window.localStorage.getItem(clave);
     const [dia, cantidad] = (crudo ?? "").split("|");
     if (dia !== hoy()) {
-      window.localStorage.setItem(CLAVE_TOPE, `${hoy()}|1`);
+      window.localStorage.setItem(clave, `${hoy()}|1`);
       return false;
     }
     const n = Number(cantidad) || 0;
     if (n >= TOPE_DIARIO) return true;
-    window.localStorage.setItem(CLAVE_TOPE, `${hoy()}|${n + 1}`);
+    window.localStorage.setItem(clave, `${hoy()}|${n + 1}`);
     return false;
   } catch {
     // Navegación privada con el almacenamiento bloqueado: se cuenta igual.
@@ -96,7 +104,7 @@ export function leerUsos(slug: string): Promise<RespuestaUsos> {
 /** Suma un uso y avisa a la insignia para que se actualice en el momento. */
 export async function registrarUso(slug: string): Promise<RespuestaUsos> {
   if (typeof window === "undefined") return { ok: false };
-  if (superoElTope()) return { ok: false };
+  if (superoElTope(slug)) return { ok: false };
 
   const r = await pedir({
     url: "/api/usos",
