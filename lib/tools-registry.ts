@@ -13,6 +13,7 @@ import {
   ReceiptText,
   Repeat,
   RotateCw,
+  Sheet,
   Scaling,
   Scissors,
   Smartphone,
@@ -1002,6 +1003,76 @@ export const herramientas: Herramienta[] = [
   /* ---------------------------------------------------------------- */
   /* Administración: extractos bancarios y cobros → informe Excel.     */
   /* ---------------------------------------------------------------- */
+  {
+    slug: "pdf-banco-a-excel",
+    nombre: "PDF del banco a Excel",
+    h1: "Pasar el resumen del banco de PDF a Excel: la tabla completa, en segundos",
+    subtitulo:
+      "Subís el resumen de cuenta en PDF tal como lo descargás del home banking y te devolvemos un Excel con todos los movimientos: fecha, descripción, débito, crédito y saldo, con las mismas columnas que usa tu banco y sin tener que copiar una fila a mano. Funciona con cualquier banco cuya tabla podamos reconocer, y si es BBVA o Comafi además lo clasificamos por categoría. Sin subir tu resumen a ningún servidor.",
+    tituloSeo: "PDF del banco a Excel: pasá el resumen de cuenta sin copiar a mano",
+    descripcionSeo:
+      "Convertí el resumen de cuenta en PDF de tu banco a Excel: fecha, descripción, débitos, créditos y saldo, en una tabla lista para trabajar. Gratis, sin registro y sin subir el archivo a ningún servidor.",
+    descripcionCorta: "Subí el resumen del banco en PDF y bajá la tabla completa en Excel, lista para trabajar.",
+    keywords: [
+      "pdf del banco a excel",
+      "pasar extracto pdf a excel",
+      "convertir resumen de cuenta a excel",
+      "extracto bancario pdf a excel gratis",
+      "resumen de cuenta pdf a excel",
+      "sacar movimientos de un pdf",
+      "pdf a excel banco galicia",
+      "pdf a excel bbva",
+      "convertidor de extractos bancarios",
+    ],
+    icono: Sheet,
+    categoria: "administracion",
+    estado: "activa",
+    formatosEntrada: ["application/pdf"],
+    guiaDescarga: {
+      titulo: "Cómo bajar el resumen en PDF",
+      pasos: [
+        "Entrá a tu home banking desde la computadora.",
+        "Buscá “Resumen de cuenta”, “Extracto” o “Estado de cuenta” (según el banco) y elegí el mes que necesitás.",
+        "Descargalo en PDF. Ese archivo es el que subís acá, tal cual, sin abrirlo ni modificarlo.",
+      ],
+      nota: "Tiene que ser el PDF que genera el banco. Si escaneaste el resumen en papel o le sacaste una foto, adentro no hay texto que leer: de esos archivos no se puede sacar la tabla, y te lo vamos a avisar.",
+    },
+    pasos: [
+      "Arrastrá el resumen en PDF al recuadro (podés subir varios meses juntos).",
+      "Dejá tildada la opción de clasificar si tu banco es BBVA o Comafi; con cualquier otro banco, destildala o dejala igual: si no lo reconocemos, te damos la tabla tal cual está impresa.",
+      "Tocá “Pasar a Excel”: vas a ver los primeros movimientos, los totales por columna y —cuando el resumen imprime una línea de total— si lo que extrajimos coincide con lo que dice tu banco.",
+      "Descargá el Excel: una hoja “Movimientos” con la tabla completa y una hoja “Control” con las sumas y esa comparación, para que puedas verificarlo vos.",
+    ],
+    tituloPasos: "Cómo pasar tu resumen a Excel",
+    faq: [
+      {
+        pregunta: "¿Con qué bancos funciona?",
+        respuesta:
+          "La tabla se reconoce por la posición de las columnas, no por el nombre del banco, así que funciona con cualquier resumen que tenga una fila de títulos con una columna de fecha y al menos dos de importe (por ejemplo: Fecha, Descripción, Débito, Crédito, Saldo). Lo probamos con resúmenes reales de Galicia y de BBVA. Además, si el resumen es de BBVA o Comafi podemos clasificar cada movimiento por categoría, porque conocemos el vocabulario de esos bancos. Si el tuyo no funciona, escribinos: con un resumen real lo agregamos.",
+      },
+      {
+        pregunta: "¿Cómo sé que no se perdió ningún movimiento?",
+        respuesta:
+          "Casi todos los resúmenes imprimen al final una línea de total (“Total”, “Total movimientos”). Sumamos lo que extrajimos y lo comparamos contra esa línea, columna por columna, y te mostramos si coincide. Si no coincide, te lo decimos con todas las letras en vez de dejarte creer que está bien. En el resumen de Galicia con el que probamos, los créditos, los débitos y el saldo final coincidieron al centavo.",
+      },
+      {
+        pregunta: "¿Sirve si escaneé el resumen en papel?",
+        respuesta:
+          "No. Un PDF escaneado es una foto de la hoja: adentro no hay texto, hay una imagen. Sin reconocimiento de caracteres no hay tabla que extraer, y preferimos avisarte antes que devolverte algo inventado. Bajá el PDF del home banking, que sí trae el texto.",
+      },
+      {
+        pregunta: "¿Qué diferencia hay con las herramientas de cada banco?",
+        respuesta:
+          "Ésta es la puerta de entrada: te da la tabla del PDF en Excel, con cualquier banco. Las herramientas de BBVA, Santander y Comafi hacen bastante más —clasifican por categoría, arman resúmenes por concepto y por mes, siguen la cadena de saldos y controlan que no falte nada— pero solo con esos bancos. Si el tuyo es uno de ellos, tildá la opción y vas a recibir el análisis completo.",
+      },
+      {
+        pregunta: "¿Mi resumen se sube a algún servidor?",
+        respuesta:
+          "No. El PDF se lee dentro de tu navegador y no sale de tu dispositivo. Podés comprobarlo desconectando internet después de abrir la herramienta: sigue funcionando igual.",
+      },
+    ],
+    cargar: () => import("@/components/tools/pdf-banco-a-excel/PdfBancoAExcelTool"),
+  },
   {
     slug: "extracto-santander",
     nombre: "Análisis de movimientos Santander",
