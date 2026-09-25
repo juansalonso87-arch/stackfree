@@ -36,11 +36,13 @@ Pendientes y rutinas del proyecto. Lo mantiene Claude al cierre de cada sesión;
 - [ ] **Capturas** de cada home banking para las guías (Win+Shift+S; nombre `banco-formato-N.png`, ej. `bbva-pdf-1.png`). Recién cuando cerremos las herramientas.
 - [ ] **TikTok**: el link clicleable en la bio se habilita a los 1.000 seguidores → revisar entonces (la cuenta @planillar.com quedó completa el 21/09; el cambio gratis a cuenta de empresa ya no existe en Argentina y la "verificada" con documentos no se hace).
 - [ ] YouTube: **fijar el comentario** de Planillar en el video 1.
-- [ ] Search Console: seguir con las **tandas de indexación** (lista de URLs de los días 2 a 4).
+- [ ] Search Console: mirar **Indexación → Páginas** y decirme cuántas de las 42 están indexadas y con qué motivos quedaron afuera las demás. (La mudanza en sí ya está cerrada: ver "Hecho".)
 - [ ] AdSense: avisar cuando llegue el mail de **aprobación** (2 a 4 semanas desde el 16/09). Datos de pago y sitio ya están cargados.
 - [ ] **LinkedIn**: crear el perfil personal y después la página de empresa. Todo lo que hay que pegar está en `Documents\Planillar - LinkedIn\` (empezar por `LEEME PRIMERO.md`).
 
 ## Hecho (últimas dos semanas)
+
+- **25/09** **La mudanza a Search Console estaba completa desde el 16/09**, no pendiente como decía este tablero. Verificado: propiedad de tipo Dominio `planillar.com` validada por el registro TXT de Porkbun (**no borrarlo nunca**), sitemap enviado y leído por Google el 25/09 con las 42 páginas, y el "Cambio de dirección" desde stackfree.vercel.app activo desde el 16/09 (**no tocar "Cancelar traslado"**). Primeras señales: 158 impresiones y 8 clics; entre las consultas, "planillar" (marca) y "comprimir jpg" (genérica). Conclusión: el SEO técnico no es el cuello de botella, el tráfico sí.
 
 - **24/09** **"PDF del banco a Excel": hecha y dada de baja el mismo día.** Juan la probó y no lo convenció, así que se sacó del sitio. El código está entero en el commit `aaa36e0` (`lib/extractos/pdf-tabla.ts` lee la tabla de un resumen sin saber de qué banco es, reconociendo las columnas por su posición; con el PDF de Galicia coincidía al centavo con el total impreso en el propio resumen). Si algún día se retoma, se recupera con `git revert` de la baja; no hay que reescribir nada.
 - **24/09** **LinkedIn desplegado** en `Documents\Planillar - LinkedIn\`: textos de la página de empresa y del perfil personal, branding con las imágenes generadas y 16 posteos con calendario. Falta que Juan cree la cuenta (Claude no puede crear cuentas).
