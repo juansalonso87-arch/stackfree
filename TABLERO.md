@@ -1,12 +1,13 @@
 # Tablero de Planillar
 
-Pendientes y rutinas del proyecto. Lo mantiene Claude al cierre de cada sesión; Juan lo lee acá (GitHub, también desde el celular) o pregunta "¿cómo vamos?". Última actualización: **2026-09-23**.
+Pendientes y rutinas del proyecto. Lo mantiene Claude al cierre de cada sesión; Juan lo lee acá (GitHub, también desde el celular) o pregunta "¿cómo vamos?". Última actualización: **2026-09-25**.
 
 ## En curso
 
 - **Reclamo a PedidosYa**: los **$ 674.089 de "descuentos a cobrar"** de agosto (su propio reporte de pedidos los informa como financiados por ellos). Están listados con número de pedido en la hoja "Revisar" del Excel de la herramienta. Juan tiene que hacer el reclamo con el ejecutivo de cuenta.
 - **Shorts / TikTok**: los 3 primeros shorts de Mercado Pago están publicados (TikTok @planillar.com: los tres el 21/09; YouTube: el 1 publicado, el 2 y el 3 programados para el 23 y el 24/09). Los shorts 4-6 tienen guion (Word) y extractos de demo probados en `04 - Shorts seguridad y bancos`: falta que Juan los grabe y yo los armo con el mismo molde.
 - **Santander en PDF**: cuando llegue el par (resumen en PDF + Excel del mismo mes) se arma `lib/extractos/santander-pdf.ts` y se valida movimiento por movimiento, como se hizo con BBVA (23 meses, 6 empresas) y Comafi (1 mes).
+- **AdSense**: al 25/09 el panel dice "Completó todos los pasos": **datos de pago cargados y sitio conectado**; el sitio figura como "Preparando el sitio". Falta solo que Google apruebe (empezó el 16/09; suele tardar de 2 a 4 semanas). Cuando llegue el mail: crear los 4 bloques display, pasarme los IDs para `NEXT_PUBLIC_ADSENSE_SLOT_*` y activar el mensaje de consentimiento UE en "Privacidad y mensajería". **El aviso de "ads.txt: No encontrado" es falsa alarma**: verificado el 25/09, `planillar.com/ads.txt` responde 200, `text/plain`, con el ID de editor correcto. Google lo consultó el 16/09 a las 12:52 y el archivo se publicó ese día a las 12:37, con el dominio recién comprado y el DNS sin acomodar: el panel quedó con ese dato viejo y se actualiza solo. No tocar nada.
 - **Contador de usos**: funcionando en producción desde el 23/09 (base `planillardb`, Upstash for Redis plan Free, conectada al proyecto `stackfree`). La insignia no se ve hasta los 100 usos por herramienta (`MINIMO_PARA_MOSTRAR` en `lib/contador.ts`; con `?contador=1` se ve igual). **Queda por decidir con Juan si ese umbral de 100 está bien** o si lo bajamos.
 
 ## Próximo (en orden)
@@ -36,7 +37,8 @@ Pendientes y rutinas del proyecto. Lo mantiene Claude al cierre de cada sesión;
 - [ ] **TikTok**: el link clicleable en la bio se habilita a los 1.000 seguidores → revisar entonces (la cuenta @planillar.com quedó completa el 21/09; el cambio gratis a cuenta de empresa ya no existe en Argentina y la "verificada" con documentos no se hace).
 - [ ] YouTube: **fijar el comentario** de Planillar en el video 1.
 - [ ] Search Console: seguir con las **tandas de indexación** (lista de URLs de los días 2 a 4).
-- [ ] AdSense: avisar cuando llegue el mail de **aprobación** (2 a 4 semanas desde el 16/09).
+- [ ] AdSense: avisar cuando llegue el mail de **aprobación** (2 a 4 semanas desde el 16/09). Datos de pago y sitio ya están cargados.
+- [ ] **LinkedIn**: crear el perfil personal y después la página de empresa. Todo lo que hay que pegar está en `Documents\Planillar - LinkedIn\` (empezar por `LEEME PRIMERO.md`).
 
 ## Hecho (últimas dos semanas)
 
