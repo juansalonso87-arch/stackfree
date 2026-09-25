@@ -159,7 +159,12 @@ export default function HomePage() {
       {/* Resto de herramientas, por categoría */}
       <section id="herramientas" className="container mx-auto scroll-mt-20 px-4 py-12">
         <h2 className="font-heading text-2xl font-semibold tracking-tight">Herramientas de imágenes, PDF y conversión</h2>
-        <p className="mt-1 text-muted-foreground">Las mismas reglas: gratis, sin registro y sin subir tus archivos.</p>
+        <p className="mt-1 text-muted-foreground">
+          Las mismas reglas: gratis, sin registro y sin subir tus archivos.{" "}
+          <Link href="/herramientas" className="underline underline-offset-2 hover:text-foreground">
+            Ver el listado completo, con todos los formatos →
+          </Link>
+        </p>
         <div className="mt-8 space-y-10">
           {otrasCategorias.map((c) => {
             const lista = herramientasPorCategoria(c.id);

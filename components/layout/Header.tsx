@@ -25,7 +25,7 @@ export function Header() {
             Administración
           </Link>
           <Link
-            href="/#herramientas"
+            href="/herramientas"
             className="hidden rounded-md px-3 py-1.5 font-medium text-muted-foreground transition-colors hover:bg-muted hover:text-foreground sm:inline-block"
           >
             Herramientas

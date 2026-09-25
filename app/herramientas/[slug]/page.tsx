@@ -105,7 +105,7 @@ export default async function PaginaHerramienta({ params }: Props) {
   const seccion =
     h.categoria === "administracion"
       ? { nombre: nombresCategoria.administracion, ruta: "/administracion" }
-      : { nombre: "Herramientas", ruta: "/#herramientas" };
+      : { nombre: "Herramientas", ruta: "/herramientas" };
   const jsonLdMigas = {
     "@context": "https://schema.org",
     "@type": "BreadcrumbList",

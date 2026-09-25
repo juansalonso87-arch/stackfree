@@ -146,7 +146,7 @@ export default function PaginaAcerca() {
         <p className="mt-4 text-sm text-muted-foreground">
           Además, herramientas gratuitas para imágenes y PDF (convertir, comprimir, unir, dividir, quitar fondo) con la
           misma regla: nada se sube a ningún servidor.{" "}
-          <Link href="/#herramientas" className="underline underline-offset-2 hover:text-foreground">
+          <Link href="/herramientas" className="underline underline-offset-2 hover:text-foreground">
             Ver todas
           </Link>
           .

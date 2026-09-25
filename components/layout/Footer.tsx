@@ -48,6 +48,11 @@ export function Footer() {
                 </Link>
               </li>
             ))}
+            <li className="pt-1">
+              <Link href="/herramientas" className="font-medium text-foreground hover:underline">
+                Ver todas, con sus formatos →
+              </Link>
+            </li>
           </ul>
         </nav>
 

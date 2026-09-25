@@ -42,6 +42,8 @@ Pendientes y rutinas del proyecto. Lo mantiene Claude al cierre de cada sesión;
 
 ## Hecho (últimas dos semanas)
 
+- **25/09** **Página `/herramientas`**: el listado completo, con las 18 herramientas y sus 16 variantes. Sale de un diagnóstico concreto de Search Console: de 42 páginas había 31 indexadas y 10 como "Descubierta: actualmente sin indexar", que eran **exactamente** las 10 con 3 enlaces internos o menos (todas variantes), mientras las hermanas con 6 enlaces sí estaban indexadas. Ahora cada variante tiene un enlace desde una página que está en el menú de las 43 páginas del sitio. El menú "Herramientas" dejó de apuntar a un ancla del inicio.
+
 - **25/09** **La mudanza a Search Console estaba completa desde el 16/09**, no pendiente como decía este tablero. Verificado: propiedad de tipo Dominio `planillar.com` validada por el registro TXT de Porkbun (**no borrarlo nunca**), sitemap enviado y leído por Google el 25/09 con las 42 páginas, y el "Cambio de dirección" desde stackfree.vercel.app activo desde el 16/09 (**no tocar "Cancelar traslado"**). Primeras señales: 158 impresiones y 8 clics; entre las consultas, "planillar" (marca) y "comprimir jpg" (genérica). Conclusión: el SEO técnico no es el cuello de botella, el tráfico sí.
 
 - **24/09** **"PDF del banco a Excel": hecha y dada de baja el mismo día.** Juan la probó y no lo convenció, así que se sacó del sitio. El código está entero en el commit `aaa36e0` (`lib/extractos/pdf-tabla.ts` lee la tabla de un resumen sin saber de qué banco es, reconociendo las columnas por su posición; con el PDF de Galicia coincidía al centavo con el total impreso en el propio resumen). Si algún día se retoma, se recupera con `git revert` de la baja; no hay que reescribir nada.
