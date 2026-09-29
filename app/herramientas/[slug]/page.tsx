@@ -137,12 +137,35 @@ export default async function PaginaHerramienta({ params }: Props) {
     inLanguage: siteConfig.idioma,
     offers: { "@type": "Offer", price: "0", priceCurrency: "USD" },
   };
+  /**
+   * Los pasos, declarados como "procedimiento" y no solo como texto suelto.
+   * Google dejó de mostrar HowTo como resultado enriquecido en 2023, pero el
+   * dato lo siguen leyendo Bing y los asistentes de IA cuando arman una
+   * respuesta del tipo "cómo hacer X": así el procedimiento queda atribuido a
+   * esta página, con la dirección de cada paso, en vez de ser prosa anónima.
+   */
+  const jsonLdPasos = {
+    "@context": "https://schema.org",
+    "@type": "HowTo",
+    name: p.h1,
+    description: p.descripcionSeo,
+    inLanguage: siteConfig.idioma,
+    estimatedCost: { "@type": "MonetaryAmount", currency: "USD", value: "0" },
+    tool: [{ "@type": "HowToTool", name: "Un navegador web" }],
+    step: h.pasos.map((paso, i) => ({
+      "@type": "HowToStep",
+      position: i + 1,
+      text: paso,
+      url: `${urlAbsoluta}#paso-${i + 1}`,
+    })),
+  };
 
   return (
     <article className="container mx-auto px-4 py-8">
       <JsonLd data={jsonLdFaq} />
       <JsonLd data={jsonLdMigas} />
       <JsonLd data={jsonLdApp} />
+      <JsonLd data={jsonLdPasos} />
       {h.video && <JsonLd data={jsonLdVideo(h.video)} />}
 
       {/* Migas de pan */}
@@ -287,7 +310,8 @@ export default async function PaginaHerramienta({ params }: Props) {
             </h2>
             <ol className="mt-4 space-y-3">
               {h.pasos.map((paso, i) => (
-                <li key={i} className="flex gap-3">
+                /* El id hace que cada paso tenga dirección propia: es la que declara el HowTo de arriba. */
+                <li key={i} id={`paso-${i + 1}`} className="flex scroll-mt-20 gap-3">
                   <span className="flex size-7 shrink-0 items-center justify-center rounded-full bg-primary text-sm font-semibold text-primary-foreground">
                     {i + 1}
                   </span>
