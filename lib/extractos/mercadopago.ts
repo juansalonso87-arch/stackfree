@@ -119,6 +119,46 @@ function canalDe(f: Record<string, Celda>, tipo: string, esTransferenciaRecibida
 export const DIAS_SEMANA = ["Lunes", "Martes", "Miércoles", "Jueves", "Viernes", "Sábado", "Domingo"];
 const OTRAS_TARIFAS = ["marketplace_fee", "shipping_cost", "financing_fee"];
 
+/** Medios de pago que son una tarjeta: solo ahí tiene sentido la marca. */
+const PAGOS_CON_TARJETA = ["credit_card", "debit_card", "prepaid_card"];
+/**
+ * Los únicos que se pueden pagar en cuotas: tarjeta de crédito y Mercado
+ * Crédito. Al resto el reporte también le pone "1 cuota", y contarlo inflaría
+ * las ventas "en un pago" con cobros por QR que nunca pudieron ser en cuotas.
+ */
+const PAGOS_EN_CUOTAS = ["credit_card", "digital_currency"];
+
+/**
+ * Marca de la tarjeta. El reporte nuevo la trae dos veces: "FRANCHISE" (visa,
+ * debvisa, master, amex…) y "MEDIO DE PAGO" ("Visa", "Tarjeta de débito
+ * Visa"…). Se acepta cualquiera de las dos. El reporte de Cobros no la trae.
+ */
+const MARCAS: [RegExp, string][] = [
+  [/^visa/, "Visa"],
+  [/^master/, "Mastercard"],
+  [/^(amex|american)/, "American Express"],
+  [/^naranja/, "Naranja"],
+  [/^cabal/, "Cabal"],
+  [/^maestro/, "Maestro"],
+  [/^diners/, "Diners Club"],
+  [/^argencard/, "Argencard"],
+  [/^cencosud/, "Cencosud"],
+  [/^cordobesa/, "Cordobesa"],
+  [/^(tarshop|tarjeta shopping)/, "Tarjeta Shopping"],
+  [/^nativa/, "Nativa"],
+];
+
+export function marcaDeTarjeta(valor: unknown): string {
+  const original = String(valor ?? "").trim();
+  const t = normalizarBasico(original)
+    .replace(/^tarjeta (de )?(debito|credito|prepaga)\s*/, "")
+    .replace(/^deb(?=[a-z])/, "");
+  if (!t) return "";
+  for (const [patron, marca] of MARCAS) if (patron.test(t)) return marca;
+  // Una marca que todavía no está en la lista: se muestra como viene.
+  return original.replace(/^tarjeta (de )?(d[eé]bito|cr[eé]dito|prepaga)\s*/i, "").replace(/^\w/, (c) => c.toUpperCase());
+}
+
 export interface Cobro {
   momento: Date;
   diaTurno: Date;
@@ -143,6 +183,12 @@ export interface Cobro {
   liberacion: Date | null;
   /** Días entre el cobro y la liberación (0 = inmediato). */
   diasLiberacion: number | null;
+  /** Marca de la tarjeta (Visa, Mastercard…); vacío si no se pagó con tarjeta o el reporte no la trae. */
+  marca: string;
+  /** Cuotas, solo en tarjeta de crédito y Mercado Crédito; null en el resto o si el reporte no las trae. */
+  cuotas: number | null;
+  /** Caja de Mercado Pago donde se cobró, si el reporte la trae. */
+  caja: string;
 }
 
 export interface NoConcretada {
@@ -325,6 +371,11 @@ function filasDeLiquidacionesV2(
     neto: col("MONTO NETO DE LA OPERACIÓN"),
     local: col("NOMBRE DE LOCAL"),
     plataforma: col("PLATAFORMA DE COBRO"),
+    franquicia: col("FRANCHISE"),
+    medioDetalle: col("MEDIO DE PAGO"),
+    cuotas: col("CUOTAS"),
+    caja: col("NOMBRE DE CAJA"),
+    cajaUsuario: col("ID DE CAJA DEFINIDO POR EL USUARIO"),
   };
   const v = (f: Celda[], i: number): Celda => (i >= 0 ? (f[i] ?? null) : null);
   const texto = (f: Celda[], i: number) => String(v(f, i) ?? "").trim();
@@ -357,6 +408,9 @@ function filasDeLiquidacionesV2(
       neto: v(f, C.neto) ?? 0,
       local: v(f, C.local),
       plataforma: v(f, C.plataforma),
+      marca: texto(f, C.franquicia) || texto(f, C.medioDetalle),
+      cuotas: v(f, C.cuotas),
+      caja: texto(f, C.caja) || texto(f, C.cajaUsuario),
     };
   });
 
@@ -385,6 +439,9 @@ interface MovimientoLiquidado {
   local?: Celda;
   unidad?: Celda;
   plataforma?: Celda;
+  marca?: Celda;
+  cuotas?: Celda;
+  caja?: Celda;
 }
 
 /**
@@ -425,6 +482,9 @@ function aFilasDeCobros(movimientos: MovimientoLiquidado[], salidas: SalidasDeDi
       description: m.local ?? null,
       business_unit: m.unidad ?? null,
       sub_unit: m.plataforma ?? null,
+      payment_method_id: m.marca ?? null,
+      installments: m.cuotas ?? null,
+      pos_name: m.caja ?? null,
     });
   }
   return salida;
@@ -609,6 +669,12 @@ export async function analizarMercadoPago(
         canal: canalDe(f, tipo, esTransferenciaRecibida),
         liberacion,
         diasLiberacion: liberacion ? Math.round((soloDia(liberacion).getTime() - soloDia(momento).getTime()) / 86_400_000) : null,
+        marca: !esTransferenciaRecibida && PAGOS_CON_TARJETA.includes(tipoPago) ? marcaDeTarjeta(f.payment_method_id) : "",
+        cuotas:
+          !esTransferenciaRecibida && PAGOS_EN_CUOTAS.includes(tipoPago) && texto(f.installments) !== ""
+            ? Math.max(1, Math.round(aNumero(f.installments)))
+            : null,
+        caja: texto(f.pos_name) || nombreDeCaja(f.external_id) || nombreDeCaja(f.pos_id),
       });
     } else if (estado === "rejected" || estado === "cancelled") {
       const detalle = texto(f.status_detail);
@@ -721,6 +787,72 @@ export function resumenMensual(cobros: Cobro[]) {
 }
 
 /** Cobros por local (solo tiene sentido cuando el reporte trae más de un local). */
+/**
+ * En el reporte de Cobros la caja viene como número (`pos_id`) o como el código
+ * que le puso el comercio (`external_id`); un número solo no se entiende.
+ */
+function nombreDeCaja(valor: unknown): string {
+  const t = String(valor ?? "").trim();
+  if (!t) return "";
+  return /^\d+$/.test(t) ? `Caja ${t}` : t;
+}
+
+/** Cajas con nombre; la hoja y el cuadro "Por caja" aparecen solo si hay más de una. */
+export function cajasConNombre(cobros: Cobro[]): string[] {
+  return [...new Set(cobros.map((c) => c.caja).filter(Boolean))];
+}
+
+/** Lo cobrado con cada tarjeta (tipo + marca), para comparar cuánto cobra Mercado Pago por cada una. */
+export function porTarjeta(cobros: Cobro[]) {
+  const mapa = new Map<string, { medio: string; marca: string; etiqueta: string; cobros: number; bruto: number; comision: number; enCuotas: number }>();
+  for (const c of cobros) {
+    if (!c.marca) continue;
+    const k = `${c.medioPago}|${c.marca}`;
+    const f = mapa.get(k) ?? { medio: c.medioPago, marca: c.marca, etiqueta: `${c.medioPago} ${c.marca}`, cobros: 0, bruto: 0, comision: 0, enCuotas: 0 };
+    f.cobros++;
+    f.bruto += c.bruto;
+    f.comision += c.comisionMp;
+    if ((c.cuotas ?? 1) > 1) f.enCuotas++;
+    mapa.set(k, f);
+  }
+  return [...mapa.values()].sort((a, b) => b.bruto - a.bruto);
+}
+
+/** Ventas con tarjeta de crédito o Mercado Crédito, por cantidad de cuotas. */
+export function porCuotas(cobros: Cobro[]) {
+  const mapa = new Map<number, { cuotas: number; cobros: number; bruto: number; comision: number; otras: number }>();
+  for (const c of cobros) {
+    if (c.cuotas === null) continue;
+    const f = mapa.get(c.cuotas) ?? { cuotas: c.cuotas, cobros: 0, bruto: 0, comision: 0, otras: 0 };
+    f.cobros++;
+    f.bruto += c.bruto;
+    f.comision += c.comisionMp;
+    f.otras += c.otrasTarifas;
+    mapa.set(c.cuotas, f);
+  }
+  return [...mapa.values()].sort((a, b) => a.cuotas - b.cuotas);
+}
+
+/** true si hubo al menos una venta en más de un pago (si no, el cuadro de cuotas no dice nada). */
+export function hayVentasEnCuotas(cobros: Cobro[]): boolean {
+  return cobros.some((c) => (c.cuotas ?? 1) > 1);
+}
+
+/** Cobros por caja. Si hay varios locales, la caja va con su local (dos locales pueden tener una "Caja 1"). */
+export function porCaja(cobros: Cobro[]) {
+  const mapa = new Map<string, { local: string; caja: string; cobros: number; bruto: number; neto: number }>();
+  for (const c of cobros) {
+    const caja = c.caja || "Sin caja";
+    const k = `${c.local}|${caja}`;
+    const f = mapa.get(k) ?? { local: c.local, caja, cobros: 0, bruto: 0, neto: 0 };
+    f.cobros++;
+    f.bruto += c.bruto;
+    f.neto += c.neto;
+    mapa.set(k, f);
+  }
+  return [...mapa.values()].sort((a, b) => b.bruto - a.bruto);
+}
+
 export function porLocal(cobros: Cobro[]) {
   const mapa = new Map<string, { local: string; cobros: number; bruto: number; neto: number }>();
   for (const c of cobros) {

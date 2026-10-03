@@ -1293,6 +1293,11 @@ export const herramientas: Herramienta[] = [
           "Los cobros aprobados por QR, link de pago, Point o suscripciones, y las transferencias recibidas si dejás activada esa opción. Las cargas de saldo con tarjeta o efectivo, las transferencias enviadas y los retiros no se cuentan como ventas. Los rechazados, cancelados, devueltos (reembolso total), con contracargo o pendientes se listan aparte, con el motivo, como alerta operativa. Si un cobro tuvo una devolución parcial, figura completo en el bruto y lo devuelto aparece en la columna “Devuelto”. Y si subís reportes de varios locales, aparece un cuadro “Por Local”.",
       },
       {
+        pregunta: "¿Puedo ver cuánto me cobra cada tarjeta y cuánto vendo en cuotas?",
+        respuesta:
+          "Sí, con el reporte de “Todas las transacciones”: el análisis separa cada tarjeta por tipo y marca (crédito Visa, débito Mastercard, American Express…) con la comisión que te cobró Mercado Pago en cada una, y cuánto vendiste en un pago y en cuotas. La diferencia suele ser grande: en un reporte real, el débito pagaba alrededor del 1 % y el crédito casi el 4 %. Si cobrás con más de una caja, también ves lo cobrado en cada una. El reporte de “Cobros” no trae la marca de la tarjeta, así que con ese vas a ver solo las cuotas.",
+      },
+      {
         pregunta: "¿Mi reporte se sube a algún servidor?",
         respuesta:
           "No. El archivo se lee y se procesa dentro de tu navegador, y el Excel se genera ahí mismo. Podés comprobarlo desconectando internet después de cargar la página: la herramienta sigue funcionando.",

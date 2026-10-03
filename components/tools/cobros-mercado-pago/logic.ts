@@ -10,13 +10,18 @@ import {
   HORA_CORTE_DEFECTO,
   MEDIO_TRANSFERENCIA_RECIBIDA,
   analizarMercadoPago,
+  cajasConNombre,
+  hayVentasEnCuotas,
   liberacionPorMedio,
   localesConNombre,
   pendienteDeLiberar,
+  porCaja,
   porCanal,
+  porCuotas,
   porDiaDeTurno,
   porLocal,
   porMedioDePago,
+  porTarjeta,
   promedioPorDiaSemana,
   resumenMensual,
 } from "@/lib/extractos/mercadopago";
@@ -47,6 +52,12 @@ export async function analizar(archivos: File[], horaCorte: number, transferenci
   const liberacion = liberacionPorMedio(a.cobros);
   const pendiente = pendienteDeLiberar(a.cobros);
   const periodos = [...new Set(a.cobros.map((c) => c.periodo))].sort();
+  // Marca, cuotas y caja: solo los trae el reporte nuevo de "Todas las transacciones" (las cuotas, también el de Cobros).
+  const tarjetas = porTarjeta(a.cobros);
+  const brutoTarjetas = tarjetas.reduce((s, t) => s + t.bruto, 0);
+  const cuotas = porCuotas(a.cobros);
+  const brutoCuotas = cuotas.reduce((s, c) => s + c.bruto, 0);
+  const variosLocales = localesConNombre(a.cobros).length > 1;
 
   return {
     titulo: "Cobros de Mercado Pago",
@@ -112,6 +123,57 @@ export async function analizar(archivos: File[], horaCorte: number, transferenci
           `${m.bruto ? ((m.retenciones / m.bruto) * 100).toFixed(2) : "0"} %`,
         ]),
       },
+      ...(tarjetas.length
+        ? [
+            {
+              titulo: "Tarjetas: cuánto te cobra Mercado Pago por cada una",
+              columnas: ["Tarjeta", "Cobros", "Bruto", "% de lo cobrado con tarjeta", "Comisión MP", "En cuotas"],
+              numericas: [1, 2, 3, 4, 5],
+              filas: tarjetas.map((t) => [
+                t.etiqueta,
+                formatearEntero(t.cobros),
+                formatearPesos(t.bruto),
+                `${brutoTarjetas ? ((t.bruto / brutoTarjetas) * 100).toFixed(1) : "0"} %`,
+                `${t.bruto ? ((t.comision / t.bruto) * 100).toFixed(2) : "0"} %`,
+                t.enCuotas ? formatearEntero(t.enCuotas) : "—",
+              ]),
+            },
+          ]
+        : []),
+      ...(hayVentasEnCuotas(a.cobros)
+        ? [
+            {
+              titulo: "En un pago o en cuotas (tarjeta de crédito y Mercado Crédito)",
+              columnas: ["Cuotas", "Cobros", "Bruto", "% de lo cobrado en crédito", "Comisión MP", "Otras tarifas"],
+              numericas: [1, 2, 3, 4, 5],
+              filas: cuotas.map((c) => [
+                c.cuotas === 1 ? "1 pago" : `${c.cuotas} cuotas`,
+                formatearEntero(c.cobros),
+                formatearPesos(c.bruto),
+                `${brutoCuotas ? ((c.bruto / brutoCuotas) * 100).toFixed(1) : "0"} %`,
+                `${c.bruto ? ((c.comision / c.bruto) * 100).toFixed(2) : "0"} %`,
+                `${c.bruto ? ((c.otras / c.bruto) * 100).toFixed(2) : "0"} %`,
+              ]),
+            },
+          ]
+        : []),
+      ...(cajasConNombre(a.cobros).length > 1
+        ? [
+            {
+              titulo: "Cobros por caja",
+              columnas: ["Caja", ...(variosLocales ? ["Local"] : []), "Cobros", "Bruto", "% del total", "Neto recibido"],
+              numericas: variosLocales ? [2, 3, 4, 5] : [1, 2, 3, 4],
+              filas: porCaja(a.cobros).map((c) => [
+                c.caja,
+                ...(variosLocales ? [c.local || "Sin local"] : []),
+                formatearEntero(c.cobros),
+                formatearPesos(c.bruto),
+                `${bruto ? ((c.bruto / bruto) * 100).toFixed(1) : "0"} %`,
+                formatearPesos(c.neto),
+              ]),
+            },
+          ]
+        : []),
       ...(liberacion.length
         ? [
             {
