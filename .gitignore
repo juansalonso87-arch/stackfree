@@ -44,3 +44,6 @@ dev.cmd
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# Copias temporales de archivos reales para probar en el navegador: nunca se suben
+public/_prueba_tmp/

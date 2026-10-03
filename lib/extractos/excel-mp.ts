@@ -28,7 +28,7 @@ import {
   FMT_PESOS,
   type Paleta,
 } from "./excel";
-import { ordenHorasDelTurno, porCanal, porDiaDeTurno, resumenMensual, type AnalisisMercadoPago } from "./mercadopago";
+import { localesConNombre, ordenHorasDelTurno, porCanal, porDiaDeTurno, resumenMensual, type AnalisisMercadoPago } from "./mercadopago";
 
 const PALETA: Paleta = { principal: "00437A", total: "D6E4F0" };
 const AMARILLO = "FFF2CC";
@@ -53,6 +53,9 @@ function filaNormal(ws: ExcelJS.Worksheet, fila: number, columnas: number, fondo
 export async function generarExcelMercadoPago(a: AnalisisMercadoPago): Promise<Blob> {
   const wb = await crearLibro();
   const fin = a.cobros.length + 1;
+  // Si el reporte trae locales, un cobro sin local va como "Sin local" también en
+  // el Detalle: si no, las fórmulas de la hoja Por Local no lo encuentran.
+  const hayLocales = localesConNombre(a.cobros).length > 0;
   const subtitulo =
     `Turnos del ${formatearFecha(a.desde)} al ${formatearFecha(a.hasta)}  |  ${a.cobros.length.toLocaleString("es-AR")} cobros  |  ` +
     `Generado: ${formatearFecha(new Date())}`;
@@ -296,8 +299,7 @@ export async function generarExcelMercadoPago(a: AnalisisMercadoPago): Promise<B
   }
 
   /* ---------------- Por Local (si hay más de uno) ---------------- */
-  const locales = [...new Set(a.cobros.map((c) => c.local || "Sin local"))];
-  if (locales.length > 1) {
+  if (localesConNombre(a.cobros).length > 1) {
     const ws = wb.addWorksheet("Por Local");
     const cab = ["Período", "Local", "Cobros", "Bruto", "% del período", "Neto recibido", "Ticket promedio"];
     encabezadoHoja(ws, "Cobros por local / sucursal", subtitulo, cab.length, PALETA);
@@ -453,7 +455,7 @@ export async function generarExcelMercadoPago(a: AnalisisMercadoPago): Promise<B
         c.neto,
         c.nroOperacion,
         c.devuelto,
-        c.local,
+        c.local || (hayLocales ? "Sin local" : ""),
         c.canal,
         c.liberacion ? fechaExcel(c.liberacion) : "",
         c.diasLiberacion ?? "",

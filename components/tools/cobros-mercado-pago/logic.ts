@@ -11,6 +11,7 @@ import {
   MEDIO_TRANSFERENCIA_RECIBIDA,
   analizarMercadoPago,
   liberacionPorMedio,
+  localesConNombre,
   pendienteDeLiberar,
   porCanal,
   porDiaDeTurno,
@@ -88,7 +89,7 @@ export async function analizar(archivos: File[], horaCorte: number, transferenci
         numericas: [1, 2],
         filas: promedioPorDiaSemana(a.cobros).map((d) => [d.dia, formatearEntero(d.turnos), formatearPesos(d.promedio)]),
       },
-      ...(new Set(a.cobros.map((c) => c.local || "Sin local")).size > 1
+      ...(localesConNombre(a.cobros).length > 1
         ? [
             {
               titulo: "Cobros por local",

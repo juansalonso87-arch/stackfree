@@ -45,7 +45,8 @@ const ETIQUETAS_MEDIO_PAGO: Record<string, string> = {
   credit_card: "Tarjeta de crédito",
   debit_card: "Tarjeta de débito",
   prepaid_card: "Tarjeta prepaga",
-  digital_currency: "Moneda digital / cripto",
+  // No es cripto: en el reporte nuevo esas filas dicen "Préstamos" como medio de pago.
+  digital_currency: "Mercado Crédito (cuotas sin tarjeta)",
   ticket: "Pago en efectivo (cupón)",
   atm: "Cajero automático",
 };
@@ -196,6 +197,53 @@ export function esReporteDeLiquidaciones(claves: string[]): boolean {
   return COLUMNAS_LIQUIDACIONES.every((c) => claves.includes(c));
 }
 
+/**
+ * **Versión 2 del mismo reporte** (archivos `settlement_v2-…`, aparecida a fines
+ * de septiembre de 2026). Mercado Pago lo rehízo: 70 columnas con títulos en
+ * castellano ("ID DE OPERACIÓN EN MERCADO PAGO", "VALOR DE LA COMPRA"…) en vez
+ * de 12 en inglés. Con el formato nuevo la herramienta rechazaba el archivo
+ * diciendo que no era de Mercado Pago. Se aceptan las dos versiones.
+ *
+ * Validado con un archivo real (875 movimientos, 1 al 15/09/2026, un local):
+ * `VALOR DE LA COMPRA + COMISIONES + IVA + IMPUESTOS COBRADOS POR RETENCIONES
+ * DE IIBB = MONTO NETO DE LA OPERACIÓN` en el 100 % de las filas. Diferencias
+ * con la versión 1 que importan:
+ * - Trae lo que a la otra le faltaba: **nombre del local** y de la caja,
+ *   cuotas, marca de la tarjeta, pagador y por dónde se cobró ("PLATAFORMA DE
+ *   COBRO": Código QR, Wallet…).
+ * - Las horas vienen con el desfasaje correcto (`-03:00`); la versión 1
+ *   escribía `-04:00`. Como `aFecha` toma la hora escrita, da igual.
+ * - "COMISIÓN DE MERCADO LIBRE + IVA" **repite** "COMISIONES + IVA" (iguales
+ *   en las 864 filas que la traen): sumarlas cobraría la comisión dos veces.
+ * - Todas las transferencias de ese archivo eran QR pagados desde la app de un
+ *   banco, con comisión (0,97 %). La que llega sin comisión y sin plataforma
+ *   de cobro es una transferencia al alias / CVU, y Mercado Pago igual le
+ *   retiene IIBB, o sea que la liquidó como cobro.
+ */
+const COLUMNAS_LIQUIDACIONES_V2 = [
+  "ID DE OPERACIÓN EN MERCADO PAGO",
+  "FECHA DE ORIGEN",
+  "VALOR DE LA COMPRA",
+  "MONTO NETO DE LA OPERACIÓN",
+];
+
+/** Sin importar mayúsculas ni acentos, por si Mercado Pago los retoca. */
+export function esReporteDeLiquidacionesV2(titulos: unknown[]): boolean {
+  const normalizados = titulos.map(normalizarBasico);
+  return COLUMNAS_LIQUIDACIONES_V2.every((c) => normalizados.includes(normalizarBasico(c)));
+}
+
+/** "Tarjeta de crédito" → "credit_card": el resto del analizador usa los nombres internos. */
+const MEDIOS_V2: Record<string, string> = {
+  "tarjeta de credito": "credit_card",
+  "tarjeta de debito": "debit_card",
+  "tarjeta prepaga": "prepaid_card",
+  "transferencia bancaria": "bank_transfer",
+  "dinero disponible": "available_money",
+  "dinero en cuenta": "account_money",
+  "moneda digital": "digital_currency",
+};
+
 /** Plata que salió de la cuenta (no son ventas): se informa aparte. */
 export interface SalidasDeDinero {
   cantidad: number;
@@ -235,46 +283,160 @@ function filasDeLiquidaciones(
     subUnidad: i("SUB_UNIT"),
   };
   const filas = filasHoja.slice(1).filter((f) => String(f[C.id] ?? "").trim() !== "");
+  const movimientos = filas.map((f): MovimientoLiquidado => {
+    const medio = String(f[C.medio] ?? "").trim();
+    return {
+      id: String(f[C.id] ?? ""),
+      medio,
+      bruto: aNumero(f[C.monto]),
+      esDevolucion: String(f[C.tipo] ?? "").toUpperCase() === "REFUND",
+      // Una transferencia al alias no paga comisión; si la tiene, es un QR o un
+      // link pagado desde la app del banco, que sí la paga.
+      esTransferenciaRecibida: medio === "bank_transfer" && Math.abs(aNumero(f[C.tarifa])) === 0,
+      fecha: f[C.fecha] ?? null,
+      liberacion: C.liberacion >= 0 ? (f[C.liberacion] ?? null) : null,
+      comision: C.tarifa >= 0 ? f[C.tarifa] : 0,
+      neto: f[C.neto] ?? 0,
+      unidad: C.unidad >= 0 ? f[C.unidad] : null,
+      plataforma: C.subUnidad >= 0 ? f[C.subUnidad] : null,
+    };
+  });
+  return aFilasDeCobros(movimientos, salidas);
+}
 
+/** Lo mismo para la versión 2 del reporte (ver `esReporteDeLiquidacionesV2`). */
+function filasDeLiquidacionesV2(
+  filasHoja: Celda[][],
+  salidas: SalidasDeDinero,
+  avisos: string[],
+): Record<string, Celda>[] {
+  const indice = new Map(filasHoja[0].map((t, i) => [normalizarBasico(t), i] as const));
+  const col = (titulo: string) => indice.get(normalizarBasico(titulo)) ?? -1;
+  const C = {
+    id: col("ID DE OPERACIÓN EN MERCADO PAGO"),
+    tipo: col("TIPO DE OPERACIÓN"),
+    medio: col("TIPO DE MEDIO DE PAGO"),
+    monto: col("VALOR DE LA COMPRA"),
+    fecha: col("FECHA DE ORIGEN"),
+    liberacion: col("FECHA DE LIQUIDACIÓN DEL DINERO"),
+    comision: col("COMISIONES + IVA"),
+    cuotasSinInteres: col("COMISIÓN POR OFRECER CUOTAS SIN INTERÉS"),
+    envio: col("COSTO DE ENVÍO"),
+    neto: col("MONTO NETO DE LA OPERACIÓN"),
+    local: col("NOMBRE DE LOCAL"),
+    plataforma: col("PLATAFORMA DE COBRO"),
+  };
+  const v = (f: Celda[], i: number): Celda => (i >= 0 ? (f[i] ?? null) : null);
+  const texto = (f: Celda[], i: number) => String(v(f, i) ?? "").trim();
+  const filas = filasHoja.slice(1).filter((f) => texto(f, C.id) !== "");
+
+  // En este formato una devolución no se distingue por el tipo (en el archivo
+  // con el que se armó no había ninguna): es un importe negativo con el mismo
+  // ID que un cobro. Un negativo sin cobro detrás es plata que salió.
+  const cobrados = new Set(filas.filter((f) => aNumero(v(f, C.monto)) > 0).map((f) => texto(f, C.id)));
+  const tiposNuevos = new Set<string>();
+
+  const movimientos = filas.map((f): MovimientoLiquidado => {
+    const id = texto(f, C.id);
+    const tipo = texto(f, C.tipo);
+    if (tipo && normalizarBasico(tipo) !== "pago aprobado") tiposNuevos.add(tipo);
+    const bruto = aNumero(v(f, C.monto));
+    const medio = texto(f, C.medio);
+    return {
+      id,
+      medio: MEDIOS_V2[normalizarBasico(medio)] ?? medio,
+      bruto,
+      esDevolucion: bruto < 0 && cobrados.has(id),
+      // Entró plata sin comisión y sin QR, Point ni link: una transferencia al alias / CVU.
+      esTransferenciaRecibida: bruto > 0 && Math.abs(aNumero(v(f, C.comision))) === 0 && texto(f, C.plataforma) === "",
+      fecha: v(f, C.fecha),
+      liberacion: v(f, C.liberacion),
+      comision: v(f, C.comision) ?? 0,
+      // No se usa "COMISIÓN DE MERCADO LIBRE + IVA": repite la comisión (ver arriba).
+      otrasTarifas: { financing_fee: v(f, C.cuotasSinInteres), shipping_cost: v(f, C.envio) },
+      neto: v(f, C.neto) ?? 0,
+      local: v(f, C.local),
+      plataforma: v(f, C.plataforma),
+    };
+  });
+
+  if (tiposNuevos.size > 0) {
+    avisos.push(
+      `El reporte trae operaciones de un tipo que todavía no vimos (${[...tiposNuevos].join(", ")}): se contaron como cobro si entró plata y como salida si salió. Si algún número no te cierra, avisanos.`,
+    );
+  }
+  return aFilasDeCobros(movimientos, salidas);
+}
+
+/** Un movimiento del reporte de liquidaciones ya leído, sea de la versión que sea. */
+interface MovimientoLiquidado {
+  id: string;
+  /** Medio de pago con el nombre interno de Mercado Pago (credit_card, available_money…). */
+  medio: string;
+  /** Positivo si entró plata, negativo si salió. */
+  bruto: number;
+  esDevolucion: boolean;
+  esTransferenciaRecibida: boolean;
+  fecha: Celda;
+  liberacion: Celda;
+  comision: Celda;
+  otrasTarifas?: Record<string, Celda>;
+  neto: Celda;
+  local?: Celda;
+  unidad?: Celda;
+  plataforma?: Celda;
+}
+
+/**
+ * Pasa los movimientos a las claves del reporte de Cobros: las devoluciones se
+ * suman al cobro original (si lo tapan entero, pasa a "no concretadas") y los
+ * importes negativos sin cobro detrás se informan aparte como salidas.
+ */
+function aFilasDeCobros(movimientos: MovimientoLiquidado[], salidas: SalidasDeDinero): Record<string, Celda>[] {
   const devueltoPorId = new Map<string, number>();
-  for (const f of filas) {
-    if (String(f[C.tipo] ?? "").toUpperCase() !== "REFUND") continue;
-    const id = String(f[C.id] ?? "");
-    devueltoPorId.set(id, (devueltoPorId.get(id) ?? 0) + Math.abs(aNumero(f[C.monto])));
+  for (const m of movimientos) {
+    if (m.esDevolucion) devueltoPorId.set(m.id, (devueltoPorId.get(m.id) ?? 0) + Math.abs(m.bruto));
   }
 
   const salida: Record<string, Celda>[] = [];
-  for (const f of filas) {
-    if (String(f[C.tipo] ?? "").toUpperCase() === "REFUND") continue;
-    const bruto = aNumero(f[C.monto]);
-    if (bruto <= 0) {
+  for (const m of movimientos) {
+    if (m.esDevolucion) continue;
+    if (m.bruto <= 0) {
       // Plata que salió: pagos hechos con el saldo, contracargos, cargos.
       salidas.cantidad++;
-      salidas.monto += Math.abs(bruto);
+      salidas.monto += Math.abs(m.bruto);
       continue;
     }
-    const id = String(f[C.id] ?? "");
-    const devuelto = devueltoPorId.get(id) ?? 0;
-    const medio = String(f[C.medio] ?? "").trim();
+    const devuelto = devueltoPorId.get(m.id) ?? 0;
     salida.push({
-      operation_id: id,
-      date_created: f[C.fecha] ?? null,
-      date_released: C.liberacion >= 0 ? (f[C.liberacion] ?? null) : null,
-      transaction_amount: bruto,
-      mercadopago_fee: C.tarifa >= 0 ? f[C.tarifa] : 0,
-      net_received_amount: f[C.neto] ?? 0,
+      operation_id: m.id,
+      date_created: m.fecha,
+      date_released: m.liberacion,
+      transaction_amount: m.bruto,
+      mercadopago_fee: m.comision,
+      net_received_amount: m.neto,
+      ...m.otrasTarifas,
       amount_refunded: devuelto,
-      payment_type: medio,
-      // Una transferencia al alias no paga comisión; si la tiene, es un QR o un
-      // link pagado desde la app del banco, que sí la paga.
-      operation_type:
-        medio === "bank_transfer" && Math.abs(aNumero(f[C.tarifa])) === 0 ? "account_fund" : "regular_payment",
-      status: devuelto > 0 && devuelto >= bruto - 0.005 ? "refunded" : "approved",
-      business_unit: C.unidad >= 0 ? f[C.unidad] : null,
-      sub_unit: C.subUnidad >= 0 ? f[C.subUnidad] : null,
+      // Así llega una transferencia al alias en el reporte de Cobros: como
+      // ingreso de dinero por transferencia. El resto del analizador la reconoce.
+      payment_type: m.esTransferenciaRecibida ? "bank_transfer" : m.medio,
+      operation_type: m.esTransferenciaRecibida ? "account_fund" : "regular_payment",
+      status: devuelto > 0 && devuelto >= m.bruto - 0.005 ? "refunded" : "approved",
+      description: m.local ?? null,
+      business_unit: m.unidad ?? null,
+      sub_unit: m.plataforma ?? null,
     });
   }
   return salida;
+}
+
+/**
+ * Locales con nombre que trae el reporte. La hoja y el cuadro "Por local"
+ * aparecen solo si hay más de uno: un cobro sin local (una transferencia al
+ * alias no pasa por ninguna caja) no alcanza para armarlos.
+ */
+export function localesConNombre(cobros: Cobro[]): string[] {
+  return [...new Set(cobros.map((c) => c.local).filter(Boolean))];
 }
 
 /** 'Medio de pago (payment_type)' → 'payment_type'. */
@@ -323,10 +485,16 @@ export async function analizarMercadoPago(
       filas.push(...filasDeLiquidaciones(hoja.filas, claves, salidas));
       continue;
     }
+    if (esReporteDeLiquidacionesV2(hoja.filas[0])) {
+      deLiquidaciones = true;
+      filas.push(...filasDeLiquidacionesV2(hoja.filas, salidas, avisos));
+      continue;
+    }
     if (!claves.some((k) => /^(date_created|date_approved|date_created_short)$/.test(k))) {
       throw new ErrorExtracto(
-        `"${archivo.name}" no parece un reporte de Mercado Pago (no trae ni la columna "date_created" ni "SOURCE_ID"). ` +
-          "Descargalo desde Mercado Pago → Reportes → Cerrar y conciliar mes → Todas las transacciones.",
+        `"${archivo.name}" no tiene las columnas de ningún reporte de Mercado Pago que conozcamos. ` +
+          "Descargalo desde Mercado Pago → Reportes → Cerrar y conciliar mes → Todas las transacciones. " +
+          "Si es ese y aun así no lo lee, puede que Mercado Pago haya cambiado el formato: avisanos y lo adaptamos.",
       );
     }
     deCobros = true;
