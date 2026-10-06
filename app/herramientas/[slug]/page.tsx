@@ -305,8 +305,7 @@ export default async function PaginaHerramienta({ params }: Props) {
 
           <section>
             <h2 className="font-heading text-xl font-semibold tracking-tight">
-              {h.tituloPasos ??
-                `Cómo ${p.variante ? `convertir ${p.variante.etiqueta.toLowerCase()}` : h.nombre.toLowerCase()} paso a paso`}
+              {p.tituloPasos}
             </h2>
             <ol className="mt-4 space-y-3">
               {h.pasos.map((paso, i) => (
@@ -332,6 +331,18 @@ export default async function PaginaHerramienta({ params }: Props) {
               ))}
             </Accordion>
           </section>
+
+          {/* Lo que solo se puede contar de esta herramienta. Cada variante trae el suyo. */}
+          {p.contenido?.map((s) => (
+            <section key={s.titulo}>
+              <h2 className="font-heading text-xl font-semibold tracking-tight">{s.titulo}</h2>
+              <div className="mt-3 max-w-3xl space-y-3 text-muted-foreground">
+                {s.parrafos.map((texto, i) => (
+                  <p key={i}>{texto}</p>
+                ))}
+              </div>
+            </section>
+          ))}
 
           {h.scriptPython && (
             <section className="rounded-lg border bg-muted/30 p-4">

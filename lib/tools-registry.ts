@@ -1,4 +1,7 @@
 import type { ComponentType } from "react";
+// El texto propio de cada página vive aparte: son ~6.000 palabras y acá taparían
+// la configuración de las herramientas (ver tools-contenido.ts).
+import { CONTENIDO_POR_PAGINA } from "./tools-contenido";
 import type { LucideIcon } from "lucide-react";
 import {
   Crop,
@@ -48,6 +51,23 @@ export type CategoriaHerramienta = "imagen" | "pdf" | "conversion" | "administra
  */
 export type EstadoHerramienta = "activa" | "proximamente";
 
+/**
+ * Un bloque de texto propio de UNA página: lo que solo se puede decir de esta
+ * herramienta (o de esta conversión concreta) y de ninguna otra.
+ *
+ * **No se hereda de la herramienta a sus variantes, a propósito.** Si una
+ * variante no trae el suyo, no muestra nada: repetir el mismo texto en siete
+ * páginas es justo lo que hay que evitar. Medido el 2026-10-06, antes de
+ * agregar estos bloques, las 27 páginas de imagen/PDF tenían ~247 palabras y
+ * solo el 23 % no aparecía igual en otra página del sitio; AdSense rechazó el
+ * sitio por "Contenido de bajo valor" ese mismo día.
+ */
+export interface SeccionContenido {
+  titulo: string;
+  /** Párrafos en texto plano. Nada de HTML: se renderizan como <p>. */
+  parrafos: string[];
+}
+
 export interface PreguntaFrecuente {
   pregunta: string;
   respuesta: string;
@@ -71,6 +91,8 @@ export interface VarianteHerramienta {
   keywords: string[];
   /** Si no se define, se usa la FAQ de la herramienta principal. */
   faq?: PreguntaFrecuente[];
+  /** Título de la sección de pasos. Sin esto, el genérico queda mal ("Cómo convertir comprimir jpg"). */
+  tituloPasos?: string;
   /** Texto corto para enlazar esta variante desde sus "hermanas". */
   etiqueta: string;
   opciones: OpcionesVariante;
@@ -172,6 +194,7 @@ function varianteConversion(de: ClaveFormato, a: ClaveFormato): VarianteHerramie
   return {
     slug: `convertir-${de}-a-${a}`,
     etiqueta: `${DE} a ${A}`,
+    tituloPasos: `Cómo convertir ${DE} a ${A} paso a paso`,
     h1: `Convertir ${DE} a ${A} gratis online`,
     subtitulo: `Pasa tus imágenes de ${DE} a ${A} en segundos, sin instalar programas y sin subir nada a internet. Puedes convertir varias a la vez.`,
     tituloSeo: `Convertir ${DE} a ${A} gratis online, sin subir archivos`,
@@ -220,6 +243,7 @@ function varianteImagenAPdf(clave: "jpg" | "png"): VarianteHerramienta {
   return {
     slug: `${clave}-a-pdf`,
     etiqueta: `${F} a PDF`,
+    tituloPasos: `Cómo convertir ${F} a PDF paso a paso`,
     h1: `Convertir ${F} a PDF gratis online`,
     subtitulo: `Convierte una o varias imágenes ${F} en un solo PDF, en el orden que quieras. Sin registro, sin marca de agua y sin subir tus archivos a ningún servidor.`,
     tituloSeo: `Convertir ${F} a PDF gratis online, sin subir archivos`,
@@ -270,6 +294,7 @@ function varianteComprimir(clave: "jpg" | "png" | "webp"): VarianteHerramienta {
   return {
     slug: `comprimir-${clave}`,
     etiqueta: `Comprimir ${F}`,
+    tituloPasos: `Cómo comprimir un ${F} paso a paso`,
     h1: `Comprimir ${F} gratis online`,
     subtitulo: `Reduce el peso de tus imágenes ${F} hasta un 80% sin perder calidad visible. Varias a la vez, sin registro y sin subir nada a internet.`,
     tituloSeo: `Comprimir ${F} online gratis, sin perder calidad`,
@@ -314,6 +339,7 @@ export const herramientas: Herramienta[] = [
   {
     slug: "quitar-fondo-imagen",
     nombre: "Quitar fondo de imagen",
+    tituloPasos: "Cómo quitar el fondo de una imagen paso a paso",
     h1: "Quitar fondo de imagen gratis online",
     subtitulo:
       "Elimina el fondo de cualquier foto en segundos o ponle un fondo blanco. Sin marca de agua, sin registro y sin subir tu imagen a ningún servidor.",
@@ -368,6 +394,7 @@ export const herramientas: Herramienta[] = [
   {
     slug: "convertir-imagen",
     nombre: "Convertir formato de imagen",
+    tituloPasos: "Cómo convertir una imagen de formato paso a paso",
     h1: "Convertir imágenes a PNG, JPG o WEBP gratis online",
     subtitulo:
       "Cambia el formato de tus imágenes en segundos: PNG, JPG y WEBP en cualquier dirección. Varias a la vez, sin registro y sin subir nada a internet.",
@@ -423,6 +450,7 @@ export const herramientas: Herramienta[] = [
   {
     slug: "unir-pdf",
     nombre: "Unir PDF",
+    tituloPasos: "Cómo unir varios PDF en uno paso a paso",
     h1: "Unir PDF gratis online",
     subtitulo:
       "Combina varios archivos PDF en uno solo, en el orden que quieras. Sin límite de archivos, sin marca de agua y sin subir tus documentos a ningún servidor.",
@@ -476,6 +504,7 @@ export const herramientas: Herramienta[] = [
   {
     slug: "imagen-a-pdf",
     nombre: "Imagen a PDF",
+    tituloPasos: "Cómo convertir una imagen a PDF paso a paso",
     h1: "Convertir imagen a PDF gratis online",
     subtitulo:
       "Pasa tus fotos, capturas o escaneos (JPG, PNG, WEBP) a un PDF en segundos. Una o varias imágenes en un solo documento, sin registro y sin subir nada a internet.",
@@ -530,6 +559,7 @@ export const herramientas: Herramienta[] = [
   {
     slug: "comprimir-imagen",
     nombre: "Comprimir imagen",
+    tituloPasos: "Cómo comprimir una imagen paso a paso",
     h1: "Comprimir imágenes online gratis sin perder calidad",
     subtitulo:
       "Reduce el peso de tus fotos JPG, PNG y WEBP hasta un 80% para enviarlas más rápido o subirlas a tu web. Varias a la vez, sin registro y sin subir nada a internet.",
@@ -583,6 +613,7 @@ export const herramientas: Herramienta[] = [
   {
     slug: "redimensionar-imagen",
     nombre: "Redimensionar imagen",
+    tituloPasos: "Cómo redimensionar una imagen paso a paso",
     h1: "Redimensionar imagen online gratis",
     subtitulo:
       "Cambia el tamaño de tus imágenes en píxeles o por porcentaje, con medidas listas para redes sociales. Varias a la vez, sin registro y sin subir nada a internet.",
@@ -635,6 +666,7 @@ export const herramientas: Herramienta[] = [
   {
     slug: "dividir-pdf",
     nombre: "Dividir PDF",
+    tituloPasos: "Cómo dividir un PDF paso a paso",
     h1: "Dividir PDF gratis online: separar o extraer páginas",
     subtitulo:
       "Separa un PDF en páginas individuales o extrae solo las que necesitas (por ejemplo, 1-3 y 7). Sin registro, sin marca de agua y sin subir tu documento a ningún servidor.",
@@ -686,6 +718,7 @@ export const herramientas: Herramienta[] = [
       {
         slug: "extraer-paginas-pdf",
         etiqueta: "Extraer páginas",
+        tituloPasos: "Cómo extraer páginas de un PDF paso a paso",
         h1: "Extraer páginas de un PDF gratis online",
         subtitulo:
           "Elige las páginas que necesitas de un PDF (por ejemplo, 2-4 y 9) y descárgalas como un PDF nuevo. Sin registro y sin subir tu documento a ningún servidor.",
@@ -707,6 +740,7 @@ export const herramientas: Herramienta[] = [
   {
     slug: "rotar-pdf",
     nombre: "Rotar PDF",
+    tituloPasos: "Cómo rotar un PDF paso a paso",
     h1: "Rotar PDF gratis online: girar páginas y guardar",
     subtitulo:
       "Gira un PDF 90° o 180°, todas las páginas o solo algunas, y descárgalo ya rotado para siempre. Sin registro, sin marca de agua y sin subir tu documento a ningún servidor.",
@@ -760,6 +794,7 @@ export const herramientas: Herramienta[] = [
   {
     slug: "recortar-imagen",
     nombre: "Recortar imagen",
+    tituloPasos: "Cómo recortar una imagen paso a paso",
     h1: "Recortar imagen gratis online",
     subtitulo:
       "Recorta una foto o imagen a la medida que necesitas: libre, cuadrada, 16:9, para Instagram o en círculo. Sin registro y sin subir tus fotos a ningún servidor.",
@@ -812,6 +847,7 @@ export const herramientas: Herramienta[] = [
       {
         slug: "recortar-imagen-circular",
         etiqueta: "En círculo",
+        tituloPasos: "Cómo recortar una imagen en círculo paso a paso",
         h1: "Recortar imagen en círculo gratis online",
         subtitulo:
           "Convierte cualquier foto en una imagen circular con fondo transparente, ideal para fotos de perfil, avatares y logos. Sin registro y sin subir tus fotos a ningún servidor.",
@@ -855,6 +891,7 @@ export const herramientas: Herramienta[] = [
   {
     slug: "pdf-a-imagen",
     nombre: "PDF a imagen",
+    tituloPasos: "Cómo convertir un PDF a imagen paso a paso",
     h1: "Convertir PDF a imagen gratis online (JPG o PNG)",
     subtitulo:
       "Convierte cada página de un PDF en una imagen JPG o PNG, con la calidad que elijas. Todas las páginas o solo algunas. Sin registro y sin subir tu documento a ningún servidor.",
@@ -907,6 +944,7 @@ export const herramientas: Herramienta[] = [
       {
         slug: "pdf-a-jpg",
         etiqueta: "PDF a JPG",
+        tituloPasos: "Cómo convertir un PDF a JPG paso a paso",
         h1: "Convertir PDF a JPG gratis online",
         subtitulo:
           "Convierte las páginas de un PDF en imágenes JPG livianas, listas para compartir por WhatsApp, mail o redes. Sin registro y sin subir tu documento a ningún servidor.",
@@ -919,6 +957,7 @@ export const herramientas: Herramienta[] = [
       {
         slug: "pdf-a-png",
         etiqueta: "PDF a PNG",
+        tituloPasos: "Cómo convertir un PDF a PNG paso a paso",
         h1: "Convertir PDF a PNG gratis online",
         subtitulo:
           "Convierte las páginas de un PDF en imágenes PNG sin pérdida de calidad, ideales para texto nítido, presentaciones y edición. Sin registro y sin subir tu documento a ningún servidor.",
@@ -934,6 +973,7 @@ export const herramientas: Herramienta[] = [
   {
     slug: "heic-a-jpg",
     nombre: "HEIC a JPG",
+    tituloPasos: "Cómo convertir HEIC a JPG paso a paso",
     h1: "Convertir HEIC a JPG gratis online",
     subtitulo:
       "Convierte las fotos HEIC de tu iPhone a JPG para abrirlas en cualquier PC, Android o sitio web. Varias a la vez, sin registro y sin subir tus fotos a ningún servidor.",
@@ -986,6 +1026,7 @@ export const herramientas: Herramienta[] = [
       {
         slug: "heic-a-png",
         etiqueta: "HEIC a PNG",
+        tituloPasos: "Cómo convertir HEIC a PNG paso a paso",
         h1: "Convertir HEIC a PNG gratis online",
         subtitulo:
           "Convierte fotos HEIC de iPhone a PNG sin pérdida de calidad, listas para editar o subir donde no aceptan HEIC. Varias a la vez, sin registro y sin subir tus fotos.",
@@ -1573,6 +1614,9 @@ export interface PaginaHerramienta {
   descripcionSeo: string;
   keywords: string[];
   faq: PreguntaFrecuente[];
+  contenido?: SeccionContenido[];
+  /** Título ya resuelto de la sección de pasos. */
+  tituloPasos: string;
   opciones?: OpcionesVariante;
 }
 
@@ -1588,6 +1632,8 @@ export function obtenerPagina(slug: string): PaginaHerramienta | undefined {
         descripcionSeo: herramienta.descripcionSeo,
         keywords: herramienta.keywords,
         faq: herramienta.faq,
+        contenido: CONTENIDO_POR_PAGINA[slug],
+        tituloPasos: herramienta.tituloPasos ?? `Cómo usar ${herramienta.nombre} paso a paso`,
       };
     }
     const variante = herramienta.variantes?.find((v) => v.slug === slug);
@@ -1602,6 +1648,10 @@ export function obtenerPagina(slug: string): PaginaHerramienta | undefined {
         descripcionSeo: variante.descripcionSeo,
         keywords: variante.keywords,
         faq: variante.faq ?? herramienta.faq,
+        // Se busca por el slug de ESTA página: una variante no hereda el de su
+        // herramienta, a propósito (ver SeccionContenido).
+        contenido: CONTENIDO_POR_PAGINA[slug],
+        tituloPasos: variante.tituloPasos ?? herramienta.tituloPasos ?? `Cómo usar ${herramienta.nombre} paso a paso`,
         opciones: variante.opciones,
       };
     }

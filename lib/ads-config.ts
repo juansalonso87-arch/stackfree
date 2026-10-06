@@ -35,15 +35,23 @@ export const adsConfig = {
   } satisfies Record<PosicionAnuncio, string>,
 
   /**
-   * Si no hay anuncios reales, ¿mostrar el recuadro placeholder? Por defecto
-   * sí, también en el sitio publicado: reserva el lugar de los anuncios (así
-   * la página no "salta" cuando lleguen) y deja claro dónde va a haber
-   * publicidad. Se puede apagar con NEXT_PUBLIC_ADS_PLACEHOLDER=false (se
-   * usó para grabar los videos del canal; NEXT_PUBLIC_* se hornea en el build,
-   * así que hay que redeployar). Este código corre en el navegador: Next solo
-   * le pasa NODE_ENV y las variables NEXT_PUBLIC_*.
+   * Si no hay anuncios reales, ¿mostrar el recuadro placeholder?
+   *
+   * **Por defecto NO** (cambiado el 2026-10-06). Hasta esa fecha se mostraba
+   * también en el sitio publicado, por decisión del dueño del 2026-09-16: la
+   * idea era reservar el lugar de los anuncios para que la página no "saltara"
+   * cuando llegaran. El 06/10 AdSense rechazó el sitio por **"Contenido de bajo
+   * valor"**, y una página de herramienta de imagen tenía ~230 palabras y
+   * **cuatro** recuadros punteados que decían "Publicidad · Banner superior":
+   * para el que revisa, eso es una página armada alrededor de la publicidad, y
+   * encima sin publicidad. El salto de layout lo sigue evitando el `min-h-` de
+   * cada posición en `AdSlot`, así que no se pierde nada.
+   *
+   * Se puede volver a encender con NEXT_PUBLIC_ADS_PLACEHOLDER=true (NEXT_PUBLIC_*
+   * se hornea en el build, así que hay que redeployar). Este código corre en el
+   * navegador: Next solo le pasa NODE_ENV y las variables NEXT_PUBLIC_*.
    */
-  mostrarPlaceholder: process.env.NEXT_PUBLIC_ADS_PLACEHOLDER !== "false",
+  mostrarPlaceholder: process.env.NEXT_PUBLIC_ADS_PLACEHOLDER === "true",
 };
 
 /** Hay AdSense configurado cuando existe el ID de cliente. */
